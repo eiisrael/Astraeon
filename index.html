@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#080706">
-<title>ASTRAEON 3.0-A — Hardcore UI</title>
+<title>ASTRAEON 3.0-B — Sprint & Loot</title>
 <link rel="stylesheet" href="src/astraeon-v2.css">
 <link rel="stylesheet" href="src/inventory-v2.css">
 <link rel="stylesheet" href="src/ui-v3.css">
+<link rel="stylesheet" href="src/ui-v3b.css">
 </head>
 <body>
 <div id="gameRoot">
@@ -18,7 +19,7 @@
   <section id="startScreen" class="screen">
     <div class="start-shell">
       <article class="start-panel">
-        <span class="eyebrow">Hardcore Remaster 3.0-A · action MMORPG 2D</span>
+        <span class="eyebrow">Hardcore Remaster 3.0-B · ação, stamina e loot persistente</span>
         <h1 class="logo">ASTRAEON<span>ECOS DA CONVERGÊNCIA</span></h1>
         <p class="lead">Um mundo quebrado por cinco climas, relíquias de classe e criaturas que guardam equipamentos únicos. Explore, evolua e monte sua própria lenda na Convergência.</p>
         <div class="menu-actions">
@@ -27,7 +28,7 @@
           <button id="editorBtn" class="main-btn">Editor Astral<small>Terreno, clima, objetos, colisões e spawns</small></button>
           <button id="settingsStartBtn" class="main-btn">Configurações<small>Interface, efeitos, minimapa, áudio e mobile</small></button>
         </div>
-        <footer class="start-footer"><span><b>WASD</b> mover</span><span><b>Mouse / Espaço</b> atacar</span><span><b>1–5</b> habilidades</span><span><b>I</b> mochila + equipamento</span></footer>
+        <footer class="start-footer"><span><b>WASD</b> mover</span><span><b>Shift</b> correr</span><span><b>Mouse / Espaço</b> atacar</span><span><b>1–5</b> habilidades</span><span><b>I</b> mochila</span></footer>
       </article>
       <aside class="world-panel">
         <div class="world-art"></div>
@@ -63,6 +64,7 @@
       <div class="bars">
         <div class="bar-line"><span>VIDA</span><div class="bar hp"><i id="hpFill" style="width:100%"></i></div><b id="hpText">100 / 100</b></div>
         <div class="bar-line"><span>MANA</span><div class="bar mp"><i id="mpFill" style="width:100%"></i></div><b id="mpText">100 / 100</b></div>
+        <div class="bar-line stamina-line"><span>FÔLEGO</span><div class="bar stamina"><i id="staminaFill" style="width:100%"></i></div><b id="staminaText">100 / 100</b></div>
         <div class="bar-line"><span>XP</span><div class="bar xp"><i id="xpFill" style="width:0%"></i></div><b>progressão</b></div>
       </div>
       <div class="player-meta"><span>Ouro <b id="goldText">0</b></span><span>Abates <b id="killText">0</b></span><span>Hora <b id="clockText">06:00</b></span></div>
@@ -75,7 +77,7 @@
       <footer><span>Recompensa: Núcleo de Astra</span><span>+120 ouro</span></footer>
     </section>
 
-    <div class="world-status"><span id="biomeChip" class="chip biome">✦ Convergência</span><span class="chip">ASTRAEON 3.0-A</span></div>
+    <div class="world-status"><span id="biomeChip" class="chip biome">✦ Convergência</span><span class="chip">ASTRAEON 3.0-B</span></div>
     <div class="minimap-shell hud-card"><canvas id="minimapCanvas" width="196" height="196"></canvas></div>
 
     <div class="hotbar-shell">
@@ -93,11 +95,12 @@
         <button id="helpBtn" class="icon-btn" title="Ajuda (H)">?</button>
       </div>
     </div>
-    <div class="hud-tip">WASD mover · clique/espaço atacar · 1–5 habilidades · I mochila/equipamento · ESC pausar</div>
+    <div class="hud-tip">WASD mover · Shift correr · clique/espaço atacar · 1–5 habilidades · I mochila · ESC pausar</div>
   </div>
 
   <div id="biomeBanner"><strong>ASTRAEON</strong><span>Uma nova região foi descoberta</span></div>
   <div id="toast">Mensagem</div>
+  <div id="lootWarning" aria-live="polite"></div>
 
   <section id="inventoryPanel" class="overlay-panel hidden">
     <div class="overlay-card inventory-overlay-card">
@@ -162,7 +165,7 @@
   </section>
 
   <section id="helpPanel" class="overlay-panel hidden">
-    <div class="overlay-card"><header class="overlay-head"><div><span class="panel-kicker">Codex</span><h2>Manual do viajante</h2><p>Controles e sistemas principais.</p></div><button class="panelClose">×</button></header><div class="help-grid"><div class="help-card"><b>Exploração</b><span>WASD/setas movem. No mobile use o direcional touch. Estradas conectam regiões.</span></div><div class="help-card"><b>Combate</b><span>Clique, Espaço ou botão de ataque. 1–5 ativa habilidades com mana e recarga.</span></div><div class="help-card"><b>Equipamentos de classe</b><span>Cada classe possui armas e peças exclusivas. Itens incompatíveis podem ser coletados, mas não equipados.</span></div><div class="help-card"><b>Mochila</b><span>I abre equipamento, mochila e Item List. Pesquise, filtre e compare os bônus reais.</span></div></div></div>
+    <div class="overlay-card"><header class="overlay-head"><div><span class="panel-kicker">Codex</span><h2>Manual do viajante</h2><p>Controles e sistemas principais.</p></div><button class="panelClose">×</button></header><div class="help-grid"><div class="help-card"><b>Exploração</b><span>WASD/setas movem. Segure Shift para correr consumindo Fôlego; ele se regenera com o tempo e enche ao subir de nível. No mobile use o direcional touch.</span></div><div class="help-card"><b>Combate</b><span>Clique, Espaço ou botão de ataque. 1–5 ativa habilidades com mana e recarga.</span></div><div class="help-card"><b>Equipamentos de classe</b><span>Cada classe possui armas e peças exclusivas. Itens incompatíveis podem ser coletados, mas não equipados.</span></div><div class="help-card"><b>Mochila</b><span>I abre equipamento, mochila e Item List. A mochila possui 30 slots; se estiver cheia, o loot permanece no chão até você liberar espaço.</span></div></div></div>
   </section>
 
   <section id="settingsPanel" class="overlay-panel hidden">
@@ -193,6 +196,7 @@
     </div>
     <div class="touch-actions">
       <button id="touchInventory">♜</button>
+      <button data-key="shift" class="touch-sprint">⇧<small>Correr</small></button>
       <button id="touchAttack" class="touch-attack">⚔</button>
       <button data-skill="0">Ⅰ</button><button data-skill="1">Ⅱ</button><button data-skill="2">Ⅲ</button>
     </div>
@@ -203,5 +207,6 @@
 <script src="src/inventory-v2.js"></script>
 <script src="src/inventory-v3.js"></script>
 <script src="src/ui-v3.js"></script>
+<script src="src/systems-v3b.js"></script>
 </body>
 </html>
