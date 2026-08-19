@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "projectName": "ASTRAEON",
+  "maxFileSize": 2500000,
+  "vectorDimensions": 128,
+  "tokenBudget": 6000,
+  "maxContextFiles": 15,
+  "gitCommitLimit": 500,
+  "ignore": [
+    ".git",
+    ".genesis",
+    ".suprememind",
+    ".idea",
+    ".vscode",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "node_modules",
+    "vendor",
+    "third_party",
+    "dist",
+    "build",
+    "bin",
+    "obj",
+    "Library",
+    "Temp",
+    "coverage"
+  ]
+}
