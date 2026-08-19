@@ -1,0 +1,21 @@
+name: Validate Astraeon 2.0
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, 'agent/**']
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate JavaScript syntax
+        run: |
+          node --check src/world-v2.js
+          node --check src/game-v2.js
+          node --check src/editor-v2.js
+      - name: Validate HTML integration and assets
+        run: python3 scripts/validate_v2.py
