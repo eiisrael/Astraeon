@@ -6,6 +6,14 @@ const finite=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
 function defaults(){return{version:'3.0-C',enabled:true,gameplay:{godMode:false,damageMultiplier:1,damageTakenMultiplier:1,xpMultiplier:1,goldMultiplier:1,lootChance:.18,backpackCapacity:30,staminaMax:100,staminaDrain:24,staminaRegen:19,staminaDelay:.65,sprintMultiplier:1.55},classes:{},mobs:{},items:{},biomes:{}}}
 function deepMerge(a,b){if(!b||typeof b!=='object')return a;for(const[k,v]of Object.entries(b)){if(v&&typeof v==='object'&&!Array.isArray(v)&&a[k]&&typeof a[k]==='object'&&!Array.isArray(a[k]))deepMerge(a[k],v);else a[k]=v;}return a;}
 function load(){try{return deepMerge(defaults(),JSON.parse(localStorage.getItem(STORAGE)||'{}'));}catch(_){return defaults();}}
+function ensureOnlineV4(){
+ if(!document.querySelector('link[data-astraeon-online-v4]')){const link=document.createElement('link');link.rel='stylesheet';link.href='src/online-v4.css';link.dataset.astraeonOnlineV4='1';document.head.appendChild(link);}
+ const scripts=[['src/world-online-v4.js','AstraeonOnlineWorld'],['src/npcs-v4.js','AstraeonNPCsV4'],['src/multiplayer-v4.js','AstraeonMultiplayerV4']];
+ let chain=Promise.resolve();
+ scripts.forEach(([src,name])=>{chain=chain.then(()=>new Promise(resolve=>{if(global[name]){global[name].install?.();resolve();return;}let s=document.querySelector(`script[data-online-src="${src}"]`);if(s){s.addEventListener('load',()=>{global[name]?.install?.();resolve();},{once:true});return;}s=document.createElement('script');s.src=src;s.dataset.onlineSrc=src;s.onload=()=>{global[name]?.install?.();resolve();};s.onerror=()=>{console.warn('[Astraeon Online] falha ao carregar',src);resolve();};document.head.appendChild(s);}));});
+ return chain;
+}
+ensureOnlineV4();
 function install(){
  const game=global.astraeon,W=global.AstraeonWorld,A=global.AstraeonItems;if(!game||!W||game.adminV30CInstalled)return false;game.adminV30CInstalled=true;
  const cfg=load();game.adminConfigV3C=cfg;
@@ -59,6 +67,6 @@ function install(){
  applyState.call(game);
  global.dispatchEvent(new CustomEvent('astraeon:admin-ready',{detail:{version:'3.0-C'}}));return true;
 }
-global.AstraeonAdminRuntime={install,load};
+global.AstraeonAdminRuntime={install,load,ensureOnlineV4};
 if(document.readyState==='loading')window.addEventListener('DOMContentLoaded',()=>setTimeout(install,0));else setTimeout(install,0);
 })(window);
