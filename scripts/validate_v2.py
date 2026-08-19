@@ -31,7 +31,7 @@ def check_js_ids(js_name, html_ids):
     if not path.exists(): ERRORS.append(f'{js_name}: ausente'); return
     text=path.read_text(encoding='utf-8')
     selectors=set(re.findall(r"\$\('#([A-Za-z0-9_-]+)'\)", text))
-    selectors.update(re.findall(r"querySelector\(['\"]#([A-Za-z0-9_-]+)['\"]\)", text))
+    selectors.update(re.findall(r"document\.querySelector\(['\"]#([A-Za-z0-9_-]+)['\"]\)", text))
     missing=sorted(selectors-html_ids)
     if missing: ERRORS.append(f'{js_name}: IDs não encontrados no HTML: {missing}')
 
