@@ -1,0 +1,37 @@
+:root{
+  --fs-micro:clamp(10px,.18vw + 9.2px,11px);
+  --fs-small:clamp(11px,.22vw + 9.8px,12px);
+  --fs-body:clamp(12px,.25vw + 10.5px,14px);
+  --fs-label:clamp(11px,.2vw + 10px,12px);
+  --fs-title:clamp(18px,1.1vw + 12px,25px);
+  --fs-panel-title:clamp(15px,.65vw + 12px,19px);
+  --fs-logo:clamp(36px,5vw,68px);
+}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body,button,input,select,textarea{font-size:var(--fs-body)}
+.logo{font-size:var(--fs-logo)!important}.logo span{font-size:clamp(8px,.35vw + 7px,11px)!important}
+.lead,.world-copy p,.modal-head p,.overlay-head p,.help-card span,.class-note{font-size:var(--fs-body)!important;line-height:1.55!important}
+.eyebrow,.panel-kicker,.world-kicker,.class-card small,.start-footer,.hud-tip{font-size:var(--fs-micro)!important;line-height:1.35}
+.main-btn{font-size:var(--fs-body)!important}.main-btn small{font-size:var(--fs-small)!important;line-height:1.35!important}
+.field label,.setting-row span b,.inventory-column-title small,.inventory-hint,.itemlist-row small,.item-details p,.detail-stats span,.class-requirement small{font-size:var(--fs-small)!important}
+.field input,.inventory-search,.filter-chip,.inventory-action,.setting-row output{font-size:var(--fs-small)!important}
+.overlay-head h2,.inventory-title-row h2{font-size:var(--fs-title)!important}.inventory-column-title h3,.help-card b{font-size:var(--fs-panel-title)!important}
+.player-title strong{font-size:clamp(12px,.28vw + 11px,14px)!important}.player-title small,.level-pill,.player-meta,.quest-kicker,.quest-card p,.quest-card footer,.chip{font-size:var(--fs-micro)!important}
+.bar-line{font-size:var(--fs-micro)!important}.bar-line b{font-size:var(--fs-micro)!important}.skill{font-size:clamp(14px,.35vw + 13px,17px)!important}.skill kbd{font-size:10px!important}.icon-btn{font-size:clamp(14px,.4vw + 13px,18px)!important}
+.inventory-meta,.inventory-meta b{font-size:var(--fs-small)!important}.equipment-portrait span{font-size:clamp(12px,.25vw + 11px,14px)!important}.equipment-portrait small{font-size:var(--fs-small)!important}
+.equipment-slot small,.equipment-slot span,.equipment-stats span,.equipment-stats i,.inventory-slot span,.inventory-slot em,.filter-chip,.itemlist-row em{font-size:var(--fs-micro)!important}
+.equipment-stats b{font-size:var(--fs-small)!important}.item-details h3,.detail-title h3{font-size:var(--fs-panel-title)!important}.itemlist-row b{font-size:var(--fs-small)!important}
+#lootWarning b{font-size:var(--fs-body)!important}#lootWarning span{font-size:var(--fs-small)!important}
+.editor,.editor button,.editor input,.editor select,.editor textarea{font-size:var(--fs-small)!important}
+.brand strong{font-size:clamp(13px,.3vw + 12px,15px)!important}.brand small{font-size:var(--fs-micro)!important}
+.btn,.tool-btn,.palette-btn b,.object-select,.seed-input,.layer-row,.section-title,.stage-toolbar button{font-size:var(--fs-small)!important}
+.tool-btn i,.palette-btn small,.layer-row span,.stage-info,.cursor-coord,.hint,.history-item,.statusbar,.notice,.kv,.stat small{font-size:var(--fs-micro)!important}
+.inspector-card h3{font-size:var(--fs-panel-title)!important}.stat b{font-size:clamp(14px,.4vw + 13px,17px)!important}.dialog-card h2{font-size:var(--fs-title)!important}.dialog-card p,.dialog-card textarea{font-size:var(--fs-small)!important}
+@media(max-width:760px){
+  :root{--fs-micro:11px;--fs-small:12px;--fs-body:13px;--fs-label:12px;--fs-panel-title:16px;--fs-title:20px;--fs-logo:clamp(34px,12vw,52px)}
+  .start-panel{padding:clamp(18px,5vw,28px)!important}.lead{line-height:1.5!important}.main-btn{min-height:48px}
+  .player-card,.quest-card{font-size:12px}.hud-tip{display:none!important}.inventory-slot span{font-size:10px!important}.equipment-slot span{font-size:10px!important}
+  .inventory-column-title h3{font-size:16px!important}.filter-chip{min-height:32px}.inventory-search{min-height:36px!important}
+  .setting-row{grid-template-columns:1fr auto!important}.setting-row output{grid-column:2}.setting-row input[type="range"]{grid-column:1/-1}
+  .editor{--fs-micro:11px;--fs-small:12px}.topbar .btn{min-height:36px}.admin-shell button{min-height:38px}
+}
