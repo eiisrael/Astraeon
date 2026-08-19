@@ -1,0 +1,1 @@
+A fase 3.0-A é deliberadamente isolada dos próximos sistemas de stamina/sprint, limite físico da mochila/baús e ferramentas administrativas profundas do editor. Esses itens pertencem às fases subsequentes para reduzir risco de regressão no runtime principal.
