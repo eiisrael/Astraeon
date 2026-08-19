@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#030711">
-<title>ASTRAEON 2.0 — MMORPG 2D</title>
+<title>ASTRAEON 2.1 — MMORPG 2D</title>
 <link rel="stylesheet" href="src/astraeon-v2.css">
+<link rel="stylesheet" href="src/inventory-v2.css">
 </head>
 <body>
 <div id="gameRoot">
@@ -24,7 +25,7 @@
           <button id="continueBtn" class="main-btn">Continuar<small>Restaura o último save local da versão 2.0</small></button>
           <button id="editorBtn" class="main-btn">Editor Astral<small>Terreno, clima, objetos, colisões e spawns</small></button>
         </div>
-        <footer class="start-footer"><span><b>WASD</b> mover</span><span><b>Mouse / Espaço</b> atacar</span><span><b>1–5</b> habilidades</span><span><b>I / M</b> inventário / mapa</span></footer>
+        <footer class="start-footer"><span><b>WASD</b> mover</span><span><b>Mouse / Espaço</b> atacar</span><span><b>1–5</b> habilidades</span><span><b>I / M</b> mochila+equipamento / mapa</span></footer>
       </article>
       <aside class="world-panel">
         <div class="world-art"></div>
@@ -71,7 +72,7 @@
       <footer><span>Recompensa: Núcleo de Astra</span><span>+120 ouro</span></footer>
     </section>
 
-    <div class="world-status"><span id="biomeChip" class="chip biome">✦ Convergência</span><span class="chip">ASTRAEON 2.0</span></div>
+    <div class="world-status"><span id="biomeChip" class="chip biome">✦ Convergência</span><span class="chip">ASTRAEON 2.1</span></div>
 
     <div class="minimap-shell hud-card"><canvas id="minimapCanvas" width="196" height="196"></canvas></div>
 
@@ -84,19 +85,68 @@
         <button class="skill" title="Habilidade 5"><kbd>5</kbd>Ⅴ<span class="cd"></span></button>
       </div>
       <div class="utility-stack">
-        <button id="inventoryBtn" class="icon-btn" title="Inventário (I)">◇</button>
+        <button id="inventoryBtn" class="icon-btn" title="Mochila + Equipamento (I)">♜</button>
         <button id="mapBtn" class="icon-btn" title="Mapa (M)">⌖</button>
         <button id="helpBtn" class="icon-btn" title="Ajuda (H)">?</button>
       </div>
     </div>
-    <div class="hud-tip">WASD mover · clique/espaço atacar · 1–5 habilidades · ESC pausar</div>
+    <div class="hud-tip">WASD mover · clique/espaço atacar · 1–5 habilidades · I mochila/equipamento · ESC pausar</div>
   </div>
 
   <div id="biomeBanner"><strong>ASTRAEON</strong><span>Uma nova região foi descoberta</span></div>
   <div id="toast">Mensagem</div>
 
   <section id="inventoryPanel" class="overlay-panel hidden">
-    <div class="overlay-card"><header class="overlay-head"><div><h2>Inventário</h2><p>Artefatos, equipamentos, consumíveis e materiais.</p></div><button class="panelClose">×</button></header><div id="inventoryMeta" class="inventory-meta"></div><div id="inventoryGrid" class="inventory-grid"></div></div>
+    <div class="overlay-card inventory-overlay-card">
+      <header class="overlay-head">
+        <div class="inventory-title-row">
+          <div class="inventory-emblem">♜</div>
+          <div><h2>Mochila & Equipamento</h2><p>Equipe, compare, use consumíveis e consulte sua Item List. Atalho: <b>I</b>.</p></div>
+        </div>
+        <button class="panelClose" aria-label="Fechar inventário">×</button>
+      </header>
+      <div id="inventoryMeta" class="inventory-meta">0 itens · 0 ouro</div>
+      <div class="inventory-layout">
+        <aside class="inventory-column equipment-column">
+          <div class="inventory-column-title"><h3>Equipamento</h3><small>8 slots</small></div>
+          <div class="equipment-portrait" aria-hidden="true"></div>
+          <div id="equipmentGrid" class="equipment-grid"></div>
+          <div id="equipmentStats" class="equipment-stats"></div>
+          <p class="inventory-hint"><b>Dica:</b> arraste itens da mochila para o slot correto. Duplo clique ou botão direito também equipa/desequipa.</p>
+        </aside>
+
+        <main class="inventory-column backpack-column">
+          <div class="inventory-column-title"><h3>Mochila</h3><small>loot e consumíveis</small></div>
+          <div class="inventory-toolbar">
+            <input id="inventorySearch" class="inventory-search" type="search" placeholder="Buscar na mochila..." autocomplete="off">
+            <div class="inventory-filters" aria-label="Filtros da mochila">
+              <button class="filter-chip active" data-inventory-filter="all">Todos</button>
+              <button class="filter-chip" data-inventory-filter="equipment">Equip.</button>
+              <button class="filter-chip" data-inventory-filter="consumable">Consum.</button>
+              <button class="filter-chip" data-inventory-filter="material">Materiais</button>
+            </div>
+          </div>
+          <div id="inventoryGrid" class="inventory-grid"></div>
+          <section id="itemDetails" class="item-details"></section>
+        </main>
+
+        <aside class="inventory-column itemlist-column">
+          <div class="itemlist-head">
+            <div class="inventory-column-title"><h3>Item List</h3><small>coleção descoberta</small></div>
+            <input id="itemListSearch" class="inventory-search" type="search" placeholder="Buscar no catálogo..." autocomplete="off">
+            <div class="itemlist-sub">
+              <div class="inventory-filters" aria-label="Filtros da Item List">
+                <button class="filter-chip active" data-itemlist-filter="all">Todos</button>
+                <button class="filter-chip" data-itemlist-filter="equipment">Equip.</button>
+                <button class="filter-chip" data-itemlist-filter="consumable">Consum.</button>
+                <button class="filter-chip" data-itemlist-filter="material">Materiais</button>
+              </div>
+            </div>
+          </div>
+          <div id="itemListResults" class="itemlist-results"></div>
+        </aside>
+      </div>
+    </div>
   </section>
 
   <section id="mapPanel" class="overlay-panel hidden">
@@ -104,7 +154,7 @@
   </section>
 
   <section id="helpPanel" class="overlay-panel hidden">
-    <div class="overlay-card"><header class="overlay-head"><div><h2>Codex do viajante</h2><p>Controles e sistemas principais.</p></div><button class="panelClose">×</button></header><div class="help-grid"><div class="help-card"><b>Exploração</b><span>WASD/setas movem. Obstáculos naturais e água profunda bloqueiam passagem. Estradas conectam regiões.</span></div><div class="help-card"><b>Combate</b><span>Clique ou Espaço usa ataque básico. 1–5 ativa habilidades com mana e recarga.</span></div><div class="help-card"><b>Progressão</b><span>Criaturas concedem XP, ouro e chance de loot. Subir de nível aumenta vida, mana, ataque e defesa.</span></div><div class="help-card"><b>Editor Astral</b><span>Abra pelo menu inicial para pintar biomas, objetos, colisões e spawns. O jogo lê o mapa salvo automaticamente.</span></div></div></div>
+    <div class="overlay-card"><header class="overlay-head"><div><h2>Codex do viajante</h2><p>Controles e sistemas principais.</p></div><button class="panelClose">×</button></header><div class="help-grid"><div class="help-card"><b>Exploração</b><span>WASD/setas movem. Obstáculos naturais e água profunda bloqueiam passagem. Estradas conectam regiões.</span></div><div class="help-card"><b>Combate</b><span>Clique ou Espaço usa ataque básico. 1–5 ativa habilidades com mana e recarga.</span></div><div class="help-card"><b>Mochila & Equipamento</b><span>I abre mochila, oito slots de equipamento e a Item List. Arraste, dê duplo clique ou botão direito para equipar, desequipar ou usar consumíveis.</span></div><div class="help-card"><b>Progressão</b><span>Criaturas concedem XP, ouro e loot por bioma. Equipamentos alteram os atributos reais do personagem e são salvos automaticamente.</span></div><div class="help-card"><b>Editor Astral</b><span>Abra pelo menu inicial para pintar biomas, objetos, colisões e spawns. O jogo lê o mapa salvo automaticamente.</span></div></div></div>
   </section>
 
   <section id="pauseScreen" class="screen hidden">
@@ -113,5 +163,6 @@
 </div>
 <script src="src/world-v2.js"></script>
 <script src="src/game-v2.js"></script>
+<script src="src/inventory-v2.js"></script>
 </body>
 </html>
