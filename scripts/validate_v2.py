@@ -40,10 +40,12 @@ editor_ids=inspect_html('game-editor.html')
 check_js_ids('src/game-v2.js', index_ids)
 check_js_ids('src/inventory-v2.js', index_ids)
 check_js_ids('src/editor-v2.js', editor_ids)
+check_js_ids('src/ui-v3.js', index_ids)
+check_js_ids('src/admin-runtime-v3c.js', index_ids)
 
 required=[
- 'src/world-v2.js','src/game-v2.js','src/inventory-v2.js','src/editor-v2.js',
- 'src/astraeon-v2.css','src/inventory-v2.css','src/editor-v2.css',
+ 'src/world-v2.js','src/game-v2.js','src/inventory-v2.js','src/inventory-v3.js','src/ui-v3.js','src/systems-v3b.js','src/admin-runtime-v3c.js',
+ 'src/editor-v2.js','src/admin-v3c.js','src/astraeon-v2.css','src/inventory-v2.css','src/ui-v3.css','src/ui-v3b.css','src/typography-v3c.css','src/editor-v2.css','src/editor-v3c.css',
  'Assets/Classes/Warrior.png','Assets/Classes/Mage.png','Assets/Classes/Archer.png','Assets/Classes/Assassin.png','Assets/Classes/Paladine.png',
  'Assets/Mob/Slime.png','Assets/Mob/Wolf.png','Assets/Mob/Globin.png','Assets/Mob/Orc.png','Assets/Mob/Troll.png','Assets/Mob/Pig_Monster.png',
  'Assets/Mob/Golem_Gelo.png','Assets/Mob/Spider.png','Assets/Mob/zombie.png','Assets/Mob/sombra.png','Assets/Mob/Caveira.png','Assets/Mob/Squelleton.png','Assets/Mob/Draconato.png'
@@ -51,9 +53,20 @@ required=[
 for item in required:
     if not (ROOT/item).exists(): ERRORS.append(f'arquivo necessário ausente: {item}')
 
+for file_name, needles in {
+    'src/typography-v3c.css':['clamp(','--fs-body','@media(max-width:760px)'],
+    'src/admin-v3c.js':['astraeon:v3c:admin','Admin 3.0-C','adminJsonSave','adminJsonWorld'],
+    'src/admin-runtime-v3c.js':['adminConfigV3C','godMode','lootChance','sprintMultiplier']
+}.items():
+    path=ROOT/file_name
+    if path.exists():
+        text=path.read_text(encoding='utf-8')
+        for needle in needles:
+            if needle not in text: ERRORS.append(f'{file_name}: contrato 3.0-C ausente: {needle}')
+
 if ERRORS:
-    print('ASTRAEON 2.x validation FAILED')
+    print('ASTRAEON 3.x validation FAILED')
     for err in ERRORS: print(' -',err)
     sys.exit(1)
-print('ASTRAEON 2.x validation OK')
+print('ASTRAEON 3.x validation OK')
 print(f'index IDs: {len(index_ids)} | editor IDs: {len(editor_ids)} | required files: {len(required)}')

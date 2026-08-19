@@ -5,13 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#050812">
-<title>ASTRAEON 2.0 — Editor Astral</title>
+<title>ASTRAEON 3.0-C — Editor Admin</title>
 <link rel="stylesheet" href="src/editor-v2.css">
+<link rel="stylesheet" href="src/typography-v3c.css">
+<link rel="stylesheet" href="src/editor-v3c.css">
 </head>
 <body>
 <div class="editor">
   <header class="topbar">
-    <div class="brand"><div class="brand-mark">A</div><div><strong>ASTRAEON</strong><small>Editor Astral 2.0</small></div></div>
+    <div class="brand"><div class="brand-mark">A</div><div><strong>ASTRAEON</strong><small>Editor Astral 3.0-C · Admin</small></div></div>
     <button id="newMapBtn" class="btn optional">Novo mapa</button>
     <button id="undoBtn" class="btn" title="Ctrl+Z">Desfazer</button>
     <button id="redoBtn" class="btn" title="Ctrl+Y">Refazer</button>
@@ -58,7 +60,7 @@
       <section class="section">
         <div class="section-title">Geração <span>procedural</span></div>
         <label class="hint" for="seedInput">Semente global</label>
-        <input id="seedInput" class="seed-input" maxlength="28" value="ASTRAEON-2">
+        <input id="seedInput" class="seed-input" maxlength="28" value="ASTRAEON-3">
         <p class="hint">A seed cria o mapa-base. Seus pincéis são salvos como overrides por cima da geração procedural.</p>
       </section>
 
@@ -85,19 +87,20 @@
       <section class="section"><div id="inspector" class="inspector-card"><h3>Inspetor</h3><p class="hint">Selecione um tile para examinar suas propriedades.</p></div></section>
       <section class="section"><div class="section-title">Resumo do mundo <span>tempo real</span></div><div id="stats" class="stats"></div></section>
       <section class="section"><div class="section-title">Histórico <span>sessão</span></div><div id="historyList" class="history-list"></div></section>
-      <section class="section"><div class="section-title">Fluxo recomendado <span>2.0</span></div><p class="hint">1. Defina a seed. 2. Reforce os cinco climas. 3. Desenhe estradas e água. 4. Posicione marcos ambientais. 5. Revise colisões. 6. Adicione spawns. 7. Salve e teste no jogo.</p></section>
+      <section class="section"><div class="section-title">Fluxo recomendado <span>3.0-C</span></div><p class="hint">1. Defina a seed. 2. Modele os biomas. 3. Desenhe terreno e spawns. 4. Abra Admin para balancear personagem, classes, mobs, itens e regras globais. 5. Salve e teste no jogo.</p></section>
     </aside>
   </main>
 
-  <footer class="statusbar"><span>Ferramenta: <b id="statusTool">Pincel de bioma</b></span><span>Seed: <b id="statusSeed">ASTRAEON-2</b></span><span>Mapa: <b>96 × 96</b></span><span>Engine: <b>ASTRA 2.0</b></span><span id="saveState" class="save-state">Pronto</span></footer>
+  <footer class="statusbar"><span>Ferramenta: <b id="statusTool">Pincel de bioma</b></span><span>Seed: <b id="statusSeed">ASTRAEON-3</b></span><span>Mapa: <b>96 × 96</b></span><span>Engine: <b>ASTRA 3.0-C</b></span><span id="saveState" class="save-state">Pronto</span></footer>
 </div>
 
 <div id="jsonDialog" class="dialog hidden">
-  <div class="dialog-card"><h2 id="jsonTitle">Mapa JSON</h2><p id="jsonHelp">Importe ou exporte o formato de mundo Astraeon 2.0.</p><textarea id="jsonText" spellcheck="false"></textarea><div class="dialog-actions"><button id="jsonClose" class="btn">Fechar</button><button id="jsonApply" class="btn primary">Aplicar</button></div></div>
+  <div class="dialog-card"><h2 id="jsonTitle">Mapa JSON</h2><p id="jsonHelp">Importe ou exporte o formato de mundo Astraeon.</p><textarea id="jsonText" spellcheck="false"></textarea><div class="dialog-actions"><button id="jsonClose" class="btn">Fechar</button><button id="jsonApply" class="btn primary">Aplicar</button></div></div>
 </div>
 <div id="notice" class="notice">Mapa salvo.</div>
 
 <script src="src/world-v2.js"></script>
 <script src="src/editor-v2.js"></script>
+<script src="src/admin-v3c.js"></script>
 </body>
 </html>

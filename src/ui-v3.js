@@ -4,6 +4,21 @@
   const STORAGE = 'astraeon:v3a:settings';
   const defaults = { uiScale:100, weather:true, damage:true, minimap:true, compact:false, touch:false };
 
+  function ensureV3CAssets() {
+    if (!document.querySelector('link[data-astraeon-typography-v3c]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet'; link.href = 'src/typography-v3c.css'; link.dataset.astraeonTypographyV3c = '1';
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector('script[data-astraeon-admin-runtime-v3c]')) {
+      const script = document.createElement('script');
+      script.src = 'src/admin-runtime-v3c.js'; script.dataset.astraeonAdminRuntimeV3c = '1';
+      script.addEventListener('load',()=>window.AstraeonAdminRuntime?.install?.());
+      document.head.appendChild(script);
+    }
+  }
+  ensureV3CAssets();
+
   function loadSettings() {
     try { return {...defaults,...JSON.parse(localStorage.getItem(STORAGE)||'{}')}; }
     catch (_) { return {...defaults}; }
@@ -116,8 +131,8 @@
 
     const originalStartNew = game.startNew.bind(game);
     const originalContinue = game.continueGame.bind(game);
-    game.startNew = function () { originalStartNew(); document.body.classList.add('game-running'); };
-    game.continueGame = function () { originalContinue(); if(this.running) document.body.classList.add('game-running'); };
+    game.startNew = function () { originalStartNew(); document.body.classList.add('game-running'); window.AstraeonAdminRuntime?.install?.(); };
+    game.continueGame = function () { originalContinue(); if(this.running) document.body.classList.add('game-running'); window.AstraeonAdminRuntime?.install?.(); };
 
     window.addEventListener('resize',()=> {
       if (innerWidth > 760) panels.forEach(p=>p.classList.remove('mobile-active'));
