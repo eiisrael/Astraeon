@@ -1,4 +1,4 @@
-name: Validate Astraeon 3.x
+name: Validate Astraeon Online
 
 on:
   pull_request:
@@ -21,7 +21,11 @@ jobs:
           node --check src/ui-v3.js
           node --check src/systems-v3b.js
           node --check src/admin-runtime-v3c.js
+          node --check src/world-online-v4.js
+          node --check src/npcs-v4.js
+          node --check src/multiplayer-v4.js
+          node --check api/config.js
           node --check src/editor-v2.js
           node --check src/admin-v3c.js
-      - name: Validate HTML integration and assets
+      - name: Validate HTML, online contracts and deployment config
         run: python3 scripts/validate_v2.py
