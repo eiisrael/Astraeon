@@ -1,0 +1,9 @@
+{
+  "name": "astraeon-online",
+  "version": "4.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "node --check src/world-v2.js && node --check src/game-v2.js && node --check src/inventory-v2.js && node --check src/inventory-v3.js && node --check src/ui-v3.js && node --check src/systems-v3b.js && node --check src/world-online-v4.js && node --check src/npcs-v4.js && node --check src/multiplayer-v4.js && node --check api/config.js && python3 scripts/validate_v2.py"
+  }
+}
