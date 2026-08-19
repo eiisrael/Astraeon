@@ -16,6 +16,7 @@ jobs:
         run: |
           node --check src/world-v2.js
           node --check src/game-v2.js
+          node --check src/inventory-v2.js
           node --check src/editor-v2.js
       - name: Validate HTML integration and assets
         run: python3 scripts/validate_v2.py
