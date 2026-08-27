@@ -1,19 +1,136 @@
-# Astraeon Online — Vercel + Supabase
+# Astraeon Online 4.1 — instalação, banco, multiplayer e chat
 
-Astraeon continua funcionando em modo local sem configuração externa. Para habilitar contas, saves em nuvem, chat e jogadores visíveis em tempo real, configure o Supabase e o Vercel abaixo.
+Este guia descreve o funcionamento real do Astraeon no navegador, o banco usado para contas e saves e a configuração necessária para Vercel + Supabase.
 
-## 1. Criar o projeto Supabase
+## O que funciona sem configurar nada
 
-1. Crie um projeto Supabase.
+Abrindo o projeto localmente, o jogo continua funcionando em modo local com:
+
+- mapa procedural e Editor Astral;
+- classes, combate e habilidades;
+- inventário, equipamentos, stamina e loot;
+- cidades e NPCs locais;
+- saves no `localStorage` do navegador.
+
+Contas, save em nuvem, chat mundial persistente e presença de outros jogadores precisam do Supabase configurado.
+
+---
+
+## 1. Programas necessários no computador
+
+Instale:
+
+1. **Git** — para baixar/atualizar o repositório.
+2. **Node.js 20 ou superior** — para validação e Vercel CLI.
+3. Um navegador atual (Chrome, Edge ou Firefox).
+4. Opcional: **VS Code** para editar o projeto.
+
+Depois:
+
+```bash
+git clone https://github.com/eiisrael/Astraeon.git
+cd Astraeon
+npm run validate
+```
+
+O projeto não depende de um framework frontend ou build de bundle. O jogo é HTML + CSS + JavaScript + Canvas e possui uma Vercel Function em `api/config.js`.
+
+### Rodar localmente do jeito correto
+
+Não use apenas duplo clique em `index.html` se quiser testar `/api/config` e o modo online. Na raiz do projeto execute:
+
+```bash
+npx vercel dev
+```
+
+Abra o endereço mostrado pelo terminal, normalmente `http://localhost:3000`.
+
+---
+
+## 2. Onde fica o banco de dados das contas
+
+O banco não fica dentro de um arquivo `.db` do repositório. O Astraeon usa **Supabase (Postgres + Auth + Realtime)**.
+
+No Supabase Dashboard:
+
+### Authentication → Users
+
+Aqui ficam as contas de autenticação criadas por e-mail e senha. O Supabase mantém esses dados na estrutura interna `auth.users`. A senha não é armazenada pelo JavaScript do Astraeon.
+
+### Table Editor → `profiles`
+
+Perfil público do jogador:
+
+- `id` — mesmo UUID da conta Auth;
+- `username`;
+- `display_name`;
+- `class_id`;
+- `level`;
+- `last_seen`.
+
+### Table Editor → `player_saves`
+
+Save persistente por conta:
+
+- `user_id`;
+- `save_data` em JSON;
+- `world_seed`;
+- `updated_at`.
+
+Cada jogador só pode ler/escrever o próprio save através de Row Level Security.
+
+### Table Editor → `chat_messages`
+
+Histórico do chat mundial:
+
+- jogador;
+- username;
+- mensagem;
+- canal;
+- horário.
+
+O esquema completo versionado está em:
+
+```text
+supabase/migrations/001_astraeon_online.sql
+```
+
+---
+
+## 3. Criar e preparar o Supabase
+
+1. Crie um projeto em Supabase.
 2. Abra **SQL Editor**.
-3. Execute o arquivo `supabase/migrations/001_astraeon_online.sql` inteiro.
-4. Em **Authentication > URL Configuration**, defina o Site URL para o domínio de produção do Vercel e adicione os domínios de Preview que você realmente usa como Redirect URLs.
-5. Mantenha confirmação de e-mail habilitada em produção.
-6. Em **Realtime Settings**, habilite Realtime e prefira **private channels only / desabilitar public access**. As policies da migration permitem apenas usuários autenticados em tópicos `world:astraeon:*`.
+3. Copie e execute todo o arquivo:
 
-## 2. Variáveis do Vercel
+```text
+supabase/migrations/001_astraeon_online.sql
+```
 
-No projeto Vercel, em **Settings > Environment Variables**, crie:
+A migration cria `profiles`, `player_saves`, `chat_messages`, triggers, índices, RLS, rate limit do chat e políticas dos canais privados Realtime.
+
+4. Em **Authentication → URL Configuration**:
+   - configure **Site URL** com o domínio de produção do Vercel;
+   - adicione somente os Redirect URLs de preview/desenvolvimento que realmente utilizar.
+5. Em produção, mantenha confirmação de e-mail habilitada.
+6. Em **Realtime → Settings**, habilite Realtime e desabilite acesso público aos canais para trabalhar somente com canais privados. A migration permite usuários autenticados nos tópicos `world:astraeon:*`.
+
+### Chave correta
+
+Use a chave pública/publishable (`sb_publishable_...`). Nunca coloque `sb_secret_...`, `service_role` ou outra chave secreta no HTML/JavaScript/GitHub.
+
+---
+
+## 4. Configurar o Vercel
+
+### Pelo painel
+
+1. No Vercel, escolha **Add New → Project**.
+2. Importe `eiisrael/Astraeon` do GitHub.
+3. Framework Preset: **Other**.
+4. Root Directory: raiz do repositório.
+5. Não é necessário Build Command.
+6. Em **Settings → Environment Variables**, adicione:
 
 ```text
 SUPABASE_URL=https://SEU-PROJETO.supabase.co
@@ -21,46 +138,155 @@ SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ASTRAEON_REALTIME_TOPIC=world:astraeon:main
 ```
 
-`ASTRAEON_REALTIME_TOPIC` é opcional, mas deve manter o prefixo `world:astraeon:` para corresponder às policies Realtime da migration.
+`ASTRAEON_REALTIME_TOPIC` é opcional, mas deve manter o prefixo `world:astraeon:` para corresponder às policies do banco.
 
-**Nunca** coloque `sb_secret_...`, `service_role` ou qualquer segredo Supabase no HTML, CSS, JavaScript do navegador ou GitHub. O endpoint `/api/config` expõe somente URL, publishable key e tópico, que são valores públicos protegidos por RLS.
+7. Faça um novo deploy depois de alterar variáveis.
 
-Depois de alterar Environment Variables, faça um novo deploy.
+### O que `/api/config` faz
 
-## 3. Deploy Vercel
+`api/config.js` roda como Vercel Function. Ela entrega ao navegador somente:
 
-- Importe o repositório GitHub no Vercel.
-- Framework Preset: **Other** (o projeto é HTML/Canvas + Vercel Function).
-- Root Directory: raiz do repositório.
-- Não é necessário build command.
-- `index.html` continua sendo a entrada do jogo.
-- `api/config.js` vira a Function `/api/config`.
+- URL pública do Supabase;
+- publishable key;
+- tópico Realtime.
 
-O `vercel.json` adiciona headers de segurança e CSP compatível com Supabase Realtime e o SDK carregado do jsDelivr.
+Não existe secret/service-role enviado ao cliente.
 
-## 4. Teste
+---
 
-1. Abra o deploy em duas janelas anônimas diferentes.
-2. Cadastre duas contas distintas e confirme os e-mails.
-3. Faça login em ambas.
-4. Inicie uma jornada em cada janela.
-5. Os personagens devem aparecer um para o outro e se mover em tempo real.
-6. Envie mensagens pelo Chat de Astra.
-7. Use o controle de transparência no ícone de engrenagem do chat.
-8. Salve e use **Conta & Nuvem > Salvar na nuvem**; recarregue a página e valide **Carregar save da nuvem**.
+## 5. Como cadastro e login funcionam
 
-## Segurança implementada
+No menu do jogo aparece **Conta online** quando a camada online inicia.
 
-- Supabase Auth para senha/e-mail e JWT.
-- Row Level Security em `profiles`, `player_saves` e `chat_messages`.
-- Save só pode ser lido/escrito pelo próprio usuário.
-- Chat só aceita usuário autenticado, força `auth.uid()`, limita a 240 caracteres e aplica intervalo mínimo de 900 ms entre mensagens.
-- Username é validado e possui índice único case-insensitive.
-- Broadcast/Presence usa canal privado e policies Realtime para usuários autenticados.
-- Movimento remoto é **cosmético e não autoritativo**: mensagens Realtime nunca concedem itens, XP, ouro ou persistem alterações de gameplay.
-- Renderização do chat usa `textContent`, evitando interpretar HTML enviado por jogadores.
-- CSP, HSTS, `nosniff`, `frame-ancestors 'none'`, Permissions Policy e Referrer Policy são definidos pelo Vercel.
+### Cadastro
 
-## Limite atual do multiplayer
+1. Abra **Conta online**.
+2. Escolha **Cadastrar**.
+3. Informe username, e-mail e senha (mínimo de 10 caracteres no cliente).
+4. O navegador chama `supabase.auth.signUp()`.
+5. O Supabase cria o usuário em Auth.
+6. O trigger da migration cria automaticamente o registro em `public.profiles`.
+7. Se confirmação de e-mail estiver ativa, confirme o e-mail antes de fazer login.
 
-Esta versão sincroniza **presença, movimento, classe, level, efeitos de ataque/skill e chat**. Mobs, dano e loot continuam simulados localmente por cliente. Para PvP, combate compartilhado ou economia competitiva, o próximo passo deve ser um servidor autoritativo que valide movimento, combate e inventário no backend.
+### Login
+
+O login usa `signInWithPassword()`. A sessão fica persistida pelo Supabase Client no navegador e é renovada automaticamente.
+
+---
+
+## 6. Como o chat funciona depois da correção 4.1
+
+### Desktop
+
+Durante a partida:
+
+```text
+Enter = abrir/focar o Chat de Astra
+```
+
+Também existe um botão de chat no HUD.
+
+Se você ainda não estiver autenticado, o chat **abre normalmente**. Ao tentar enviar uma mensagem, o jogo abre **Conta & Nuvem** e informa que é necessário login. Antes da 4.1 o campo ficava `disabled` sem sessão, por isso o `Enter` podia aparentar não funcionar.
+
+### Mobile
+
+Existe botão **Chat** junto aos controles touch. O painel expande e pode ser recolhido pelo cabeçalho.
+
+### Transparência
+
+No ícone de engrenagem do Chat de Astra existe o controle de transparência. O valor é salvo no navegador em:
+
+```text
+astraeon:v4:chat-opacity
+```
+
+### Segurança do chat
+
+- máximo de 240 caracteres;
+- texto renderizado com `textContent`;
+- trigger do Postgres força `auth.uid()` e o username real do perfil;
+- rate limit mínimo de 900 ms entre mensagens;
+- somente usuários autenticados podem inserir mensagens;
+- canal Realtime privado.
+
+---
+
+## 7. Diagnóstico multiplayer
+
+Em **Conta online → Diagnóstico Online** aparecem quatro estados:
+
+- **Configuração** — indica se `/api/config` recebeu URL + publishable key;
+- **Autenticação** — mostra se existe sessão;
+- **Realtime** — `online`, `connecting`, `offline` ou erro;
+- **Banco** — indica se a configuração Supabase foi detectada.
+
+Para testar de verdade:
+
+1. abra o deploy em duas janelas anônimas/perfis diferentes;
+2. crie duas contas e confirme os e-mails;
+3. faça login nas duas;
+4. inicie uma jornada em ambas;
+5. confirme que os dois personagens aparecem um para o outro;
+6. mova os dois personagens;
+7. envie mensagens dos dois lados;
+8. confira Table Editor → `chat_messages`;
+9. clique em **Salvar na nuvem** e confira `player_saves`.
+
+### Escopo multiplayer atual
+
+Sincronizado entre jogadores:
+
+- presença;
+- posição/movimento;
+- classe e nível exibidos;
+- efeitos visuais de ataque/habilidades;
+- chat;
+- save individual na nuvem.
+
+Ainda local em cada cliente:
+
+- IA e estado dos mobs;
+- dano compartilhado;
+- loot compartilhado;
+- economia competitiva;
+- PvP.
+
+Portanto, esta versão já é multiplayer social/presença, mas combate MMORPG autoritativo exigirá uma camada de servidor que valide estado de mundo, combate, itens e economia.
+
+---
+
+## 8. Game Editor / Admin Studio
+
+O Editor foi removido do menu público da `index.html`.
+
+Para abrir diretamente:
+
+```text
+http://localhost:3000/game-editor
+```
+
+ou, em um deploy:
+
+```text
+https://SEU-DOMINIO/game-editor
+```
+
+O Editor possui duas responsabilidades:
+
+1. **World Editor** — terreno, biomas, água, estradas, objetos, colisões e spawns.
+2. **Admin Studio (F10)** — personagem local, gameplay, classes, mobs, itens, biomas, save/world JSON e diagnóstico de infraestrutura.
+
+O Admin Studio manipula os dados locais e os overrides de balanceamento do navegador. Ele **não é uma interface service-role do Supabase** e não ignora RLS.
+
+---
+
+## 9. Atualizar o projeto no PC
+
+```bash
+git checkout main
+git pull origin main
+npm run validate
+npx vercel dev
+```
+
+Se o Vercel estiver conectado ao GitHub, merges no branch de produção disparam novos deployments automaticamente.

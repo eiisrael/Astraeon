@@ -5,11 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#080706">
-<title>ASTRAEON 3.0-B — Sprint & Loot</title>
+<title>ASTRAEON ONLINE 4.1 — Ecos da Convergência</title>
 <link rel="stylesheet" href="src/astraeon-v2.css">
 <link rel="stylesheet" href="src/inventory-v2.css">
 <link rel="stylesheet" href="src/ui-v3.css">
 <link rel="stylesheet" href="src/ui-v3b.css">
+<link rel="stylesheet" href="src/typography-v3c.css" data-astraeon-typography-v3c="1">
+<link rel="stylesheet" href="src/online-v4.css" data-astraeon-online-v4="1">
+<link rel="stylesheet" href="src/online-fixes-v4.css">
 </head>
 <body>
 <div id="gameRoot">
@@ -19,23 +22,23 @@
   <section id="startScreen" class="screen">
     <div class="start-shell">
       <article class="start-panel">
-        <span class="eyebrow">Hardcore Remaster 3.0-B · ação, stamina e loot persistente</span>
+        <span class="eyebrow">ASTRAEON ONLINE 4.1 · cidades vivas, contas, chat e multiplayer</span>
         <h1 class="logo">ASTRAEON<span>ECOS DA CONVERGÊNCIA</span></h1>
-        <p class="lead">Um mundo quebrado por cinco climas, relíquias de classe e criaturas que guardam equipamentos únicos. Explore, evolua e monte sua própria lenda na Convergência.</p>
+        <p class="lead">Explore Astra em cinco climas, visite cidades, converse com habitantes, encontre outros viajantes e evolua equipamentos exclusivos de classe.</p>
         <div class="menu-actions">
           <button id="newGameBtn" class="main-btn primary">Nova jornada<small>Classe, nome e semente procedural</small></button>
           <button id="continueBtn" class="main-btn">Continuar<small>Restaura personagem, itens e configurações</small></button>
-          <button id="editorBtn" class="main-btn">Editor Astral<small>Terreno, clima, objetos, colisões e spawns</small></button>
           <button id="settingsStartBtn" class="main-btn">Configurações<small>Interface, efeitos, minimapa, áudio e mobile</small></button>
+          <span id="editorBtn" hidden aria-hidden="true"></span>
         </div>
-        <footer class="start-footer"><span><b>WASD</b> mover</span><span><b>Shift</b> correr</span><span><b>Mouse / Espaço</b> atacar</span><span><b>1–5</b> habilidades</span><span><b>I</b> mochila</span></footer>
+        <footer class="start-footer"><span><b>WASD</b> mover</span><span><b>Shift</b> correr</span><span><b>Enter</b> chat</span><span><b>E</b> falar com NPC</span><span><b>1–5</b> habilidades</span><span><b>I</b> mochila</span></footer>
       </article>
       <aside class="world-panel">
         <div class="world-art"></div>
         <div class="world-copy">
           <span class="world-kicker">Astra · continente vivo</span>
-          <h3>Equipamentos contam sua jornada</h3>
-          <p>Cada classe possui identidade própria de armas e armaduras. Biomas, raridades, clima e exploração influenciam o loot encontrado.</p>
+          <h3>Cidades e viajantes agora fazem parte do mundo</h3>
+          <p>Equipamentos, biomas, clima e exploração continuam definindo sua jornada, enquanto contas online, chat e presença conectam os jogadores.</p>
           <div id="biomePreview" class="biome-strip"></div>
         </div>
       </aside>
@@ -45,12 +48,12 @@
   <section id="classScreen" class="screen hidden">
     <div class="modal-card">
       <header class="modal-head">
-        <div><span class="eyebrow">Criação de personagem</span><h2>Escolha seu vínculo astral</h2><p>Cada classe agora possui equipamentos exclusivos e identidade visual própria.</p></div>
+        <div><span class="eyebrow">Criação de personagem</span><h2>Escolha seu vínculo astral</h2><p>Cada classe possui equipamentos exclusivos e identidade visual própria.</p></div>
         <button id="backStartBtn" class="ghost-btn">Voltar</button>
       </header>
       <div class="setup-row">
         <div class="field"><label for="charName">Nome</label><input id="charName" maxlength="18" value="Viajante" autocomplete="off"></div>
-        <div class="field"><label for="seedInput">Semente do mundo</label><input id="seedInput" maxlength="28" value="ASTRAEON-3" autocomplete="off"></div>
+        <div class="field"><label for="seedInput">Semente do mundo</label><input id="seedInput" maxlength="28" value="ASTRAEON-ONLINE" autocomplete="off"></div>
       </div>
       <div id="classGrid" class="class-grid"></div>
       <p id="classDescription" class="class-note"></p>
@@ -77,7 +80,7 @@
       <footer><span>Recompensa: Núcleo de Astra</span><span>+120 ouro</span></footer>
     </section>
 
-    <div class="world-status"><span id="biomeChip" class="chip biome">✦ Convergência</span><span class="chip">ASTRAEON 3.0-B</span></div>
+    <div class="world-status"><span id="biomeChip" class="chip biome">✦ Convergência</span><span class="chip">ASTRAEON ONLINE 4.1</span></div>
     <div class="minimap-shell hud-card"><canvas id="minimapCanvas" width="196" height="196"></canvas></div>
 
     <div class="hotbar-shell">
@@ -95,7 +98,7 @@
         <button id="helpBtn" class="icon-btn" title="Ajuda (H)">?</button>
       </div>
     </div>
-    <div class="hud-tip">WASD mover · Shift correr · clique/espaço atacar · 1–5 habilidades · I mochila · ESC pausar</div>
+    <div class="hud-tip">WASD mover · Shift correr · Enter chat · E falar · clique/espaço atacar · 1–5 habilidades · I mochila · ESC pausar</div>
   </div>
 
   <div id="biomeBanner"><strong>ASTRAEON</strong><span>Uma nova região foi descoberta</span></div>
@@ -161,11 +164,11 @@
   </section>
 
   <section id="mapPanel" class="overlay-panel hidden">
-    <div class="overlay-card"><header class="overlay-head"><div><span class="panel-kicker">Cartografia</span><h2>Mapa Astral</h2><p>Visão geral dos cinco climas e da sua posição.</p></div><button class="panelClose">×</button></header><div class="big-map"><canvas id="bigMapCanvas" width="620" height="620"></canvas><div id="mapLegend" class="map-legend"></div></div></div>
+    <div class="overlay-card"><header class="overlay-head"><div><span class="panel-kicker">Cartografia</span><h2>Mapa Astral</h2><p>Cidades, cinco climas e sua posição atual.</p></div><button class="panelClose">×</button></header><div class="big-map"><canvas id="bigMapCanvas" width="620" height="620"></canvas><div id="mapLegend" class="map-legend"></div></div></div>
   </section>
 
   <section id="helpPanel" class="overlay-panel hidden">
-    <div class="overlay-card"><header class="overlay-head"><div><span class="panel-kicker">Codex</span><h2>Manual do viajante</h2><p>Controles e sistemas principais.</p></div><button class="panelClose">×</button></header><div class="help-grid"><div class="help-card"><b>Exploração</b><span>WASD/setas movem. Segure Shift para correr consumindo Fôlego; ele se regenera com o tempo e enche ao subir de nível. No mobile use o direcional touch.</span></div><div class="help-card"><b>Combate</b><span>Clique, Espaço ou botão de ataque. 1–5 ativa habilidades com mana e recarga.</span></div><div class="help-card"><b>Equipamentos de classe</b><span>Cada classe possui armas e peças exclusivas. Itens incompatíveis podem ser coletados, mas não equipados.</span></div><div class="help-card"><b>Mochila</b><span>I abre equipamento, mochila e Item List. A mochila possui 30 slots; se estiver cheia, o loot permanece no chão até você liberar espaço.</span></div></div></div>
+    <div class="overlay-card"><header class="overlay-head"><div><span class="panel-kicker">Codex</span><h2>Manual do viajante</h2><p>Controles e sistemas principais.</p></div><button class="panelClose">×</button></header><div class="help-grid"><div class="help-card"><b>Exploração</b><span>WASD/setas movem. Segure Shift para correr consumindo Fôlego. No mobile use o direcional touch.</span></div><div class="help-card"><b>Combate</b><span>Clique, Espaço ou botão de ataque. 1–5 ativa habilidades com mana e recarga.</span></div><div class="help-card"><b>Chat online</b><span>Pressione Enter ou use o botão de chat. Sem login, o chat abre e orienta como conectar sua conta; autenticado, a mensagem vai para o canal mundial.</span></div><div class="help-card"><b>NPCs</b><span>Aproxime-se de um habitante e pressione E; no mobile use Falar.</span></div><div class="help-card"><b>Equipamentos de classe</b><span>Cada classe possui armas e peças exclusivas. Itens incompatíveis podem ser coletados, mas não equipados.</span></div><div class="help-card"><b>Mochila</b><span>I abre equipamento, mochila e Item List. Se estiver cheia, o loot permanece no chão até liberar espaço.</span></div></div></div>
   </section>
 
   <section id="settingsPanel" class="overlay-panel hidden">
@@ -184,7 +187,7 @@
   </section>
 
   <section id="pauseScreen" class="screen hidden">
-    <div class="overlay-card pause-box"><span class="eyebrow">Jornada suspensa</span><h2>Pausa</h2><p>O mundo permanece salvo localmente a cada poucos segundos.</p><div class="menu-actions"><button id="resumeBtn" class="main-btn primary">Continuar</button><button id="settingsPauseBtn" class="main-btn">Configurações</button><button id="saveQuitBtn" class="main-btn">Salvar e voltar ao menu</button></div></div>
+    <div class="overlay-card pause-box"><span class="eyebrow">Jornada suspensa</span><h2>Pausa</h2><p>O mundo permanece salvo localmente e, quando autenticado, pode ser sincronizado com a nuvem.</p><div class="menu-actions"><button id="resumeBtn" class="main-btn primary">Continuar</button><button id="settingsPauseBtn" class="main-btn">Configurações</button><button id="saveQuitBtn" class="main-btn">Salvar e voltar ao menu</button></div></div>
   </section>
 
   <div id="mobileControls" class="mobile-controls" aria-label="Controles mobile">
@@ -198,7 +201,7 @@
       <button id="touchInventory">♜</button>
       <button data-key="shift" class="touch-sprint">⇧<small>Correr</small></button>
       <button id="touchAttack" class="touch-attack">⚔</button>
-      <button data-skill="0">Ⅰ</button><button data-skill="1">Ⅱ</button><button data-skill="2">Ⅲ</button>
+      <button data-skill="0">Ⅰ</button><button data-skill="1">Ⅱ</button><button data-skill="2">Ⅲ</button><button data-skill="3">Ⅳ</button><button data-skill="4">Ⅴ</button>
     </div>
   </div>
 </div>
@@ -208,5 +211,6 @@
 <script src="src/inventory-v3.js"></script>
 <script src="src/ui-v3.js"></script>
 <script src="src/systems-v3b.js"></script>
+<script src="src/online-controller-v4.js"></script>
 </body>
 </html>

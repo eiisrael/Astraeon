@@ -8,5 +8,12 @@ export default function handler(req,res){
   const supabaseUrl=process.env.SUPABASE_URL||'';
   const supabaseKey=process.env.SUPABASE_PUBLISHABLE_KEY||process.env.SUPABASE_ANON_KEY||'';
   const realtimeTopic=process.env.ASTRAEON_REALTIME_TOPIC||'world:astraeon:main';
-  return res.status(200).json({enabled:Boolean(supabaseUrl&&supabaseKey),supabaseUrl,supabaseKey,realtimeTopic,version:'4.0-online'});
+  return res.status(200).json({
+    enabled:Boolean(supabaseUrl&&supabaseKey),
+    supabaseUrl,
+    supabaseKey,
+    realtimeTopic,
+    databaseProvider:'supabase',
+    version:'4.1-online'
+  });
 }
