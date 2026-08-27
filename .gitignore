@@ -4,3 +4,9 @@
 .vercel/
 node_modules/
 npm-debug.log*
+*.swp
+*.swo
+*.crswap
+*~
+.DS_Store
+Thumbs.db
