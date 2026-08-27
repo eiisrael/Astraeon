@@ -52,9 +52,9 @@ check_js_ids('src/admin-runtime-v3c.js', index_ids)
 
 required=[
  'src/world-v2.js','src/game-v2.js','src/inventory-v2.js','src/inventory-v3.js','src/ui-v3.js','src/systems-v3b.js','src/admin-runtime-v3c.js',
- 'src/world-online-v4.js','src/npcs-v4.js','src/multiplayer-v4.js','src/online-v4.css',
- 'src/editor-v2.js','src/admin-v3c.js','src/astraeon-v2.css','src/inventory-v2.css','src/ui-v3.css','src/ui-v3b.css','src/typography-v3c.css','src/editor-v2.css','src/editor-v3c.css',
- 'api/config.js','vercel.json','package.json','ONLINE_SETUP.md','supabase/migrations/001_astraeon_online.sql',
+ 'src/world-online-v4.js','src/npcs-v4.js','src/multiplayer-v4.js','src/online-controller-v4.js','src/online-v4.css','src/online-fixes-v4.css',
+ 'src/editor-v2.js','src/admin-v3c.js','src/admin-studio-v4.js','src/astraeon-v2.css','src/inventory-v2.css','src/ui-v3.css','src/ui-v3b.css','src/typography-v3c.css','src/editor-v2.css','src/editor-v3c.css','src/editor-studio-v4.css',
+ 'api/config.js','vercel.json','package.json','README.md','ONLINE_SETUP.md','supabase/migrations/001_astraeon_online.sql',
  'Assets/Classes/Warrior.png','Assets/Classes/Mage.png','Assets/Classes/Archer.png','Assets/Classes/Assassin.png','Assets/Classes/Paladine.png',
  'Assets/Mob/Slime.png','Assets/Mob/Wolf.png','Assets/Mob/Globin.png','Assets/Mob/Orc.png','Assets/Mob/Troll.png','Assets/Mob/Pig_Monster.png',
  'Assets/Mob/Golem_Gelo.png','Assets/Mob/Spider.png','Assets/Mob/zombie.png','Assets/Mob/sombra.png','Assets/Mob/Caveira.png','Assets/Mob/Squelleton.png','Assets/Mob/Draconato.png'
@@ -62,19 +62,41 @@ required=[
 for item in required:
     if not (ROOT/item).exists(): ERRORS.append(f'arquivo necessário ausente: {item}')
 
-for file_name, needles in {
+contracts={
     'src/typography-v3c.css':['clamp(','--fs-body','@media(max-width:760px)'],
     'src/admin-v3c.js':['astraeon:v3c:admin','Admin 3.0-C','adminJsonSave','adminJsonWorld'],
     'src/admin-runtime-v3c.js':['adminConfigV3C','godMode','lootChance','sprintMultiplier','ensureOnlineV4','src/multiplayer-v4.js'],
     'src/world-online-v4.js':['Astralum','Lúmenfall','Solvaris','Nivora','Umbra Vale','Cinzalta','cityStructures'],
     'src/npcs-v4.js':['IA local contextual','E · Falar','npc-dialogue','updateNpcs'],
     'src/multiplayer-v4.js':['signUp','signInWithPassword','player_state','postgres_changes','player_saves','CHAT_OPACITY_KEY','textContent'],
+    'src/online-controller-v4.js':['openChat','onlineChatInput','login será solicitado','keydown','MutationObserver','onlineRuntimeHealth'],
     'src/online-v4.css':['--online-chat-alpha','online-chat','npc-dialogue','@media(max-width:760px)'],
-    'api/config.js':['SUPABASE_URL','SUPABASE_PUBLISHABLE_KEY','no-store'],
-    'supabase/migrations/001_astraeon_online.sql':['enable row level security','chat_rate_limited','realtime.topic()','claim_username','player_saves','chat_messages'],
-    'vercel.json':['Content-Security-Policy','X-Content-Type-Options','wss://*.supabase.co']
-}.items():
+    'src/online-fixes-v4.css':['online-chat-launcher','online-runtime-health','touch-chat'],
+    'src/admin-studio-v4.js':['ADMIN STUDIO 4.1','Diagnóstico','player_saves','chat_messages'],
+    'src/editor-studio-v4.css':['studio-topbar','admin-studio-v4','studio-dashboard-addon'],
+    'api/config.js':['SUPABASE_URL','SUPABASE_PUBLISHABLE_KEY','no-store','4.1-online'],
+    'supabase/migrations/001_astraeon_online.sql':['enable row level security','chat_rate_limited','realtime.topic()','claim_username','player_saves','chat_messages','supabase_realtime'],
+    'vercel.json':['Content-Security-Policy','X-Content-Type-Options','wss://*.supabase.co'],
+    'ONLINE_SETUP.md':['Table Editor','auth.users','npx vercel dev','Enter = abrir/focar','Admin Studio'],
+    'README.md':['ASTRAEON ONLINE 4.1','/game-editor','SUPABASE_PUBLISHABLE_KEY']
+}
+for file_name, needles in contracts.items():
     require_needles(file_name, needles)
+
+index_text=(ROOT/'index.html').read_text(encoding='utf-8') if (ROOT/'index.html').exists() else ''
+if 'Editor Astral<small>' in index_text or '>Editor Astral<' in index_text:
+    ERRORS.append('index.html: Editor Astral não deve aparecer no menu principal')
+if 'src/online-controller-v4.js' not in index_text:
+    ERRORS.append('index.html: controlador de chat 4.1 não carregado')
+for skill in ['data-skill="3"','data-skill="4"']:
+    if skill not in index_text: ERRORS.append(f'index.html: controle mobile ausente: {skill}')
+
+editor_text=(ROOT/'game-editor.html').read_text(encoding='utf-8') if (ROOT/'game-editor.html').exists() else ''
+for needle in ['Admin Studio 4.1','src/editor-studio-v4.css','src/admin-studio-v4.js','name="robots"']:
+    if needle not in editor_text: ERRORS.append(f'game-editor.html: contrato Admin Studio ausente: {needle}')
+
+if (ROOT/'index.html.4.crswap').exists():
+    ERRORS.append('arquivo swap index.html.4.crswap não deve estar versionado')
 
 for name in ['vercel.json','package.json']:
     path=ROOT/name
@@ -89,8 +111,8 @@ if api_path.exists():
         if forbidden in api_text: ERRORS.append(f'api/config.js: segredo proibido referenciado: {forbidden}')
 
 if ERRORS:
-    print('ASTRAEON ONLINE validation FAILED')
+    print('ASTRAEON ONLINE 4.1 validation FAILED')
     for err in ERRORS: print(' -',err)
     sys.exit(1)
-print('ASTRAEON ONLINE validation OK')
+print('ASTRAEON ONLINE 4.1 validation OK')
 print(f'index IDs: {len(index_ids)} | editor IDs: {len(editor_ids)} | required files: {len(required)}')
