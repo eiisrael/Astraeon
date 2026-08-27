@@ -4,31 +4,47 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#050812">
-<title>ASTRAEON 3.0-C — Editor Admin</title>
+<meta name="theme-color" content="#071018">
+<meta name="robots" content="noindex,nofollow">
+<title>ASTRAEON — Admin Studio 4.1</title>
 <link rel="stylesheet" href="src/editor-v2.css">
 <link rel="stylesheet" href="src/typography-v3c.css">
 <link rel="stylesheet" href="src/editor-v3c.css">
+<link rel="stylesheet" href="src/editor-studio-v4.css">
 </head>
 <body>
-<div class="editor">
-  <header class="topbar">
-    <div class="brand"><div class="brand-mark">A</div><div><strong>ASTRAEON</strong><small>Editor Astral 3.0-C · Admin</small></div></div>
-    <button id="newMapBtn" class="btn optional">Novo mapa</button>
-    <button id="undoBtn" class="btn" title="Ctrl+Z">Desfazer</button>
-    <button id="redoBtn" class="btn" title="Ctrl+Y">Refazer</button>
-    <div class="top-actions">
-      <button id="importBtn" class="btn optional">Importar JSON</button>
-      <button id="exportBtn" class="btn optional">Exportar JSON</button>
+<div class="editor studio-v4">
+  <header class="topbar studio-topbar">
+    <div class="brand studio-brand">
+      <div class="brand-mark">A</div>
+      <div><strong>ASTRAEON</strong><small>Admin Studio 4.1 · World & Balance</small></div>
+    </div>
+    <div class="studio-context">
+      <span class="studio-status-dot"></span>
+      <div><b>Projeto local</b><small>Mundo, balanceamento e diagnóstico</small></div>
+    </div>
+    <div class="studio-quick-actions">
+      <button id="newMapBtn" class="btn optional">Novo mundo</button>
+      <button id="undoBtn" class="btn" title="Ctrl+Z">Desfazer</button>
+      <button id="redoBtn" class="btn" title="Ctrl+Y">Refazer</button>
+    </div>
+    <div class="top-actions studio-publish-actions">
+      <button id="importBtn" class="btn optional">Importar</button>
+      <button id="exportBtn" class="btn optional">Exportar</button>
       <button id="saveBtn" class="btn primary">Salvar mundo</button>
-      <button id="playBtn" class="btn primary">▶ Testar no jogo</button>
+      <button id="playBtn" class="btn primary">▶ Testar jogo</button>
     </div>
   </header>
 
-  <main class="workspace">
-    <aside class="sidebar">
-      <section class="section">
-        <div class="section-title">Ferramentas <span>atalhos</span></div>
+  <div class="studio-commandbar">
+    <div><span class="studio-command-kicker">Editor de mundo</span><b>Modele Astra sem misturar ferramentas administrativas com a tela pública do jogo.</b></div>
+    <div class="studio-shortcuts"><span><kbd>F10</kbd> Admin Studio</span><span><kbd>Ctrl+S</kbd> Salvar</span><span><kbd>Shift</kbd> Pan</span></div>
+  </div>
+
+  <main class="workspace studio-workspace">
+    <aside class="sidebar studio-sidebar">
+      <section class="section studio-section">
+        <div class="section-title">Ferramentas <span>mundo</span></div>
         <div class="tool-grid">
           <button class="tool-btn active" data-tool="biome"><i>B</i>Bioma</button>
           <button class="tool-btn" data-tool="road"><i>R</i>Estrada</button>
@@ -42,29 +58,29 @@
         </div>
       </section>
 
-      <section class="section">
+      <section class="section studio-section">
         <div class="section-title">Biomas <span>5 climas</span></div>
         <div id="biomePalette" class="palette"></div>
       </section>
 
-      <section class="section">
-        <div class="section-title">Pincel <span>conteúdo</span></div>
+      <section class="section studio-section">
+        <div class="section-title">Pincel & conteúdo <span>precisão</span></div>
         <label class="hint" for="brushSize">Tamanho do pincel</label>
-        <input id="brushSize" type="range" min="1" max="4" step="1" value="1" style="width:100%;accent-color:#72d9ff">
+        <input id="brushSize" type="range" min="1" max="4" step="1" value="1">
         <label class="hint" for="objectSelect">Objeto ambiental</label>
         <select id="objectSelect" class="object-select"></select>
         <label class="hint" for="mobSelect">Criatura de spawn</label>
         <select id="mobSelect" class="object-select"></select>
       </section>
 
-      <section class="section">
+      <section class="section studio-section">
         <div class="section-title">Geração <span>procedural</span></div>
         <label class="hint" for="seedInput">Semente global</label>
-        <input id="seedInput" class="seed-input" maxlength="28" value="ASTRAEON-3">
-        <p class="hint">A seed cria o mapa-base. Seus pincéis são salvos como overrides por cima da geração procedural.</p>
+        <input id="seedInput" class="seed-input" maxlength="28" value="ASTRAEON-ONLINE">
+        <p class="hint">A seed gera o mapa-base; pinturas e spawns ficam como overrides versionáveis.</p>
       </section>
 
-      <section class="section">
+      <section class="section studio-section">
         <div class="section-title">Camadas <span>visibilidade</span></div>
         <div class="layer-list">
           <label class="layer-row"><input class="layer-toggle" data-layer="terrain" type="checkbox" checked> Terreno <span>base</span></label>
@@ -76,22 +92,26 @@
       </section>
     </aside>
 
-    <section class="stage-wrap">
+    <section class="stage-wrap studio-stage">
+      <div class="studio-stage-head">
+        <div><span>Canvas do mundo</span><b>96 × 96 tiles</b></div>
+        <div class="studio-stage-head-actions"><span id="studioDirtyState">Sincronizado com o navegador</span></div>
+      </div>
       <canvas id="editorCanvas"></canvas>
       <div class="stage-toolbar"><button id="zoomOut" title="Diminuir zoom">−</button><button id="zoomFit" title="Enquadrar mundo">⌗</button><button id="zoomIn" title="Aumentar zoom">+</button></div>
       <div class="stage-info">Zoom <b id="zoomLabel">100%</b> · Shift/Mouse direito para mover · roda para zoom</div>
       <div id="cursorCoord" class="cursor-coord">tile —, —</div>
     </section>
 
-    <aside class="sidebar right">
-      <section class="section"><div id="inspector" class="inspector-card"><h3>Inspetor</h3><p class="hint">Selecione um tile para examinar suas propriedades.</p></div></section>
-      <section class="section"><div class="section-title">Resumo do mundo <span>tempo real</span></div><div id="stats" class="stats"></div></section>
-      <section class="section"><div class="section-title">Histórico <span>sessão</span></div><div id="historyList" class="history-list"></div></section>
-      <section class="section"><div class="section-title">Fluxo recomendado <span>3.0-C</span></div><p class="hint">1. Defina a seed. 2. Modele os biomas. 3. Desenhe terreno e spawns. 4. Abra Admin para balancear personagem, classes, mobs, itens e regras globais. 5. Salve e teste no jogo.</p></section>
+    <aside class="sidebar right studio-inspector">
+      <section class="section studio-section"><div id="inspector" class="inspector-card"><h3>Inspetor</h3><p class="hint">Selecione um tile para examinar suas propriedades.</p></div></section>
+      <section class="section studio-section"><div class="section-title">Resumo do mundo <span>tempo real</span></div><div id="stats" class="stats"></div></section>
+      <section class="section studio-section"><div class="section-title">Histórico <span>sessão</span></div><div id="historyList" class="history-list"></div></section>
+      <section class="section studio-section studio-help-card"><div class="section-title">Fluxo profissional <span>4.1</span></div><ol><li>Defina a seed e o terreno.</li><li>Modele cidades, acessos e spawns.</li><li>Abra <b>Admin Studio</b> (F10) para balanceamento.</li><li>Salve e teste no jogo.</li><li>Use o diagnóstico online para conferir Supabase/Vercel.</li></ol></section>
     </aside>
   </main>
 
-  <footer class="statusbar"><span>Ferramenta: <b id="statusTool">Pincel de bioma</b></span><span>Seed: <b id="statusSeed">ASTRAEON-3</b></span><span>Mapa: <b>96 × 96</b></span><span>Engine: <b>ASTRA 3.0-C</b></span><span id="saveState" class="save-state">Pronto</span></footer>
+  <footer class="statusbar studio-statusbar"><span>Ferramenta <b id="statusTool">Pincel de bioma</b></span><span>Seed <b id="statusSeed">ASTRAEON-ONLINE</b></span><span>Mapa <b>96 × 96</b></span><span>Suite <b>ADMIN 4.1</b></span><span id="saveState" class="save-state">Pronto</span></footer>
 </div>
 
 <div id="jsonDialog" class="dialog hidden">
@@ -102,5 +122,6 @@
 <script src="src/world-v2.js"></script>
 <script src="src/editor-v2.js"></script>
 <script src="src/admin-v3c.js"></script>
+<script src="src/admin-studio-v4.js"></script>
 </body>
 </html>
