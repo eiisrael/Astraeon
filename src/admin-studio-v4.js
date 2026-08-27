@@ -1,5 +1,6 @@
 (function (global) {
   'use strict';
+  // Diagnóstico profissional do Editor, mundo e infraestrutura online.
 
   let installed = false;
   const $ = (s) => document.querySelector(s);
