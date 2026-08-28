@@ -115,7 +115,7 @@ create or replace function public.process_astraeon_account_deletions()
 returns integer
 language plpgsql
 security definer
-set search_path = public, auth, pg_temp
+set search_path = public, auth, storage, pg_temp
 as $$
 declare
   r record;
@@ -131,6 +131,10 @@ begin
       update public.account_deletion_requests set cancelled_at=now(),updated_at=now() where user_id=r.user_id;
       update public.profiles set access=case when r.previous_access=0 then 1 else r.previous_access end,updated_at=now() where id=r.user_id;
     else
+      -- Database records cascade from auth.users. Storage objects do not, so purge the user's avatar folder first.
+      delete from storage.objects
+       where bucket_id='avatars'
+         and (storage.foldername(name))[1]=r.user_id::text;
       delete from auth.users where id=r.user_id;
       removed := removed + 1;
     end if;
