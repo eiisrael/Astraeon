@@ -21,7 +21,7 @@ async function verifySession(session){
 }
 function script(src){return new Promise((resolve,reject)=>{if(document.querySelector(`script[data-admin-runtime="${src}"]`)){resolve();return;}const s=document.createElement('script');s.src=src;s.dataset.adminRuntime=src;s.onload=resolve;s.onerror=()=>reject(new Error(`Falha ao carregar ${src}`));document.body.appendChild(s);});}
 async function loadAdminRuntime(){
-  for(const src of ['src/world-v2.js','src/editor-v2.js','src/admin-v3c.js','src/admin-studio-v4.js','src/admin-accounts-v4.js'])await script(src);
+  for(const src of ['src/world-v2.js','src/editor-v2.js','src/admin-v3c.js','src/admin-studio-v4.js','src/admin-accounts-v4.js','src/admin-system-messages-v4.js'])await script(src);
 }
 function addSessionChip(){
   if(document.getElementById('adminSessionChip'))return;
