@@ -1,12 +1,12 @@
 {
   "name": "astraeon-online",
-  "version": "4.3.0",
+  "version": "7.0.0",
   "private": true,
   "license": "MIT",
   "author": "Erick Israel (eiisrael)",
   "type": "module",
   "scripts": {
     "check:secrets": "python3 scripts/check_secrets.py",
-    "validate": "python3 scripts/check_secrets.py && node --check src/world-v2.js && node --check src/game-v2.js && node --check src/inventory-v2.js && node --check src/inventory-v3.js && node --check src/ui-v3.js && node --check src/systems-v3b.js && node --check src/world-online-v4.js && node --check src/npcs-v4.js && node --check src/multiplayer-v4.js && node --check src/online-controller-v4.js && node --check src/combat-focus-v4.js && node --check src/chat-system-v4.js && node --check src/account-status-v4.js && node --check src/editor-v2.js && node --check src/admin-v3c.js && node --check src/admin-studio-v4.js && node --check src/admin-auth-v4.js && node --check src/admin-accounts-v4.js && node --check src/admin-system-messages-v4.js && node --check api/config.js && node --check api/admin-access.js && python3 scripts/validate_v2.py"
+    "validate": "python3 scripts/check_secrets.py && node --check src/world-v2.js && node --check src/game-v2.js && node --check src/inventory-v2.js && node --check src/inventory-v3.js && node --check src/ui-v3.js && node --check src/systems-v3b.js && node --check src/admin-runtime-v3c.js && node --check src/world-online-v4.js && node --check src/npcs-v4.js && node --check src/multiplayer-v4.js && node --check src/online-controller-v4.js && node --check src/combat-focus-v4.js && node --check src/chat-system-v4.js && node --check src/live-runtime-v5.js && node --check src/production-runtime-v6.js && node --check src/character-system-v6.js && node --check src/worldmaps-runtime-v61.js && node --check src/server-config-v62.js && node --check src/menu-cinematic-v62.js && node --check src/account-status-v4.js && node --check src/gameplay-v7.js && node --check src/inventory-v7.js && node --check src/menu-account-v7.js && node --check src/spawn-runtime-v7.js && node --check src/system-style-v7.js && node --check src/editor-diagnostics-v5.js && node --check src/editor-v2.js && node --check src/admin-v3c.js && node --check src/admin-studio-v4.js && node --check src/admin-auth-v4.js && node --check src/admin-accounts-v4.js && node --check src/admin-system-messages-v4.js && node --check src/admin-live-tools-v5.js && node --check src/admin-character-slots-v6.js && node --check src/admin-production-v6.js && node --check src/admin-worldmaps-v61.js && node --check src/admin-realtime-v62.js && node --check src/admin-server-config-v62.js && node --check src/admin-v7.js && node --check api/config.js && node --check api/admin-access.js && python3 scripts/validate_v2.py && python3 scripts/validate_worldmaps_v61.py && python3 scripts/validate_v7.py"
   }
 }
