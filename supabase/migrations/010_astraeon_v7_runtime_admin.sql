@@ -4,6 +4,10 @@
 alter table public.profiles
   add column if not exists avatar_url text;
 
+-- Migration 002 intentionally restricts profile UPDATE to named columns.
+-- Explicitly allow each authenticated user to update only their own avatar_url through the existing own-profile RLS policy.
+grant update (avatar_url) on public.profiles to authenticated;
+
 alter table public.system_messages
   add column if not exists line_width integer not null default 220;
 
@@ -154,13 +158,13 @@ with check (bucket_id='avatars' and (storage.foldername(name))[1]=auth.uid()::te
 drop policy if exists "astraeon_avatar_update_own" on storage.objects;
 create policy "astraeon_avatar_update_own" on storage.objects
 for update to authenticated
-using (bucket_id='avatars' and owner_id=auth.uid()::text)
+using (bucket_id='avatars' and (storage.foldername(name))[1]=auth.uid()::text)
 with check (bucket_id='avatars' and (storage.foldername(name))[1]=auth.uid()::text);
 
 drop policy if exists "astraeon_avatar_delete_own" on storage.objects;
 create policy "astraeon_avatar_delete_own" on storage.objects
 for delete to authenticated
-using (bucket_id='avatars' and owner_id=auth.uid()::text);
+using (bucket_id='avatars' and (storage.foldername(name))[1]=auth.uid()::text);
 
 do $$
 begin
