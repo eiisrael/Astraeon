@@ -8,7 +8,7 @@ function deepMerge(a,b){if(!b||typeof b!=='object')return a;for(const[k,v]of Obj
 function load(){try{return deepMerge(defaults(),JSON.parse(localStorage.getItem(STORAGE)||'{}'));}catch(_){return defaults();}}
 function ensureOnlineV4(){
  if(!document.querySelector('link[data-astraeon-online-v4]')){const link=document.createElement('link');link.rel='stylesheet';link.href='src/online-v4.css';link.dataset.astraeonOnlineV4='1';document.head.appendChild(link);}
- const scripts=[['src/world-online-v4.js','AstraeonOnlineWorld'],['src/npcs-v4.js','AstraeonNPCsV4'],['src/multiplayer-v4.js','AstraeonMultiplayerV4'],['src/account-status-v4.js','AstraeonAccountStatusV4'],['src/combat-focus-v4.js','AstraeonCombatFocusV4']];
+ const scripts=[['src/world-online-v4.js','AstraeonOnlineWorld'],['src/npcs-v4.js','AstraeonNPCsV4'],['src/multiplayer-v4.js','AstraeonMultiplayerV4'],['src/account-status-v4.js','AstraeonAccountStatusV4'],['src/combat-focus-v4.js','AstraeonCombatFocusV4'],['src/chat-system-v4.js','AstraeonChatSystemV4']];
  let chain=Promise.resolve();
  scripts.forEach(([src,name])=>{chain=chain.then(()=>new Promise(resolve=>{if(global[name]){global[name].install?.(global.AstraeonMultiplayerV4);resolve();return;}let s=document.querySelector(`script[data-online-src="${src}"]`);if(s){s.addEventListener('load',()=>{global[name]?.install?.(global.AstraeonMultiplayerV4);resolve();},{once:true});return;}s=document.createElement('script');s.src=src;s.dataset.onlineSrc=src;s.onload=()=>{global[name]?.install?.(global.AstraeonMultiplayerV4);resolve();};s.onerror=()=>{console.warn('[Astraeon Online] falha ao carregar',src);resolve();};document.head.appendChild(s);}));});
  return chain;
