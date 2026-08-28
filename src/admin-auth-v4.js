@@ -45,7 +45,7 @@ async function loadAdminRuntime(){
   await script('src/editor-v2.js',{bridgeDomReady:true});
   await waitForEditor();
   for(const src of ['src/admin-v3c.js','src/admin-studio-v4.js','src/admin-accounts-v4.js','src/admin-system-messages-v4.js'])await script(src);
-  diag('info','runtime.complete',{editor:!!global.astraeonEditor,adminPanel:!!$('#adminPanel')});
+  diag('info','runtime.complete',{editor:!!global.astraeonEditor,adminPanel:!!document.getElementById('adminPanel')});
 }
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function addSessionChip(){
