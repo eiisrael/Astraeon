@@ -39,11 +39,29 @@ begin
 end;
 $$;
 
--- Users must never be able to promote themselves by updating profiles.access.
+-- Users must never be able to promote themselves by writing profiles.access.
 revoke insert, update on public.profiles from authenticated;
 grant select on public.profiles to authenticated;
 grant insert (id, username, display_name, class_id, level, last_seen) on public.profiles to authenticated;
 grant update (username, display_name, class_id, level, last_seen) on public.profiles to authenticated;
+
+create or replace function public.astraeon_has_online_access()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1
+      from public.profiles
+     where id = auth.uid()
+       and access <> 0
+  );
+$$;
+
+revoke all on function public.astraeon_has_online_access() from public;
+grant execute on function public.astraeon_has_online_access() to authenticated;
 
 create or replace function public.astraeon_is_admin()
 returns boolean
@@ -142,67 +160,39 @@ $$;
 revoke all on function public.admin_set_access(uuid, smallint) from public;
 grant execute on function public.admin_set_access(uuid, smallint) to authenticated;
 
--- A banned account can authenticate (so the UI can explain the status) but cannot
+-- A banned account can authenticate so the UI can explain the status, but cannot
 -- mutate gameplay data, chat or join the realtime world.
 drop policy if exists "astraeon_profiles_update_own" on public.profiles;
 create policy "astraeon_profiles_update_own" on public.profiles
 for update to authenticated
-using (
-  (select auth.uid()) = id
-  and exists (select 1 from public.profiles me where me.id = auth.uid() and me.access <> 0)
-)
-with check (
-  (select auth.uid()) = id
-  and exists (select 1 from public.profiles me where me.id = auth.uid() and me.access <> 0)
-);
+using ((select auth.uid()) = id and public.astraeon_has_online_access())
+with check ((select auth.uid()) = id and public.astraeon_has_online_access());
 
 drop policy if exists "astraeon_saves_read_own" on public.player_saves;
 create policy "astraeon_saves_read_own" on public.player_saves
-for select to authenticated using (
-  (select auth.uid()) = user_id
-  and exists (select 1 from public.profiles me where me.id = auth.uid() and me.access <> 0)
-);
+for select to authenticated using ((select auth.uid()) = user_id and public.astraeon_has_online_access());
 
 drop policy if exists "astraeon_saves_insert_own" on public.player_saves;
 create policy "astraeon_saves_insert_own" on public.player_saves
-for insert to authenticated with check (
-  (select auth.uid()) = user_id
-  and exists (select 1 from public.profiles me where me.id = auth.uid() and me.access <> 0)
-);
+for insert to authenticated with check ((select auth.uid()) = user_id and public.astraeon_has_online_access());
 
 drop policy if exists "astraeon_saves_update_own" on public.player_saves;
 create policy "astraeon_saves_update_own" on public.player_saves
 for update to authenticated
-using (
-  (select auth.uid()) = user_id
-  and exists (select 1 from public.profiles me where me.id = auth.uid() and me.access <> 0)
-)
-with check (
-  (select auth.uid()) = user_id
-  and exists (select 1 from public.profiles me where me.id = auth.uid() and me.access <> 0)
-);
+using ((select auth.uid()) = user_id and public.astraeon_has_online_access())
+with check ((select auth.uid()) = user_id and public.astraeon_has_online_access());
 
 drop policy if exists "astraeon_saves_delete_own" on public.player_saves;
 create policy "astraeon_saves_delete_own" on public.player_saves
-for delete to authenticated using (
-  (select auth.uid()) = user_id
-  and exists (select 1 from public.profiles me where me.id = auth.uid() and me.access <> 0)
-);
+for delete to authenticated using ((select auth.uid()) = user_id and public.astraeon_has_online_access());
 
 drop policy if exists "astraeon_chat_read" on public.chat_messages;
 create policy "astraeon_chat_read" on public.chat_messages
-for select to authenticated using (
-  channel = 'world'
-  and exists (select 1 from public.profiles me where me.id = auth.uid() and me.access <> 0)
-);
+for select to authenticated using (channel = 'world' and public.astraeon_has_online_access());
 
 drop policy if exists "astraeon_chat_insert" on public.chat_messages;
 create policy "astraeon_chat_insert" on public.chat_messages
-for insert to authenticated with check (
-  (select auth.uid()) = user_id
-  and channel = 'world'
-  and exists (select 1 from public.profiles me where me.id = auth.uid() and me.access <> 0)
-);
+for insert to authenticated with check ((select auth.uid()) = user_id and channel = 'world' and public.astraeon_has_online_access());
 
 drop policy if exists "astraeon_realtime_receive" on realtime.messages;
 create policy "astraeon_realtime_receive" on realtime.messages
@@ -210,7 +200,7 @@ for select to authenticated
 using (
   (select realtime.topic()) like 'world:astraeon:%'
   and realtime.messages.extension in ('broadcast','presence')
-  and exists (select 1 from public.profiles me where me.id = auth.uid() and me.access <> 0)
+  and public.astraeon_has_online_access()
 );
 
 drop policy if exists "astraeon_realtime_send" on realtime.messages;
@@ -219,5 +209,5 @@ for insert to authenticated
 with check (
   (select realtime.topic()) like 'world:astraeon:%'
   and realtime.messages.extension in ('broadcast','presence')
-  and exists (select 1 from public.profiles me where me.id = auth.uid() and me.access <> 0)
+  and public.astraeon_has_online_access()
 );
