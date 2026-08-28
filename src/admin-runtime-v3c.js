@@ -3,9 +3,9 @@
 const STORAGE='astraeon:v3c:admin';
 const BASE_LOOT_CHANCE=.18;
 const finite=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
-function defaults(){return{version:'3.0-C',enabled:true,gameplay:{godMode:false,damageMultiplier:1,damageTakenMultiplier:1,xpMultiplier:1,goldMultiplier:1,lootChance:.18,backpackCapacity:30,staminaMax:100,staminaDrain:24,staminaRegen:19,staminaDelay:.65,sprintMultiplier:1.55},classes:{},mobs:{},items:{},biomes:{}}}
+function defaults(){return{version:'3.0-C',enabled:true,gameplay:{godMode:false,damageMultiplier:1,damageTakenMultiplier:1,xpMultiplier:1,goldMultiplier:1,lootChance:.18,backpackCapacity:25,staminaMax:100,staminaDrain:24,staminaRegen:19,staminaDelay:.65,sprintMultiplier:1.55},classes:{},mobs:{},items:{},biomes:{}}}
 function deepMerge(a,b){if(!b||typeof b!=='object')return a;for(const[k,v]of Object.entries(b)){if(v&&typeof v==='object'&&!Array.isArray(v)&&a[k]&&typeof a[k]==='object'&&!Array.isArray(a[k]))deepMerge(a[k],v);else a[k]=v;}return a;}
-function load(){try{return deepMerge(defaults(),JSON.parse(localStorage.getItem(STORAGE)||'{}'));}catch(_){return defaults();}}
+function load(){try{const cfg=deepMerge(defaults(),JSON.parse(localStorage.getItem(STORAGE)||'{}'));if(Number(cfg.gameplay?.backpackCapacity)===30){cfg.gameplay.backpackCapacity=25;localStorage.setItem(STORAGE,JSON.stringify(cfg));}return cfg;}catch(_){return defaults();}}
 function ensureOnlineV4(){
  if(!document.querySelector('link[data-astraeon-online-v4]')){const link=document.createElement('link');link.rel='stylesheet';link.href='src/online-v4.css';link.dataset.astraeonOnlineV4='1';document.head.appendChild(link);}
  const scripts=[['src/world-online-v4.js','AstraeonOnlineWorld'],['src/npcs-v4.js','AstraeonNPCsV4'],['src/multiplayer-v4.js','AstraeonMultiplayerV4'],['src/account-status-v4.js','AstraeonAccountStatusV4'],['src/combat-focus-v4.js','AstraeonCombatFocusV4'],['src/chat-system-v4.js','AstraeonChatSystemV4'],['src/live-runtime-v5.js','AstraeonLiveRuntimeV5']];
@@ -27,7 +27,7 @@ function install(){
  if(A?.items)for(const[id,ov]of Object.entries(cfg.items||{})){const item=A.items[id];if(!item)continue;if(ov.stats)item.stats={...(item.stats||{}),...ov.stats};Object.entries(ov).forEach(([k,v])=>{if(k!=='stats')item[k]=v});}
  const g=cfg.gameplay||{};
  function applyState(){
-  this.backpackCapacity=Math.max(1,Math.floor(Number(g.backpackCapacity)||30));
+  this.backpackCapacity=Math.max(1,Math.floor(Number(g.backpackCapacity)||25));
   this.staminaMax=Math.max(1,Number(g.staminaMax)||100);
   this.stamina=Math.max(0,Math.min(this.staminaMax,Number.isFinite(this.stamina)?this.stamina:this.staminaMax));
   this.adminSprintMultiplier=Math.max(.1,Number(g.sprintMultiplier)||1.55);

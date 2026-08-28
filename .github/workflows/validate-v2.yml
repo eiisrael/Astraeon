@@ -1,4 +1,4 @@
-name: Validate Astraeon Online 6.2 + Admin Studio 6.2
+name: Validate Astraeon 6.3 + Admin Studio
 
 on:
   pull_request:
@@ -36,6 +36,10 @@ jobs:
           node --check src/server-config-v62.js
           node --check src/menu-cinematic-v62.js
           node --check src/account-status-v4.js
+          node --check src/gameplay-v63.js
+          node --check src/inventory-v63.js
+          node --check src/menu-account-v63.js
+          node --check src/system-announcement-v63.js
           node --check api/config.js
           node --check api/admin-access.js
           node --check src/editor-diagnostics-v5.js
@@ -51,6 +55,7 @@ jobs:
           node --check src/admin-worldmaps-v61.js
           node --check src/admin-realtime-v62.js
           node --check src/admin-server-config-v62.js
+          node --check src/admin-v63.js
       - name: Validate HTML, access contracts, admin and deployment config
         run: python3 scripts/validate_v2.py
       - name: Validate connected maps and MobList contracts
@@ -97,5 +102,7 @@ jobs:
           for src in ('src/server-config-v62.js','src/menu-cinematic-v62.js'):
               if src not in ui:
                   raise SystemExit(f'game loader missing {src}')
-          print('Astraeon 6.2 contracts OK')
+          print('Astraeon 6.2 base contracts OK')
           PY
+      - name: Validate 6.3 rebuild contracts
+        run: python3 scripts/validate_v63.py
