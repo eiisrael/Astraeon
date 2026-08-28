@@ -4,14 +4,19 @@
   const W = global.AstraeonWorld;
   let A = null;
   let V3 = null;
+
   const CAPACITY = 25;
   const LONG_PRESS_MS = 3000;
+  const HOVER_OPEN_MS = 420;
+  const DRAG_MIME = 'application/x-astraeon-item';
   const ALL_CLASSES = ['Warrior', 'Mage', 'Archer', 'Assassin', 'Paladine'];
+
   const CLASS_LABELS = {
     Warrior: 'Guerreiro', Mage: 'Mago', Archer: 'Arqueiro', Assassin: 'Assassino', Paladine: 'Paladino'
   };
   const STAT_LABELS = {
-    power: 'Poder', defense: 'Defesa', maxHp: 'Vida', maxMana: 'Mana', speed: 'Velocidade', range: 'Alcance', crit: 'Crítico'
+    power: 'Poder', defense: 'Defesa', maxHp: 'Vida', maxMana: 'Mana', speed: 'Velocidade', range: 'Alcance', crit: 'Crítico',
+    strength: 'Força', magic: 'Magia', dexterity: 'Destreza', heal: 'Cura', mana: 'Mana', healPct: 'Cura %', manaPct: 'Mana %'
   };
   const SLOT_CATEGORY = {
     weapon: 'weapon', head: 'armor', chest: 'armor', hands: 'armor', boots: 'armor',
@@ -20,13 +25,15 @@
   const RARITY_LABELS = {
     common: 'Comum', uncommon: 'Incomum', rare: 'Raro', epic: 'Épico', legendary: 'Lendário'
   };
+  const DEFAULT_PURCHASE_VALUE = {
+    common: 90, uncommon: 180, rare: 420, epic: 980, legendary: 2400
+  };
 
   let installed = false;
   let tooltip = null;
   let inspectSheet = null;
-  let tooltipRef = null;
-  let longPressTimer = 0;
-  let longPressElement = null;
+  let armed = null;
+  let armTimer = 0;
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -36,11 +43,17 @@
     return !!global.matchMedia?.('(pointer:coarse)').matches || document.body.classList.contains('touch-forced');
   }
 
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, char => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    })[char]);
+  }
+
   function itemArt(item) {
     if (typeof V3?.artFor === 'function') return V3.artFor(item);
-    const img = String(item?.icon || '◇');
-    if (img.includes('<img')) {
-      const match = img.match(/src=["']([^"']+)/i);
+    const icon = String(item?.icon || '◇');
+    if (icon.includes('<img')) {
+      const match = icon.match(/src=["']([^"']+)/i);
       if (match) return match[1];
     }
     return '';
@@ -48,17 +61,21 @@
 
   function itemIconMarkup(item) {
     const src = itemArt(item);
-    if (src) return `<img class="item-art-img" src="${src}" alt="">`;
-    return `<span class="inventory-rune">${String(item?.icon || '◇').replace(/<[^>]+>/g, '') || '◇'}</span>`;
+    if (src) return `<img class="item-art-img" src="${escapeHtml(src)}" draggable="false" alt="">`;
+    const glyph = String(item?.icon || '◇').replace(/<[^>]+>/g, '') || '◇';
+    return `<span class="inventory-rune">${escapeHtml(glyph)}</span>`;
   }
 
   function rarityLabel(item) {
     return RARITY_LABELS[item?.rarity] || 'Comum';
   }
 
-  function slotLabel(item) {
-    if (typeof global.astraeon?.itemTypeLabel === 'function') return global.astraeon.itemTypeLabel(item);
-    return item?.type === 'equipment' ? 'Equipamento' : item?.type === 'consumable' ? 'Consumível' : item?.type === 'material' ? 'Material' : 'Item';
+  function itemTypeLabel(game, item) {
+    if (typeof game?.itemTypeLabel === 'function') return game.itemTypeLabel(item);
+    if (item?.type === 'equipment') return 'Equipamento';
+    if (item?.type === 'consumable') return 'Consumível';
+    if (item?.type === 'material') return 'Material';
+    return 'Item';
   }
 
   function inferredRequiredStats(item) {
@@ -79,8 +96,10 @@
   }
 
   function formatStatValue(key, value) {
-    if (key === 'crit') return `${Math.round(Number(value || 0) * 1000) / 10}%`;
-    return String(Math.round(Number(value || 0)));
+    const n = Number(value) || 0;
+    if (key === 'crit') return `${Math.round(n * 1000) / 10}%`;
+    if (key.endsWith('Pct')) return `${Math.round(n * 10) / 10}%`;
+    return String(Math.round(n));
   }
 
   function requirementStatus(game, item) {
@@ -92,36 +111,83 @@
     const requiredStats = inferredRequiredStats(item);
     const stats = Object.entries(requiredStats).map(([key, required]) => {
       const current = Number(player[key]) || 0;
-      return { key, label: STAT_LABELS[key] || key, required: Number(required) || 0, current, ok: current >= Number(required || 0) };
+      const requiredValue = Number(required) || 0;
+      return {
+        key, label: STAT_LABELS[key] || key, required: requiredValue, current, ok: current >= requiredValue
+      };
     });
-    const statsOk = stats.every(x => x.ok);
+    const statsOk = stats.every(row => row.ok);
     return { allowed, requiredLevel, classOk, levelOk, stats, statsOk, ok: classOk && levelOk && statsOk };
   }
 
-  function requirementsMarkup(game, item) {
-    if (!item || item.type !== 'equipment') {
-      return '<div class="requirement-row ok"><span>✓</span><div><b>Sem requisitos de equipamento</b><small>Pode ser usado diretamente da mochila.</small></div></div>';
+  function purchaseValue(item) {
+    const candidates = [item?.buyPrice, item?.purchasePrice, item?.shopPrice, item?.price];
+    for (const candidate of candidates) {
+      const value = Number(candidate);
+      if (Number.isFinite(value) && value > 0) return value;
     }
+    const base = DEFAULT_PURCHASE_VALUE[item?.rarity] || DEFAULT_PURCHASE_VALUE.common;
+    const level = Math.max(1, Number(item?.level || item?.requiredLevel || 1) || 1);
+    const typeMultiplier = item?.type === 'equipment' ? 1.2 : item?.type === 'consumable' ? .7 : .9;
+    return Math.max(10, Math.round(base * typeMultiplier * (1 + Math.max(0, level - 1) * .08)));
+  }
+
+  function saleValue(item) {
+    return Math.max(1, Math.floor(purchaseValue(item) * .10));
+  }
+
+  function attributeRows(game, item) {
+    const rows = [];
+    const seen = new Set();
+    const push = (label, value, key = label) => {
+      if (value === undefined || value === null || value === '' || seen.has(key)) return;
+      seen.add(key);
+      rows.push({ label, value: String(value) });
+    };
+
+    Object.entries(item?.stats || {}).forEach(([key, value]) => {
+      if (!Number(value)) return;
+      const sign = Number(value) > 0 ? '+' : '';
+      push(STAT_LABELS[key] || key, `${sign}${formatStatValue(key, value)}`, `stat:${key}`);
+    });
+    if (Number(item?.heal) > 0) push('Cura', `+${Math.round(Number(item.heal))}`, 'heal');
+    if (Number(item?.mana) > 0) push('Mana restaurada', `+${Math.round(Number(item.mana))}`, 'mana');
+    if (Number(item?.healPct) > 0) push('Cura percentual', `+${formatStatValue('healPct', item.healPct)}`, 'healPct');
+    if (Number(item?.manaPct) > 0) push('Mana percentual', `+${formatStatValue('manaPct', item.manaPct)}`, 'manaPct');
+    if (Number(item?.qty) > 1) push('Quantidade', `x${Math.round(Number(item.qty))}`, 'qty');
+
+    if (!rows.length && typeof game?.itemStatsText === 'function') {
+      (game.itemStatsText(item) || []).forEach((text, index) => push('Bônus', text, `fallback:${index}`));
+    }
+    return rows;
+  }
+
+  function requirementsMarkup(game, item) {
     const req = requirementStatus(game, item);
-    const classText = req.allowed.map(c => CLASS_LABELS[c] || c).join(' · ');
+    const classes = req.allowed.map(cls => CLASS_LABELS[cls] || cls).join(' · ');
     const rows = [
-      `<div class="requirement-row ${req.classOk ? 'ok' : 'blocked'}"><span>${req.classOk ? '✓' : '×'}</span><div><b>Classe</b><small>${classText}</small></div></div>`,
-      `<div class="requirement-row ${req.levelOk ? 'ok' : 'blocked'}"><span>${req.levelOk ? '✓' : '×'}</span><div><b>Nível necessário</b><small>Nv. ${req.requiredLevel} · atual Nv. ${Number(game.player?.level || 1)}</small></div></div>`
+      `<div class="requirement-row ${req.classOk ? 'ok' : 'blocked'}"><span>${req.classOk ? '✓' : '×'}</span><div><b>Classes</b><small>${escapeHtml(classes)}</small></div></div>`
     ];
-    if (req.stats.length) {
-      req.stats.forEach(stat => {
-        rows.push(`<div class="requirement-row ${stat.ok ? 'ok' : 'blocked'}"><span>${stat.ok ? '✓' : '×'}</span><div><b>${stat.label}</b><small>${formatStatValue(stat.key, stat.current)} / ${formatStatValue(stat.key, stat.required)} pontos</small></div></div>`);
-      });
+
+    if (item?.type === 'equipment') {
+      rows.push(`<div class="requirement-row ${req.levelOk ? 'ok' : 'blocked'}"><span>${req.levelOk ? '✓' : '×'}</span><div><b>Nível</b><small>Necessário ${req.requiredLevel} · atual ${Math.max(1, Number(game?.player?.level || 1))}</small></div></div>`);
+      if (req.stats.length) {
+        req.stats.forEach(stat => rows.push(
+          `<div class="requirement-row ${stat.ok ? 'ok' : 'blocked'}"><span>${stat.ok ? '✓' : '×'}</span><div><b>${escapeHtml(stat.label)}</b><small>${escapeHtml(formatStatValue(stat.key, stat.current))} / ${escapeHtml(formatStatValue(stat.key, stat.required))} pontos</small></div></div>`
+        ));
+      } else {
+        rows.push('<div class="requirement-row ok"><span>✓</span><div><b>Pontos</b><small>Sem requisito adicional</small></div></div>');
+      }
     } else {
-      rows.push('<div class="requirement-row ok"><span>✓</span><div><b>Pontos necessários</b><small>Sem requisito adicional de atributos.</small></div></div>');
+      rows.push('<div class="requirement-row ok"><span>✓</span><div><b>Uso</b><small>Sem restrição de equipamento</small></div></div>');
     }
     return rows.join('');
   }
 
-  function statsMarkup(game, item) {
-    const stats = typeof game?.itemStatsText === 'function' ? game.itemStatsText(item) : [];
-    if (!stats.length) return '<span class="item-stat neutral">Sem bônus de combate</span>';
-    return stats.map(text => `<span class="item-stat">${text}</span>`).join('');
+  function attributesMarkup(game, item) {
+    const rows = attributeRows(game, item);
+    if (!rows.length) return '<div class="inspect-attribute neutral"><span>Combate</span><b>Sem bônus</b></div>';
+    return rows.map(row => `<div class="inspect-attribute"><span>${escapeHtml(row.label)}</span><b>${escapeHtml(row.value)}</b></div>`).join('');
   }
 
   function ensureFloatingUi() {
@@ -143,27 +209,48 @@
   }
 
   function inspectMarkup(game, item, includeActions = false, ref = null) {
-    const compatible = requirementStatus(game, item).ok;
-    const actionText = item?.type === 'equipment' ? (ref?.source === 'equipment' ? 'Desequipar' : 'Equipar') : item?.type === 'consumable' ? 'Usar' : '';
+    const req = requirementStatus(game, item);
+    const equipped = ref?.source === 'equipment';
+    const primaryLabel = item?.type === 'equipment' ? (equipped ? 'Desequipar' : 'Equipar') : item?.type === 'consumable' ? 'Usar' : '';
+    const blocked = item?.type === 'equipment' && !equipped && !req.ok;
+    const classNames = req.allowed.map(cls => CLASS_LABELS[cls] || cls).join(' · ');
     return `
-      <div class="inspect-head" data-rarity="${item?.rarity || 'common'}">
+      <div class="inspect-head" data-rarity="${escapeHtml(item?.rarity || 'common')}">
         <div class="inspect-art">${itemIconMarkup(item)}</div>
-        <div class="inspect-title"><small>${rarityLabel(item)} · ${slotLabel(item)}</small><h3>${item?.name || 'Item'}</h3><span>${item?.description || 'Item encontrado em Astraeon.'}</span></div>
+        <div class="inspect-title">
+          <small>${escapeHtml(rarityLabel(item))} · ${escapeHtml(itemTypeLabel(game, item))}</small>
+          <h3>${escapeHtml(item?.name || 'Item')}</h3>
+          <span>${escapeHtml(item?.description || 'Item encontrado em Astraeon.')}</span>
+        </div>
         ${includeActions ? '<button class="inspect-close" type="button" aria-label="Fechar">×</button>' : ''}
       </div>
-      <div class="inspect-section"><b>Atributos</b><div class="inspect-stats">${statsMarkup(game, item)}</div></div>
-      <div class="inspect-section"><b>Requisitos</b><div class="inspect-requirements">${requirementsMarkup(game, item)}</div></div>
-      ${includeActions ? `<div class="inspect-actions">${actionText ? `<button class="inventory-action primary inspect-primary" type="button" ${item?.type === 'equipment' && !compatible && ref?.source !== 'equipment' ? 'disabled' : ''}>${item?.type === 'equipment' && !compatible && ref?.source !== 'equipment' ? 'Requisitos não atendidos' : actionText}</button>` : ''}<button class="inventory-action danger inspect-discard" type="button">Descartar</button></div>` : ''}
+      <div class="inspect-quick-meta">
+        <span><small>CLASSES</small><b>${escapeHtml(classNames)}</b></span>
+        <span><small>NÍVEL</small><b>${item?.type === 'equipment' ? escapeHtml(req.requiredLevel) : '—'}</b></span>
+        <span class="sell"><small>VALOR DE VENDA</small><b>${saleValue(item)} ouro</b></span>
+      </div>
+      <div class="inspect-section">
+        <b>Atributos do item</b>
+        <div class="inspect-attributes">${attributesMarkup(game, item)}</div>
+      </div>
+      <div class="inspect-section">
+        <b>Requisitos de uso</b>
+        <div class="inspect-requirements">${requirementsMarkup(game, item)}</div>
+      </div>
+      ${includeActions ? `<div class="inspect-actions">
+        ${primaryLabel ? `<button class="inventory-action primary inspect-primary" type="button" ${blocked ? 'disabled' : ''}>${blocked ? 'Requisitos não atendidos' : primaryLabel}</button>` : ''}
+        <button class="inventory-action danger inspect-discard" type="button">Descartar</button>
+      </div>` : ''}
     `;
   }
 
   function positionTooltip(x, y) {
     if (!tooltip || tooltip.classList.contains('hidden')) return;
-    const pad = 14;
+    const pad = 12;
     const rect = tooltip.getBoundingClientRect();
-    let left = x + 18;
-    let top = y + 14;
-    if (left + rect.width > innerWidth - pad) left = x - rect.width - 18;
+    let left = x + 16;
+    let top = y + 12;
+    if (left + rect.width > innerWidth - pad) left = x - rect.width - 16;
     if (top + rect.height > innerHeight - pad) top = innerHeight - rect.height - pad;
     tooltip.style.left = `${Math.max(pad, Math.round(left))}px`;
     tooltip.style.top = `${Math.max(pad, Math.round(top))}px`;
@@ -172,16 +259,13 @@
   function showTooltip(game, item, ref, x, y) {
     if (isCoarsePointer()) return;
     ensureFloatingUi();
-    tooltipRef = ref;
     tooltip.innerHTML = inspectMarkup(game, item, false, ref);
     tooltip.classList.remove('hidden');
     positionTooltip(x, y);
   }
 
   function hideTooltip() {
-    if (!tooltip) return;
-    tooltip.classList.add('hidden');
-    tooltipRef = null;
+    tooltip?.classList.add('hidden');
   }
 
   function showInspectSheet(game, item, ref) {
@@ -191,6 +275,7 @@
     card.innerHTML = inspectMarkup(game, item, true, ref);
     inspectSheet.classList.remove('hidden');
     document.body.classList.add('inventory-inspecting');
+
     card.querySelector('.inspect-close')?.addEventListener('click', hideInspectSheet);
     card.querySelector('.inspect-primary')?.addEventListener('click', () => {
       if (item.type === 'equipment') {
@@ -208,57 +293,114 @@
   }
 
   function hideInspectSheet() {
-    if (!inspectSheet) return;
-    inspectSheet.classList.add('hidden');
+    inspectSheet?.classList.add('hidden');
     document.body.classList.remove('inventory-inspecting');
   }
 
-  function cancelLongPress() {
-    clearTimeout(longPressTimer);
-    longPressTimer = 0;
-    longPressElement?.classList.remove('longpress-arming');
-    longPressElement = null;
+  function clearArming() {
+    if (armTimer) global.clearTimeout(armTimer);
+    armTimer = 0;
+    if (armed?.element) {
+      armed.element.classList.remove('inspect-arming', 'inspect-arming-hover', 'inspect-arming-touch');
+      armed.element.style.removeProperty('--inspect-arm-duration');
+    }
+    armed = null;
+  }
+
+  function beginArming(game, element, item, ref, delay, mode, x, y) {
+    clearArming();
+    armed = { game, element, item, ref, mode, x, y, startX: x, startY: y };
+    element.style.setProperty('--inspect-arm-duration', `${delay}ms`);
+    element.classList.add('inspect-arming', mode === 'touch' ? 'inspect-arming-touch' : 'inspect-arming-hover');
+    armTimer = global.setTimeout(() => {
+      const snapshot = armed;
+      clearArming();
+      if (!snapshot) return;
+      if (snapshot.mode === 'touch') {
+        try { navigator.vibrate?.(24); } catch (_) {}
+        showInspectSheet(snapshot.game, snapshot.item, snapshot.ref);
+      } else {
+        showTooltip(snapshot.game, snapshot.item, snapshot.ref, snapshot.x, snapshot.y);
+      }
+    }, delay);
   }
 
   function bindInspectEvents(game, element, item, ref) {
-    element.addEventListener('mouseenter', event => showTooltip(game, item, ref, event.clientX, event.clientY));
-    element.addEventListener('mousemove', event => positionTooltip(event.clientX, event.clientY));
-    element.addEventListener('mouseleave', hideTooltip);
+    element.addEventListener('mouseenter', event => {
+      if (isCoarsePointer()) return;
+      beginArming(game, element, item, ref, HOVER_OPEN_MS, 'hover', event.clientX, event.clientY);
+    });
+    element.addEventListener('mousemove', event => {
+      if (armed?.element === element && armed.mode === 'hover') {
+        armed.x = event.clientX;
+        armed.y = event.clientY;
+      }
+      if (!tooltip?.classList.contains('hidden')) positionTooltip(event.clientX, event.clientY);
+    });
+    element.addEventListener('mouseleave', () => {
+      if (armed?.element === element) clearArming();
+      hideTooltip();
+    });
 
     element.addEventListener('pointerdown', event => {
       if (event.pointerType === 'mouse' && !isCoarsePointer()) return;
-      cancelLongPress();
-      longPressElement = element;
-      element.classList.add('longpress-arming');
-      longPressTimer = global.setTimeout(() => {
-        element.classList.remove('longpress-arming');
-        longPressTimer = 0;
-        longPressElement = null;
-        try { navigator.vibrate?.(28); } catch (_) {}
-        showInspectSheet(game, item, ref);
-      }, LONG_PRESS_MS);
+      beginArming(game, element, item, ref, LONG_PRESS_MS, 'touch', event.clientX, event.clientY);
     }, { passive: true });
-    ['pointerup', 'pointercancel', 'pointerleave'].forEach(type => element.addEventListener(type, cancelLongPress, { passive: true }));
+    element.addEventListener('pointermove', event => {
+      if (armed?.element !== element || armed.mode !== 'touch') return;
+      if (Math.hypot(event.clientX - armed.startX, event.clientY - armed.startY) > 14) clearArming();
+    }, { passive: true });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(type => element.addEventListener(type, () => {
+      if (armed?.element === element && armed.mode === 'touch') clearArming();
+    }, { passive: true }));
   }
 
-  function bindDragSource(element, ref) {
-    element.draggable = true;
+  function parseDragRef(dataTransfer) {
+    if (!dataTransfer) return null;
+    for (const type of [DRAG_MIME, 'text/astraeon-item', 'text/plain']) {
+      try {
+        const raw = dataTransfer.getData(type);
+        if (!raw) continue;
+        const parsed = JSON.parse(raw);
+        if (parsed?.source === 'inventory' || parsed?.source === 'equipment') return parsed;
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  function bindDragSource(game, element, ref) {
+    element.draggable = !isCoarsePointer();
+    element.querySelectorAll('img').forEach(img => {
+      img.draggable = false;
+      img.setAttribute('draggable', 'false');
+    });
     element.addEventListener('dragstart', event => {
-      event.dataTransfer.setData('text/astraeon-item', JSON.stringify(ref));
+      if (!event.dataTransfer) return;
+      clearArming();
+      hideTooltip();
+      const raw = JSON.stringify(ref);
+      try { event.dataTransfer.setData(DRAG_MIME, raw); } catch (_) {}
+      try { event.dataTransfer.setData('text/astraeon-item', raw); } catch (_) {}
+      try { event.dataTransfer.setData('text/plain', raw); } catch (_) {}
       event.dataTransfer.effectAllowed = 'move';
+      game.selectedInventoryRef = ref;
+      element.classList.add('dragging');
       document.querySelector('#inventoryTrash')?.classList.add('drag-active');
     });
-    element.addEventListener('dragend', () => document.querySelector('#inventoryTrash')?.classList.remove('drag-active', 'dragover'));
-  }
-
-  function setSelected(game, ref) {
-    game.selectedInventoryRef = ref;
-    game.renderInventory?.();
+    element.addEventListener('dragend', () => {
+      element.classList.remove('dragging');
+      document.querySelector('#inventoryTrash')?.classList.remove('drag-active', 'dragover');
+    });
   }
 
   function sameRef(a, b) {
     if (!a || !b || a.source !== b.source) return false;
-    return a.source === 'equipment' ? a.slot === b.slot : a.index === b.index;
+    return a.source === 'equipment' ? a.slot === b.slot : Number(a.index) === Number(b.index);
+  }
+
+  function selectRef(game, ref) {
+    game.selectedInventoryRef = ref;
+    game.renderInventory?.();
   }
 
   function install(game) {
@@ -277,9 +419,11 @@
     game.getItemRequirementStatus = function (item) {
       return requirementStatus(this, item);
     };
-
     game.canEquipRequirements = function (item) {
       return requirementStatus(this, item).ok;
+    };
+    game.getItemSaleValue = function (item) {
+      return saleValue(item);
     };
 
     game.equipItem = function (index, forcedSlot) {
@@ -299,20 +443,27 @@
     game.discardInventoryRef = function (ref) {
       if (!ref) return false;
       let item = null;
-      if (ref.source === 'inventory') item = this.inventory?.[ref.index] || null;
+      if (ref.source === 'inventory') item = this.inventory?.[Number(ref.index)] || null;
       if (ref.source === 'equipment') item = this.equipment?.[ref.slot] || null;
-      if (!item) return false;
-      const qty = item.qty && item.qty > 1 ? ` x${item.qty}` : '';
+      if (!item) {
+        this.toast?.('O item não está mais disponível.');
+        return false;
+      }
+
+      const qty = Number(item.qty) > 1 ? ` x${Math.round(Number(item.qty))}` : '';
       const confirmed = global.confirm(`Descartar ${item.name}${qty}?\n\nEsta ação não pode ser desfeita.`);
       if (!confirmed) return false;
 
       if (ref.source === 'inventory') {
-        this.inventory.splice(ref.index, 1);
-      } else if (ref.source === 'equipment') {
+        this.inventory.splice(Number(ref.index), 1);
+      } else {
         this.equipment[ref.slot] = null;
         this.recalculateEquipmentStats?.();
       }
+
       if (sameRef(this.selectedInventoryRef, ref)) this.selectedInventoryRef = null;
+      hideTooltip();
+      hideInspectSheet();
       this.renderInventory?.();
       this.save?.();
       this.toast?.(`${item.name} foi descartado.`);
@@ -324,36 +475,16 @@
       if (!root) return;
       const item = this.getSelectedItem?.();
       if (!item) {
-        root.dataset.rarity = 'common';
-        root.innerHTML = '<div class="item-details-empty"><strong>Inspecione seu equipamento</strong><span>No desktop, passe o mouse sobre um item. No mobile, pressione um item por 3 segundos para abrir os atributos e requisitos.</span></div>';
+        root.innerHTML = '<span>Inspeção disponível por hover ou pressionamento.</span>';
         return;
       }
-      const ref = this.selectedInventoryRef;
-      const req = requirementStatus(this, item);
-      const equipped = ref?.source === 'equipment';
-      root.dataset.rarity = item.rarity || 'common';
-      root.innerHTML = `
-        <div class="detail-title"><span class="detail-icon">${itemIconMarkup(item)}</span><div><small>${rarityLabel(item)} · ${slotLabel(item)}</small><h3>${item.name}</h3></div></div>
-        <p>${item.description || 'Item encontrado em Astraeon.'}</p>
-        <div class="detail-stats">${statsMarkup(this, item)}</div>
-        <div class="detail-requirements">${requirementsMarkup(this, item)}</div>
-        <div class="detail-actions">
-          ${item.type === 'equipment' ? `<button class="inventory-action primary detail-primary" type="button" ${!equipped && !req.ok ? 'disabled' : ''}>${equipped ? 'Desequipar' : req.ok ? 'Equipar' : 'Requisitos não atendidos'}</button>` : ''}
-          ${item.type === 'consumable' && ref?.source === 'inventory' ? '<button class="inventory-action primary detail-primary" type="button">Usar</button>' : ''}
-          <button class="inventory-action danger detail-discard" type="button">Descartar</button>
-        </div>`;
-      root.querySelector('.detail-primary')?.addEventListener('click', () => {
-        if (item.type === 'equipment') {
-          if (equipped) this.unequipItem(ref.slot);
-          else this.equipItem(ref.index);
-        } else if (item.type === 'consumable' && ref?.source === 'inventory') this.useInventoryItem(ref.index);
-      });
-      root.querySelector('.detail-discard')?.addEventListener('click', () => this.discardInventoryRef(ref));
+      root.innerHTML = inspectMarkup(this, item, false, this.selectedInventoryRef);
     };
 
     game.renderInventory = function () {
       if (!this.player) return;
       this.backpackCapacity = CAPACITY;
+
       const grid = document.querySelector('#inventoryGrid');
       const equipmentGrid = document.querySelector('#equipmentGrid');
       const stats = document.querySelector('#equipmentStats');
@@ -363,8 +494,8 @@
       if (!grid || !equipmentGrid) return;
 
       this.inventory = (this.inventory || []).map(A.normalizeLegacyItem).filter(Boolean);
-      const className = CLASS_LABELS[this.player.classId] || this.player.classId;
-      if (meta) meta.innerHTML = `<span>${className}</span><b>Nv. ${this.player.level}</b><b>${this.inventory.length}/${CAPACITY} slots</b><b>${this.gold} ouro</b>`;
+      const className = CLASS_LABELS[this.player.classId] || this.player.classId || 'Viajante';
+      if (meta) meta.innerHTML = `<span>${escapeHtml(className)}</span><b>Nv. ${Math.max(1, Number(this.player.level || 1))}</b><b>${this.inventory.length}/${CAPACITY}</b><b>${Math.round(Number(this.gold || 0))} ouro</b>`;
       if (counter) counter.textContent = `${this.inventory.length}/${CAPACITY}`;
 
       const portrait = document.querySelector('.equipment-portrait');
@@ -372,7 +503,7 @@
       if (portrait && cls) {
         portrait.style.setProperty('--portrait', `url("Assets/Classes/${cls.sprite}")`);
         portrait.dataset.class = this.player.classId;
-        portrait.innerHTML = `<span>${className}</span><small>${this.player.name} · Nv. ${this.player.level}</small>`;
+        portrait.innerHTML = `<span>${escapeHtml(className)}</span><small>${escapeHtml(this.player.name || 'Viajante')} · Nv. ${Math.max(1, Number(this.player.level || 1))}</small>`;
       }
 
       equipmentGrid.innerHTML = '';
@@ -383,54 +514,60 @@
         el.className = `equipment-slot slot-${slotId}`;
         el.dataset.slot = slotId;
         el.dataset.category = SLOT_CATEGORY[slotId] || 'armor';
+        el.removeAttribute('title');
+
         if (item) {
           const req = requirementStatus(this, item);
+          const ref = { source: 'equipment', slot: slotId };
           el.dataset.rarity = item.rarity || 'common';
           el.classList.toggle('class-locked', !req.ok);
-          el.innerHTML = `<small>${info.label}</small><strong>${itemIconMarkup(item)}</strong><span>${item.name}</span>`;
-          el.classList.toggle('selected', sameRef(this.selectedInventoryRef, { source: 'equipment', slot: slotId }));
-          el.addEventListener('click', () => setSelected(this, { source: 'equipment', slot: slotId }));
+          el.classList.toggle('selected', sameRef(this.selectedInventoryRef, ref));
+          el.innerHTML = `<small>${escapeHtml(info.label)}</small><strong>${itemIconMarkup(item)}</strong><span>${escapeHtml(item.name)}</span><i class="inspect-progress" aria-hidden="true"></i>`;
+          el.setAttribute('aria-label', `${item.name}, ${rarityLabel(item)}`);
+          el.addEventListener('click', () => selectRef(this, ref));
           el.addEventListener('dblclick', () => this.unequipItem(slotId));
-          el.addEventListener('contextmenu', event => { event.preventDefault(); this.unequipItem(slotId); });
-          const ref = { source: 'equipment', slot: slotId };
+          el.addEventListener('contextmenu', event => {
+            event.preventDefault();
+            if (!isCoarsePointer()) this.unequipItem(slotId);
+          });
           bindInspectEvents(this, el, item, ref);
-          bindDragSource(el, ref);
+          bindDragSource(this, el, ref);
         } else {
           el.classList.add('empty');
-          el.innerHTML = `<small>${info.label}</small><strong>${info.icon}</strong><span>Vazio</span>`;
+          el.innerHTML = `<small>${escapeHtml(info.label)}</small><strong>${escapeHtml(info.icon || '◇')}</strong><span>Vazio</span>`;
+          el.draggable = false;
         }
+
         el.addEventListener('dragover', event => {
-          if (event.dataTransfer.types.includes('text/astraeon-item')) {
-            event.preventDefault();
-            el.classList.add('dragover');
-          }
+          if (!parseDragRef(event.dataTransfer)) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+          el.classList.add('dragover');
         });
         el.addEventListener('dragleave', () => el.classList.remove('dragover'));
         el.addEventListener('drop', event => {
+          const data = parseDragRef(event.dataTransfer);
+          if (!data) return;
           event.preventDefault();
           el.classList.remove('dragover');
-          try {
-            const data = JSON.parse(event.dataTransfer.getData('text/astraeon-item'));
-            if (data.source === 'inventory') this.equipItem(data.index, slotId);
-          } catch (_) {}
+          if (data.source === 'inventory') this.equipItem(Number(data.index), slotId);
         });
         equipmentGrid.appendChild(el);
       });
 
       const bonuses = this.getEquipmentBonuses?.() || {};
       if (stats) stats.innerHTML = `
-        <div><span>Poder</span><b>${this.player.power}<i>+${bonuses.power || 0}</i></b></div>
-        <div><span>Defesa</span><b>${this.player.defense}<i>+${bonuses.defense || 0}</i></b></div>
-        <div><span>Vida</span><b>${this.player.maxHp}<i>+${bonuses.maxHp || 0}</i></b></div>
-        <div><span>Mana</span><b>${this.player.maxMana}<i>+${bonuses.maxMana || 0}</i></b></div>
-        <div><span>Velocidade</span><b>${this.player.speed}<i>+${bonuses.speed || 0}</i></b></div>
-        <div><span>Crítico</span><b>${Math.round(this.player.crit * 100)}%<i>+${((bonuses.crit || 0) * 100).toFixed(1)}%</i></b></div>`;
+        <div><span>Poder</span><b>${Math.round(Number(this.player.power || 0))}<i>+${Math.round(Number(bonuses.power || 0))}</i></b></div>
+        <div><span>Defesa</span><b>${Math.round(Number(this.player.defense || 0))}<i>+${Math.round(Number(bonuses.defense || 0))}</i></b></div>
+        <div><span>Vida</span><b>${Math.round(Number(this.player.maxHp || 0))}<i>+${Math.round(Number(bonuses.maxHp || 0))}</i></b></div>
+        <div><span>Mana</span><b>${Math.round(Number(this.player.maxMana || 0))}<i>+${Math.round(Number(bonuses.maxMana || 0))}</i></b></div>
+        <div><span>Vel.</span><b>${Math.round(Number(this.player.speed || 0))}<i>+${Math.round(Number(bonuses.speed || 0))}</i></b></div>
+        <div><span>Crítico</span><b>${Math.round(Number(this.player.crit || 0) * 100)}%<i>+${(Number(bonuses.crit || 0) * 100).toFixed(1)}%</i></b></div>`;
 
       const search = String(this.inventorySearch || '').trim().toLowerCase();
       const filter = this.inventoryFilter || 'all';
       const visible = this.inventory.map((item, index) => ({ item, index })).filter(({ item }) => {
-        const filterOk = filter === 'all' || item.type === filter;
-        if (!filterOk) return false;
+        if (filter !== 'all' && item.type !== filter) return false;
         if (!search) return true;
         return `${item.name || ''} ${item.description || ''} ${item.slot || ''}`.toLowerCase().includes(search);
       });
@@ -447,26 +584,28 @@
         slot.dataset.category = item.type === 'equipment' ? (SLOT_CATEGORY[item.slot] || 'armor') : item.type;
         slot.classList.toggle('selected', sameRef(this.selectedInventoryRef, ref));
         slot.classList.toggle('class-locked', item.type === 'equipment' && !req.ok);
-        slot.innerHTML = `<strong>${itemIconMarkup(item)}</strong><span>${item.name}</span>${item.qty ? `<em>${item.qty}</em>` : ''}${item.type === 'equipment' && !req.ok ? '<i class="req-lock">!</i>' : ''}`;
-        slot.addEventListener('click', () => setSelected(this, ref));
+        slot.removeAttribute('title');
+        slot.innerHTML = `<strong>${itemIconMarkup(item)}</strong>${Number(item.qty) > 1 ? `<em>${Math.round(Number(item.qty))}</em>` : ''}${item.type === 'equipment' && !req.ok ? '<i class="req-lock">!</i>' : ''}<i class="inspect-progress" aria-hidden="true"></i>`;
+        slot.setAttribute('aria-label', `${item.name}, ${rarityLabel(item)}`);
+        slot.addEventListener('click', () => selectRef(this, ref));
         slot.addEventListener('dblclick', () => item.type === 'equipment' ? this.equipItem(index) : item.type === 'consumable' ? this.useInventoryItem(index) : null);
         slot.addEventListener('contextmenu', event => {
           event.preventDefault();
+          if (isCoarsePointer()) return;
           if (item.type === 'equipment') this.equipItem(index);
           else if (item.type === 'consumable') this.useInventoryItem(index);
         });
         bindInspectEvents(this, slot, item, ref);
-        bindDragSource(slot, ref);
+        bindDragSource(this, slot, ref);
         grid.appendChild(slot);
       });
 
-      const filteredOutCount = Math.max(0, this.inventory.length - visible.length);
-      for (let i = 0; i < filteredOutCount; i++) {
+      const occupiedHidden = Math.max(0, this.inventory.length - visible.length);
+      for (let i = 0; i < occupiedHidden; i++) {
         const reserved = document.createElement('button');
         reserved.type = 'button';
         reserved.className = 'inventory-slot filtered-out';
         reserved.disabled = true;
-        reserved.title = 'Slot ocupado por item oculto pelo filtro atual';
         reserved.innerHTML = '<span class="empty-rune">◦</span>';
         grid.appendChild(reserved);
       }
@@ -479,29 +618,42 @@
         empty.innerHTML = '<span class="empty-rune">·</span>';
         grid.appendChild(empty);
       }
+
       grid.ondragover = event => {
-        if (event.dataTransfer.types.includes('text/astraeon-item')) event.preventDefault();
+        if (!parseDragRef(event.dataTransfer)) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
       };
       grid.ondrop = event => {
+        const data = parseDragRef(event.dataTransfer);
+        if (!data) return;
         event.preventDefault();
-        try {
-          const data = JSON.parse(event.dataTransfer.getData('text/astraeon-item'));
-          if (data.source === 'equipment') this.unequipItem(data.slot);
-        } catch (_) {}
+        if (data.source === 'equipment') this.unequipItem(data.slot);
       };
 
       const trash = document.querySelector('#inventoryTrash');
       if (trash) {
-        trash.ondragover = event => {
-          if (!event.dataTransfer.types.includes('text/astraeon-item')) return;
+        trash.ondragenter = event => {
+          if (!parseDragRef(event.dataTransfer)) return;
           event.preventDefault();
           trash.classList.add('dragover');
         };
-        trash.ondragleave = () => trash.classList.remove('dragover');
-        trash.ondrop = event => {
+        trash.ondragover = event => {
+          if (!parseDragRef(event.dataTransfer)) return;
           event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+          trash.classList.add('dragover');
+        };
+        trash.ondragleave = event => {
+          if (!trash.contains(event.relatedTarget)) trash.classList.remove('dragover');
+        };
+        trash.ondrop = event => {
+          const data = parseDragRef(event.dataTransfer);
+          if (!data) return;
+          event.preventDefault();
+          event.stopPropagation();
           trash.classList.remove('dragover', 'drag-active');
-          try { this.discardInventoryRef(JSON.parse(event.dataTransfer.getData('text/astraeon-item'))); } catch (_) {}
+          this.discardInventoryRef(data);
         };
         trash.onclick = () => {
           if (!this.selectedInventoryRef) {
@@ -522,22 +674,30 @@
       this.renderInventory?.();
       return result;
     };
+
     game.continueGame = function (...args) {
       const result = originalContinue(...args);
       this.backpackCapacity = CAPACITY;
       if ((this.inventory?.length || 0) > CAPACITY) {
         const overflow = this.inventory.splice(CAPACITY);
         overflow.forEach((item, index) => this.pickups?.push?.({
-          type: 'loot', x: this.player.x + (index % 3 - 1) * 14, y: this.player.y + Math.floor(index / 3) * 12,
-          value: item, life: 90, persistent: true, blockedByCapacity: true
+          type: 'loot',
+          x: this.player.x + (index % 3 - 1) * 14,
+          y: this.player.y + Math.floor(index / 3) * 12,
+          value: item,
+          life: 90,
+          persistent: true,
+          blockedByCapacity: true
         }));
       }
       this.renderInventory?.();
       return result;
     };
+
     game.togglePanel = function (panel) {
       const result = originalTogglePanel(panel);
       if (panel === this.ui.inventoryPanel) {
+        clearArming();
         hideTooltip();
         hideInspectSheet();
         if (!panel.classList.contains('hidden')) {
@@ -559,7 +719,7 @@
     }));
 
     game.renderInventory?.();
-    global.AstraeonInventoryV4 = { CAPACITY, LONG_PRESS_MS, requirementStatus };
+    global.AstraeonInventoryV4 = { CAPACITY, LONG_PRESS_MS, HOVER_OPEN_MS, requirementStatus, saleValue };
     return true;
   }
 
