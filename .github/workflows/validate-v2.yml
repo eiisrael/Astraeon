@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Scan tracked files for secrets
+        run: python3 scripts/check_secrets.py
       - name: Validate JavaScript syntax
         run: |
           node --check src/world-v2.js
