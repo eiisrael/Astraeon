@@ -80,8 +80,11 @@
 
     const refresh = () => {
       const authenticated = !!state.session;
-      if (input.disabled) input.disabled = false;
-      if (send.disabled) send.disabled = false;
+      const blocked = input.dataset.accountBlocked === 'true' || send.dataset.accountBlocked === 'true';
+      if (!blocked) {
+        if (input.disabled) input.disabled = false;
+        if (send.disabled) send.disabled = false;
+      }
       input.dataset.authenticated = authenticated ? 'true' : 'false';
       send.dataset.authenticated = authenticated ? 'true' : 'false';
       input.placeholder = authenticated
@@ -92,8 +95,8 @@
 
     refresh();
     const observer = new MutationObserver(refresh);
-    observer.observe(input, { attributes: true, attributeFilter: ['disabled'] });
-    observer.observe(send, { attributes: true, attributeFilter: ['disabled'] });
+    observer.observe(input, { attributes: true, attributeFilter: ['disabled', 'data-account-blocked'] });
+    observer.observe(send, { attributes: true, attributeFilter: ['disabled', 'data-account-blocked'] });
     sessionTimer = setInterval(refresh, 700);
   }
 
@@ -115,6 +118,16 @@
     }, true);
   }
 
+  function installRightMouseGuard() {
+    document.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+    }, true);
+
+    document.addEventListener('auxclick', (event) => {
+      if (event.button === 2) event.preventDefault();
+    }, true);
+  }
+
   function installGuestSubmitGuard(state) {
     const form = $('#onlineChatForm');
     if (!form) return;
@@ -130,53 +143,6 @@
     }, true);
   }
 
-  function addDiagnostics(state) {
-    const card = document.querySelector('#onlineAccountPanel .online-account-card');
-    if (!card || $('#onlineRuntimeHealth')) return;
-
-    const health = document.createElement('section');
-    health.id = 'onlineRuntimeHealth';
-    health.className = 'online-runtime-health';
-    health.innerHTML = `
-      <header><b>Diagnóstico Online</b><button id="onlineHealthRefresh" type="button">Atualizar</button></header>
-      <div class="online-health-grid">
-        <span>Configuração <b data-health="config">verificando</b></span>
-        <span>Autenticação <b data-health="auth">desconectado</b></span>
-        <span>Realtime <b data-health="realtime">offline</b></span>
-        <span>Banco <b data-health="database">Supabase</b></span>
-      </div>
-      <small>Banco: Supabase → Table Editor → <code>profiles</code>, <code>player_saves</code> e <code>chat_messages</code>. O esquema versionado está em <code>supabase/migrations/001_astraeon_online.sql</code>.</small>`;
-    card.appendChild(health);
-
-    function refresh() {
-      const config = health.querySelector('[data-health="config"]');
-      const auth = health.querySelector('[data-health="auth"]');
-      const realtime = health.querySelector('[data-health="realtime"]');
-      const database = health.querySelector('[data-health="database"]');
-      const enabled = !!state.config?.enabled;
-      if (config) {
-        config.textContent = enabled ? 'ativa' : 'não configurada';
-        config.dataset.state = enabled ? 'ok' : 'warn';
-      }
-      if (auth) {
-        auth.textContent = state.session ? (state.profile?.username || 'conectado') : 'desconectado';
-        auth.dataset.state = state.session ? 'ok' : 'warn';
-      }
-      if (realtime) {
-        realtime.textContent = String(state.channelStatus || 'OFFLINE').toLowerCase();
-        realtime.dataset.state = state.channelStatus === 'ONLINE' ? 'ok' : state.channelStatus === 'ERROR' ? 'error' : 'warn';
-      }
-      if (database) {
-        database.textContent = enabled ? 'configurado via /api/config' : 'aguardando Vercel + Supabase';
-        database.dataset.state = enabled ? 'ok' : 'warn';
-      }
-    }
-
-    $('#onlineHealthRefresh')?.addEventListener('click', refresh);
-    setInterval(refresh, 1000);
-    refresh();
-  }
-
   function install(mp) {
     if (installed || !mp?.state) return;
     installed = true;
@@ -184,8 +150,8 @@
     addLaunchers();
     keepGuestChatUsable(state);
     installKeyboard(state);
+    installRightMouseGuard();
     installGuestSubmitGuard(state);
-    addDiagnostics(state);
     document.body.classList.add('astraeon-online-controller-ready');
   }
 
@@ -198,7 +164,7 @@
         return;
       }
       if (Date.now() - started < MAX_WAIT_MS) setTimeout(tick, 80);
-      else console.warn('[Astraeon Online 4.1] Multiplayer runtime não ficou disponível para o controlador de chat.');
+      else console.warn('[Astraeon Online 4.2] Multiplayer runtime não ficou disponível para o controlador de chat.');
     };
     tick();
   }
