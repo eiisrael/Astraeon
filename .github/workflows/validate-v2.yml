@@ -20,6 +20,7 @@ jobs:
           node --check src/game-v2.js
           node --check src/inventory-v2.js
           node --check src/inventory-v3.js
+          node --check src/inventory-layout-v43.js
           node --check src/ui-v3.js
           node --check src/gameplay-polish-v7.js
           node --check src/systems-v3b.js
@@ -84,6 +85,22 @@ jobs:
                   'create table if not exists public.admin_runtime_config',
                   'cannot_delete_default_map',
               ],
+              'supabase/migrations/010_inventory_standard_slots.sql': [
+                  "'pet'",
+                  "'cloak'",
+                  "'offhand'",
+                  "'legs'",
+                  "'necklace'",
+                  "item_id = 'wanderer_cloak'",
+              ],
+              'src/inventory-layout-v43.js': [
+                  "label: 'Colar'",
+                  "label: 'Pingente'",
+                  "label: 'Anel'",
+                  "label: 'Amuleto'",
+                  'Peito / Armadura',
+                  'Arma 2 / Escudo',
+              ],
           }
           for path, needles in checks.items():
               text = Path(path).read_text(encoding='utf-8')
@@ -95,7 +112,7 @@ jobs:
               if src not in auth:
                   raise SystemExit(f'admin loader missing {src}')
           ui = Path('src/ui-v3.js').read_text(encoding='utf-8')
-          for src in ('src/server-config-v62.js','src/menu-cinematic-v62.js','src/gameplay-polish-v7.js'):
+          for src in ('src/server-config-v62.js','src/menu-cinematic-v62.js','src/gameplay-polish-v7.js','src/inventory-layout-v43.js','src/inventory-layout-v43.css'):
               if src not in ui:
                   raise SystemExit(f'game loader missing {src}')
           print('Astraeon 6.2 contracts OK')
