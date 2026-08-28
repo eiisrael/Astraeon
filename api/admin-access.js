@@ -1,3 +1,15 @@
+const UPSTREAM_TIMEOUT_MS=8000;
+
+async function fetchTimed(url,options={}){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),UPSTREAM_TIMEOUT_MS);
+  try{
+    return await fetch(url,{...options,signal:controller.signal});
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
 export default async function handler(req,res){
   if(req.method&&req.method!=='GET'){
     res.setHeader('Allow','GET');
@@ -12,16 +24,18 @@ export default async function handler(req,res){
   const token=authHeader.startsWith('Bearer ')?authHeader.slice(7).trim():'';
   if(!token)return res.status(401).json({authenticated:false,allowed:false,error:'missing_session'});
   try{
-    const userResponse=await fetch(`${supabaseUrl}/auth/v1/user`,{headers:{apikey:supabaseKey,Authorization:`Bearer ${token}`}});
+    const headers={apikey:supabaseKey,Authorization:`Bearer ${token}`};
+    const userResponse=await fetchTimed(`${supabaseUrl}/auth/v1/user`,{headers});
     if(!userResponse.ok)return res.status(401).json({authenticated:false,allowed:false,error:'invalid_session'});
     const user=await userResponse.json();
-    const profileResponse=await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(user.id)}&select=id,username,display_name,access`,{headers:{apikey:supabaseKey,Authorization:`Bearer ${token}`,Accept:'application/vnd.pgrst.object+json'}});
+    const profileResponse=await fetchTimed(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(user.id)}&select=id,username,display_name,access`,{headers:{...headers,Accept:'application/vnd.pgrst.object+json'}});
     if(!profileResponse.ok)return res.status(403).json({authenticated:true,allowed:false,error:'profile_unavailable'});
     const profile=await profileResponse.json();
     const access=Number(profile?.access??1);
     return res.status(200).json({authenticated:true,allowed:access===3,access,profile:{id:profile.id,username:profile.username,displayName:profile.display_name}});
   }catch(error){
+    const timedOut=error?.name==='AbortError';
     console.error('[Astraeon Admin Access]',error);
-    return res.status(500).json({authenticated:false,allowed:false,error:'verification_failed'});
+    return res.status(timedOut?504:500).json({authenticated:false,allowed:false,error:timedOut?'verification_timeout':'verification_failed'});
   }
 }
