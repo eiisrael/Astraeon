@@ -1,4 +1,4 @@
-name: Validate Astraeon Online 6.0 + Admin Studio 6.0
+name: Validate Astraeon Online 6.2 + Admin Studio 6.2
 
 on:
   pull_request:
@@ -33,6 +33,8 @@ jobs:
           node --check src/production-runtime-v6.js
           node --check src/character-system-v6.js
           node --check src/worldmaps-runtime-v61.js
+          node --check src/server-config-v62.js
+          node --check src/menu-cinematic-v62.js
           node --check src/account-status-v4.js
           node --check api/config.js
           node --check api/admin-access.js
@@ -47,7 +49,53 @@ jobs:
           node --check src/admin-character-slots-v6.js
           node --check src/admin-production-v6.js
           node --check src/admin-worldmaps-v61.js
+          node --check src/admin-realtime-v62.js
+          node --check src/admin-server-config-v62.js
       - name: Validate HTML, access contracts, admin and deployment config
         run: python3 scripts/validate_v2.py
       - name: Validate connected maps and MobList contracts
         run: python3 scripts/validate_worldmaps_v61.py
+      - name: Validate cinematic menu and realtime admin contracts
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          checks = {
+              'src/menu-cinematic-v62.js': [
+                  'Assets/img/logo/logo.png',
+                  'Assets/img/logo/logoA.png',
+                  'Assets/img/logo/favicon.png',
+                  'Assets/img/song/login.mp3',
+                  'menu-session-offline',
+                  'systemAnnouncementV5',
+              ],
+              'src/admin-realtime-v62.js': [
+                  'admin_backups',
+                  'worldMapCanvasStripV62',
+                  'world-map-delete',
+                  'item_configs',
+                  'INTERNAL_LOOT',
+                  'saveActiveMap',
+              ],
+              'src/admin-server-config-v62.js': ['admin_runtime_config', 'astraeon:v3c:admin'],
+              'src/server-config-v62.js': ['admin_runtime_config', 'postgres_changes'],
+              'supabase/migrations/009_admin_realtime_backups.sql': [
+                  'create table if not exists public.admin_backups',
+                  'create table if not exists public.admin_runtime_config',
+                  'cannot_delete_default_map',
+              ],
+          }
+          for path, needles in checks.items():
+              text = Path(path).read_text(encoding='utf-8')
+              missing = [n for n in needles if n not in text]
+              if missing:
+                  raise SystemExit(f'{path}: missing contracts: {missing}')
+          auth = Path('src/admin-auth-v4.js').read_text(encoding='utf-8')
+          for src in ('src/admin-realtime-v62.js','src/admin-server-config-v62.js'):
+              if src not in auth:
+                  raise SystemExit(f'admin loader missing {src}')
+          ui = Path('src/ui-v3.js').read_text(encoding='utf-8')
+          for src in ('src/server-config-v62.js','src/menu-cinematic-v62.js'):
+              if src not in ui:
+                  raise SystemExit(f'game loader missing {src}')
+          print('Astraeon 6.2 contracts OK')
+          PY
