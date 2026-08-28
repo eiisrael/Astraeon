@@ -53,13 +53,18 @@
       link.rel = 'stylesheet'; link.href = 'src/gameplay-polish-v7.css'; link.dataset.astraeonGameplayPolishV7 = '1';
       document.head.appendChild(link);
     }
+    if (!document.querySelector('link[data-astraeon-inventory-layout-v43]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet'; link.href = 'src/inventory-layout-v43.css'; link.dataset.astraeonInventoryLayoutV43 = '1';
+      document.head.appendChild(link);
+    }
     if (!document.querySelector('script[data-astraeon-admin-runtime-v3c]')) {
       const script = document.createElement('script');
       script.src = 'src/admin-runtime-v3c.js'; script.dataset.astraeonAdminRuntimeV3c = '1';
       script.addEventListener('load',()=>window.AstraeonAdminRuntime?.install?.());
       document.head.appendChild(script);
     }
-    for (const [src,key] of [['src/gameplay-polish-v7.js','gameplayPolishV7'],['src/production-runtime-v6.js','productionRuntimeV6'],['src/character-system-v6.js','characterSystemV6'],['src/worldmaps-runtime-v61.js','worldMapsRuntimeV61'],['src/server-config-v62.js','serverConfigV62'],['src/menu-cinematic-v62.js','menuCinematicV62']]) {
+    for (const [src,key] of [['src/gameplay-polish-v7.js','gameplayPolishV7'],['src/inventory-layout-v43.js','inventoryLayoutV43'],['src/production-runtime-v6.js','productionRuntimeV6'],['src/character-system-v6.js','characterSystemV6'],['src/worldmaps-runtime-v61.js','worldMapsRuntimeV61'],['src/server-config-v62.js','serverConfigV62'],['src/menu-cinematic-v62.js','menuCinematicV62']]) {
       if (document.querySelector(`script[data-${key}]`)) continue;
       const script=document.createElement('script');script.src=src;script.async=false;script.dataset[key]='1';document.head.appendChild(script);
     }
