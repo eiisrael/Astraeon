@@ -4,13 +4,19 @@
   const $ = (s) => document.querySelector(s);
   const MAX_WAIT_MS = 15000;
   const MIN_SPRINT_MULTIPLIER = 1.70;
+  const CHAT_POSITION_KEY = 'astraeon:v4:chat-position-v2';
+  const CHAT_EDGE = 8;
   const MOB_DISPLAY_NAMES = Object.freeze({
     Slime:'Slime', Wolf:'Lobo', Globin:'Goblin', Orc:'Orc', Troll:'Troll', Pig_Monster:'Monstro Javali',
     Golem_Gelo:'Golem de Gelo', Spider:'Aranha', zombie:'Zumbi', sombra:'Sombra', Caveira:'Caveira',
     Squelleton:'Esqueleto', Draconato:'Draconato'
   });
+  const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   let installed = false;
   let sessionTimer = null;
+  let chatPlacementRaf = 0;
+  let chatResizeObserver = null;
+  let chatClassObserver = null;
 
   function appendLocalSystem(text) {
     const box = $('#onlineChatMessages');
@@ -46,10 +52,159 @@
     const input = $('#onlineChatInput');
     if (!chat || !input) return;
     chat.classList.remove('collapsed', 'collapsed-mobile');
+    queueChatPlacement();
     if (focus) {
       input.disabled = false;
       requestAnimationFrame(() => input.focus());
     }
+  }
+
+  function chatMode() {
+    const touch = document.body.classList.contains('touch-forced') || !!global.matchMedia?.('(pointer:coarse)').matches;
+    if (!touch) return 'desktop';
+    return innerWidth > innerHeight ? 'touch-landscape' : 'touch-portrait';
+  }
+
+  function loadChatPositions() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(CHAT_POSITION_KEY) || '{}');
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function defaultChatPosition(rect, mode) {
+    if (mode === 'touch-landscape') {
+      const leftControlsEdge = Math.min(174, Math.max(150, innerWidth * .22));
+      const rightControlsWidth = Math.min(208, Math.max(178, innerWidth * .25));
+      const rightControlsEdge = innerWidth - rightControlsWidth;
+      const corridorWidth = Math.max(0, rightControlsEdge - leftControlsEdge);
+      const x = corridorWidth >= rect.width
+        ? leftControlsEdge + (corridorWidth - rect.width) / 2
+        : (innerWidth - rect.width) / 2;
+      return { x, y: innerHeight - rect.height - 16 };
+    }
+    if (mode === 'touch-portrait') {
+      return { x: 8, y: innerHeight - rect.height - 170 };
+    }
+    return { x: 12, y: innerHeight - rect.height - 44 };
+  }
+
+  function applyChatPosition(preferSaved = true) {
+    const chat = $('#onlineChat');
+    if (!chat || chat.classList.contains('chat-dragging')) return;
+    const rect = chat.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const mode = chatMode();
+    const maxX = Math.max(CHAT_EDGE, innerWidth - rect.width - CHAT_EDGE);
+    const maxY = Math.max(CHAT_EDGE, innerHeight - rect.height - CHAT_EDGE);
+    const saved = preferSaved ? loadChatPositions()[mode] : null;
+    let position;
+
+    if (saved && Number.isFinite(Number(saved.x)) && Number.isFinite(Number(saved.y))) {
+      position = {
+        x: CHAT_EDGE + clamp(Number(saved.x), 0, 1) * Math.max(0, maxX - CHAT_EDGE),
+        y: CHAT_EDGE + clamp(Number(saved.y), 0, 1) * Math.max(0, maxY - CHAT_EDGE)
+      };
+      chat.dataset.userPosition = 'true';
+    } else {
+      position = defaultChatPosition(rect, mode);
+      chat.dataset.userPosition = 'false';
+    }
+
+    chat.style.left = `${Math.round(clamp(position.x, CHAT_EDGE, maxX))}px`;
+    chat.style.top = `${Math.round(clamp(position.y, CHAT_EDGE, maxY))}px`;
+    chat.style.right = 'auto';
+    chat.style.bottom = 'auto';
+    chat.style.transform = 'none';
+    chat.style.translate = 'none';
+    chat.dataset.positionMode = mode;
+  }
+
+  function queueChatPlacement(preferSaved = true) {
+    if (chatPlacementRaf) cancelAnimationFrame(chatPlacementRaf);
+    chatPlacementRaf = requestAnimationFrame(() => {
+      chatPlacementRaf = requestAnimationFrame(() => {
+        chatPlacementRaf = 0;
+        applyChatPosition(preferSaved);
+      });
+    });
+  }
+
+  function saveChatPosition(chat) {
+    const rect = chat.getBoundingClientRect();
+    const maxX = Math.max(1, innerWidth - rect.width - CHAT_EDGE * 2);
+    const maxY = Math.max(1, innerHeight - rect.height - CHAT_EDGE * 2);
+    const positions = loadChatPositions();
+    positions[chatMode()] = {
+      x: clamp((rect.left - CHAT_EDGE) / maxX, 0, 1),
+      y: clamp((rect.top - CHAT_EDGE) / maxY, 0, 1)
+    };
+    localStorage.setItem(CHAT_POSITION_KEY, JSON.stringify(positions));
+    chat.dataset.userPosition = 'true';
+  }
+
+  function installChatDrag() {
+    const chat = $('#onlineChat');
+    const header = chat?.querySelector(':scope > header');
+    if (!chat || !header || chat.dataset.dragReady === 'true') return;
+    chat.dataset.dragReady = 'true';
+    chat.classList.add('online-chat-draggable');
+    header.title = 'Arraste esta barra para mover o chat';
+
+    let drag = null;
+    header.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      if (event.target.closest('button,input,textarea,select,a,label')) return;
+      const rect = chat.getBoundingClientRect();
+      drag = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        left: rect.left,
+        top: rect.top
+      };
+      chat.style.left = `${Math.round(rect.left)}px`;
+      chat.style.top = `${Math.round(rect.top)}px`;
+      chat.style.right = 'auto';
+      chat.style.bottom = 'auto';
+      chat.style.transform = 'none';
+      chat.style.translate = 'none';
+      chat.classList.add('chat-dragging');
+      header.setPointerCapture?.(event.pointerId);
+      event.preventDefault();
+    });
+
+    header.addEventListener('pointermove', (event) => {
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      const rect = chat.getBoundingClientRect();
+      const maxX = Math.max(CHAT_EDGE, innerWidth - rect.width - CHAT_EDGE);
+      const maxY = Math.max(CHAT_EDGE, innerHeight - rect.height - CHAT_EDGE);
+      const x = clamp(drag.left + event.clientX - drag.startX, CHAT_EDGE, maxX);
+      const y = clamp(drag.top + event.clientY - drag.startY, CHAT_EDGE, maxY);
+      chat.style.left = `${Math.round(x)}px`;
+      chat.style.top = `${Math.round(y)}px`;
+      event.preventDefault();
+    });
+
+    const finishDrag = (event) => {
+      if (!drag || (event && event.pointerId !== drag.pointerId)) return;
+      try { header.releasePointerCapture?.(drag.pointerId); } catch (_) {}
+      drag = null;
+      chat.classList.remove('chat-dragging');
+      saveChatPosition(chat);
+    };
+    header.addEventListener('pointerup', finishDrag);
+    header.addEventListener('pointercancel', finishDrag);
+
+    chatResizeObserver = new ResizeObserver(() => queueChatPlacement());
+    chatResizeObserver.observe(chat);
+    chatClassObserver = new MutationObserver(() => queueChatPlacement());
+    chatClassObserver.observe(chat, { attributes: true, attributeFilter: ['class'] });
+    global.addEventListener('resize', () => queueChatPlacement());
+    global.visualViewport?.addEventListener('resize', () => queueChatPlacement());
+    queueChatPlacement();
   }
 
   function addLaunchers() {
@@ -177,6 +332,25 @@
     };
   }
 
+  function installPlayerFacingFix() {
+    const game = global.astraeon;
+    if (!game || game.playerFacingV42Fixed || typeof game.drawPlayer !== 'function') return;
+    game.playerFacingV42Fixed = true;
+    const originalDrawPlayer = game.drawPlayer.bind(game);
+    game.drawPlayer = function (ctx) {
+      const player = this.player;
+      const facing = Number(player?.facing);
+      if (!player || !Number.isFinite(facing) || facing === 0) return originalDrawPlayer(ctx);
+      const storedFacing = player.facing;
+      player.facing = -facing;
+      try {
+        return originalDrawPlayer(ctx);
+      } finally {
+        if (this.player === player) player.facing = storedFacing;
+      }
+    };
+  }
+
   function mobLevel(mob, data) {
     const explicit = Number(mob?.level);
     if (Number.isFinite(explicit) && explicit >= 1) return Math.max(1, Math.round(explicit));
@@ -247,8 +421,10 @@
     installKeyboard(state);
     installRightMouseGuard();
     installSprintFix();
+    installPlayerFacingFix();
     installMobLabels();
     installGuestSubmitGuard(state);
+    installChatDrag();
     document.body.classList.add('astraeon-online-controller-ready');
   }
 
@@ -271,6 +447,9 @@
 
   global.addEventListener('beforeunload', () => {
     if (sessionTimer) clearInterval(sessionTimer);
+    if (chatPlacementRaf) cancelAnimationFrame(chatPlacementRaf);
+    chatResizeObserver?.disconnect();
+    chatClassObserver?.disconnect();
   });
 
   global.AstraeonOnlineControllerV4 = { openChat };
