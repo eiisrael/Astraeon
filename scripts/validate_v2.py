@@ -54,7 +54,7 @@ required=[
  'src/world-v2.js','src/game-v2.js','src/inventory-v2.js','src/inventory-v3.js','src/ui-v3.js','src/systems-v3b.js','src/admin-runtime-v3c.js',
  'src/world-online-v4.js','src/npcs-v4.js','src/multiplayer-v4.js','src/online-controller-v4.js','src/online-v4.css','src/online-fixes-v4.css',
  'src/editor-v2.js','src/admin-v3c.js','src/admin-studio-v4.js','src/astraeon-v2.css','src/inventory-v2.css','src/ui-v3.css','src/ui-v3b.css','src/typography-v3c.css','src/editor-v2.css','src/editor-v3c.css','src/editor-studio-v4.css',
- 'api/config.js','vercel.json','package.json','README.md','INSTALLME.md','ONLINE_SETUP.md','COPYRIGHT.md','LICENSE','supabase/migrations/001_astraeon_online.sql',
+ 'api/config.js','vercel.json','package.json','.env.example','.gitignore','README.md','INSTALLME.md','ONLINE_SETUP.md','SECURITY.md','COPYRIGHT.md','LICENSE','scripts/check_secrets.py','supabase/migrations/001_astraeon_online.sql',
  'Assets/Classes/Warrior.png','Assets/Classes/Mage.png','Assets/Classes/Archer.png','Assets/Classes/Assassin.png','Assets/Classes/Paladine.png',
  'Assets/Mob/Slime.png','Assets/Mob/Wolf.png','Assets/Mob/Globin.png','Assets/Mob/Orc.png','Assets/Mob/Troll.png','Assets/Mob/Pig_Monster.png',
  'Assets/Mob/Golem_Gelo.png','Assets/Mob/Spider.png','Assets/Mob/zombie.png','Assets/Mob/sombra.png','Assets/Mob/Caveira.png','Assets/Mob/Squelleton.png','Assets/Mob/Draconato.png'
@@ -80,6 +80,10 @@ contracts={
     'ONLINE_SETUP.md':['Table Editor','auth.users','npx vercel dev','Enter = abrir/focar','Admin Studio'],
     'README.md':['ASTRAEON ONLINE','INSTALLME.md','SUPABASE_PUBLISHABLE_KEY','MIT License'],
     'INSTALLME.md':['npx vercel link','npx vercel dev','SUPABASE_PUBLISHABLE_KEY','service_role','Checklist antes de publicar'],
+    '.env.example':['PROJECT_REF.supabase.co','SUPABASE_PUBLISHABLE_KEY','ASTRAEON_REALTIME_TOPIC','DO NOT ADD SECRETS'],
+    '.gitignore':['.env.*','!.env.example','.vercel/','.envrc'],
+    'SECURITY.md':['npm run check:secrets','Supabase secret/service-role keys','If a secret was committed','Environment Variables'],
+    'scripts/check_secrets.py':['git", "ls-files','ASTRAEON SECRET SCAN','sb_secret_','VERCEL_TOKEN'],
     'COPYRIGHT.md':['Erick Israel','MIT License','LICENSE'],
     'LICENSE':['MIT License','Copyright (c) 2026 Erick Israel','Permission is hereby granted']
 }
