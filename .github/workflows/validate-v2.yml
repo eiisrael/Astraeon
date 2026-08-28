@@ -1,4 +1,4 @@
-name: Validate Astraeon Online 4.3
+name: Validate Astraeon Online 4.3 + Admin Studio 5.0
 
 on:
   pull_request:
