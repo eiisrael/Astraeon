@@ -4,6 +4,11 @@
   const $ = (s) => document.querySelector(s);
   const MAX_WAIT_MS = 15000;
   const MIN_SPRINT_MULTIPLIER = 1.70;
+  const MOB_DISPLAY_NAMES = Object.freeze({
+    Slime:'Slime', Wolf:'Lobo', Globin:'Goblin', Orc:'Orc', Troll:'Troll', Pig_Monster:'Monstro Javali',
+    Golem_Gelo:'Golem de Gelo', Spider:'Aranha', zombie:'Zumbi', sombra:'Sombra', Caveira:'Caveira',
+    Squelleton:'Esqueleto', Draconato:'Draconato'
+  });
   let installed = false;
   let sessionTimer = null;
 
@@ -172,6 +177,52 @@
     };
   }
 
+  function mobLevel(mob, data) {
+    const explicit = Number(mob?.level);
+    if (Number.isFinite(explicit) && explicit >= 1) return Math.max(1, Math.round(explicit));
+    const baseHp = Math.max(1, Number(data?.hp) || 1);
+    const scaledHp = Math.max(1, Number(mob?.maxHp) || baseHp);
+    return Math.max(1, Math.round(1 + ((scaledHp / baseHp) - 1) / .08));
+  }
+
+  function installMobLabels() {
+    const game = global.astraeon;
+    const W = global.AstraeonWorld;
+    if (!game || !W || game.mobLabelsV42Installed || typeof game.drawMobs !== 'function') return;
+    game.mobLabelsV42Installed = true;
+
+    const originalDrawMobs = game.drawMobs.bind(game);
+    game.drawMobs = function (ctx) {
+      originalDrawMobs(ctx);
+      if (!this.player || !Array.isArray(this.mobs)) return;
+
+      const visible = this.mobs.filter((mob) =>
+        !mob.dead &&
+        Math.abs(mob.x - this.player.x) < this.viewW * .8 + 400 &&
+        Math.abs(mob.y - this.player.y) < this.viewH * .8 + 400
+      );
+
+      for (const mob of visible) {
+        if (!(mob.aggro || mob.hit > 0 || mob.hp < mob.maxHp)) continue;
+        const data = W.MOB_DATA[mob.type] || {};
+        const name = MOB_DISPLAY_NAMES[mob.type] || data.name || String(mob.type || 'Criatura').replaceAll('_', ' ');
+        const label = `${name} • Nv. ${mobLevel(mob, data)}`;
+
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.font = '700 9px Inter, sans-serif';
+        ctx.lineWidth = 3;
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = 'rgba(0,0,0,.82)';
+        ctx.strokeText(label, mob.x, mob.y - 47);
+        ctx.fillStyle = '#f3ead8';
+        ctx.fillText(label, mob.x, mob.y - 47);
+        ctx.restore();
+      }
+    };
+  }
+
   function installGuestSubmitGuard(state) {
     const form = $('#onlineChatForm');
     if (!form) return;
@@ -196,6 +247,7 @@
     installKeyboard(state);
     installRightMouseGuard();
     installSprintFix();
+    installMobLabels();
     installGuestSubmitGuard(state);
     document.body.classList.add('astraeon-online-controller-ready');
   }
