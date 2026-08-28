@@ -53,7 +53,7 @@ function prepareGate(){
     body.appendChild(retry);
     state.retryButton=retry;
     retry.addEventListener('click',()=>void retryAccess());
-  }else state.retryButton=$('#adminSessionRetry');
+  }else state.retryButton=document.getElementById('adminSessionRetry');
   setMessage('Verificando acesso…');
 }
 function loadSdk(){return new Promise((resolve,reject)=>{
@@ -146,7 +146,7 @@ async function waitForAdminPanel(){
   throw new Error('admin_panel_boot_failed');
 }
 function ensureAdminLauncherFallback(){
-  const launcher=$('#studioAdminLauncher'),hidden=$('#adminOpenBtn');
+  const launcher=$('#studioAdminLauncher'),hidden=document.getElementById('adminOpenBtn');
   if(!launcher||!hidden||launcher.dataset.coreFallback==='1')return;
   launcher.dataset.coreFallback='1';
   launcher.addEventListener('click',()=>{hidden.click();launcher.classList.add('active');});
