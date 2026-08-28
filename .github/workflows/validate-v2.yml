@@ -1,4 +1,4 @@
-name: Validate Astraeon Online 5.1 + Admin Studio 5.1
+name: Validate Astraeon Online 6.0 + Admin Studio 6.0
 
 on:
   pull_request:
@@ -30,6 +30,8 @@ jobs:
           node --check src/combat-focus-v4.js
           node --check src/chat-system-v4.js
           node --check src/live-runtime-v5.js
+          node --check src/production-runtime-v6.js
+          node --check src/character-system-v6.js
           node --check src/account-status-v4.js
           node --check api/config.js
           node --check api/admin-access.js
@@ -41,5 +43,7 @@ jobs:
           node --check src/admin-accounts-v4.js
           node --check src/admin-system-messages-v4.js
           node --check src/admin-live-tools-v5.js
+          node --check src/admin-character-slots-v6.js
+          node --check src/admin-production-v6.js
       - name: Validate HTML, access contracts, admin and deployment config
         run: python3 scripts/validate_v2.py
