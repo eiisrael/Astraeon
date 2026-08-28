@@ -70,7 +70,7 @@ contracts={
     'src/world-online-v4.js':['Astralum','Lúmenfall','Solvaris','Nivora','Umbra Vale','Cinzalta','cityStructures'],
     'src/npcs-v4.js':['IA local contextual','E · Falar','npc-dialogue','updateNpcs'],
     'src/multiplayer-v4.js':['signUp','signInWithPassword','player_state','postgres_changes','player_saves','CHAT_OPACITY_KEY','textContent'],
-    'src/account-status-v4.js':['Conta confirmada com sucesso. Seja bem-vindo!','Acesso 0','Acesso 1','Acesso 3','pending-confirmation'],
+    'src/account-status-v4.js':['Conta confirmada com sucesso. Seja bem-vindo!','Acesso 0','Acesso 1',"3:'Admin'",'pending-confirmation'],
     'src/online-controller-v4.js':['openChat','onlineChatInput','login será solicitado','keydown','MutationObserver','onlineRuntimeHealth'],
     'src/online-v4.css':['--online-chat-alpha','online-chat','npc-dialogue','@media(max-width:760px)'],
     'src/online-fixes-v4.css':['online-chat-launcher','online-runtime-health','online-access-badge','data-account-blocked'],
