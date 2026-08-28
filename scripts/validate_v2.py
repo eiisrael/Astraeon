@@ -77,8 +77,8 @@ contracts={
     'src/admin-studio-v4.js':['ADMIN STUDIO 4.2','Diagnóstico','access','Admin exige Acesso 3'],
     'src/admin-auth-v4.js':['/api/admin-access','signInWithPassword','Acesso 3','admin-editor-locked','admin-accounts-v4.js'],
     'src/admin-accounts-v4.js':['admin_list_profiles','admin_set_access','Contas & Acesso','Em análise'],
-    'src/admin-auth-v4.css':['admin-access-gate','admin-studio-v4 .admin-body','admin-accounts-table','grid-template-columns:176px'],
-    'src/editor-studio-v4.css':['studio-topbar','admin-studio-v4','studio-dashboard-addon'],
+    'src/admin-auth-v4.css':['admin-access-gate','admin-studio-v4 .admin-body','admin-accounts-table','grid-template-columns:168px'],
+    'src/editor-studio-v4.css':['studio-topbar','studio-commandbar','grid-template-rows:54px 32px minmax(0,1fr) 26px','grid-template-columns:220px minmax(0,1fr) 238px','admin-studio-v4','studio-dashboard-addon'],
     'api/config.js':['SUPABASE_URL','SUPABASE_PUBLISHABLE_KEY','no-store','4.1-online'],
     'api/admin-access.js':['/auth/v1/user','/rest/v1/profiles','access===3','Authorization'],
     'supabase/migrations/001_astraeon_online.sql':['enable row level security','chat_rate_limited','realtime.topic()','claim_username','player_saves','chat_messages','supabase_realtime'],
@@ -113,7 +113,7 @@ for skill in ['data-skill="3"','data-skill="4"']:
     if skill not in index_text: ERRORS.append(f'index.html: controle mobile ausente: {skill}')
 
 editor_text=(ROOT/'game-editor.html').read_text(encoding='utf-8') if (ROOT/'game-editor.html').exists() else ''
-for needle in ['Admin Studio 4.2','src/admin-auth-v4.css','src/admin-auth-v4.js','adminAccessGate','admin-editor-locked','name="robots"']:
+for needle in ['Admin Studio 4.2','src/admin-auth-v4.css','src/admin-auth-v4.js','adminAccessGate','admin-editor-locked','studio-commandbar','name="robots"']:
     if needle not in editor_text: ERRORS.append(f'game-editor.html: contrato Admin Studio protegido ausente: {needle}')
 for forbidden in ['<script src="src/world-v2.js"','<script src="src/editor-v2.js"','<script src="src/admin-v3c.js"','<script src="src/admin-studio-v4.js"']:
     if forbidden in editor_text: ERRORS.append(f'game-editor.html: runtime administrativo não deve carregar antes da autenticação: {forbidden}')
