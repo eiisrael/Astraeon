@@ -21,7 +21,19 @@
       script.addEventListener('load',()=>window.AstraeonAdminRuntime?.install?.());
       document.head.appendChild(script);
     }
-    for (const [src,key] of [['src/production-runtime-v6.js','productionRuntimeV6'],['src/character-system-v6.js','characterSystemV6'],['src/worldmaps-runtime-v61.js','worldMapsRuntimeV61'],['src/server-config-v62.js','serverConfigV62'],['src/menu-cinematic-v62.js','menuCinematicV62']]) {
+    const modules = [
+      ['src/production-runtime-v6.js','productionRuntimeV6'],
+      ['src/character-system-v6.js','characterSystemV6'],
+      ['src/worldmaps-runtime-v61.js','worldMapsRuntimeV61'],
+      ['src/server-config-v62.js','serverConfigV62'],
+      ['src/menu-cinematic-v62.js','menuCinematicV62'],
+      ['src/gameplay-v7.js','gameplayV7'],
+      ['src/inventory-v7.js','inventoryV7'],
+      ['src/menu-account-v7.js','menuAccountV7'],
+      ['src/system-style-v7.js','systemStyleV7'],
+      ['src/spawn-runtime-v7.js','spawnRuntimeV7']
+    ];
+    for (const [src,key] of modules) {
       if (document.querySelector(`script[data-${key}]`)) continue;
       const script=document.createElement('script');script.src=src;script.dataset[key]='1';document.head.appendChild(script);
     }
@@ -135,6 +147,7 @@
     document.querySelector('#touchAttack')?.addEventListener('pointerdown',e=>{e.preventDefault();game.basicAttack?.();});
     document.querySelector('#touchInventory')?.addEventListener('pointerdown',e=>{e.preventDefault();game.togglePanel?.(game.ui.inventoryPanel);});
     document.querySelectorAll('#mobileControls [data-skill]').forEach(btn=>btn.addEventListener('pointerdown',e=>{
+      if (btn.dataset.skillEditV7==='1') return;
       e.preventDefault(); game.castSkill?.(Number(btn.dataset.skill));
     }));
 
