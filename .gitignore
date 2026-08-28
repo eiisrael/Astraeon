@@ -1,12 +1,36 @@
+# ─────────────────────────────────────────────────────────────
+# Environment variables / local secrets
+# Never commit real environment files. Keep only .env.example.
+# ─────────────────────────────────────────────────────────────
 .env
 .env.*
 !.env.example
+.envrc
+.direnv/
+
+# Common credential / certificate files
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+service-account*.json
+
+# Vercel local project metadata and downloaded env values
 .vercel/
+
+# Dependencies / logs
 node_modules/
 npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor / temporary files
 *.swp
 *.swo
 *.crswap
 *~
+
+# OS files
 .DS_Store
 Thumbs.db
