@@ -71,9 +71,9 @@ contracts={
     'src/npcs-v4.js':['IA local contextual','E · Falar','npc-dialogue','updateNpcs'],
     'src/multiplayer-v4.js':['signUp','signInWithPassword','player_state','postgres_changes','player_saves','CHAT_OPACITY_KEY','textContent'],
     'src/account-status-v4.js':['Conta confirmada com sucesso. Seja bem-vindo!','Acesso 0','Acesso 1',"3:'Admin'",'pending-confirmation'],
-    'src/online-controller-v4.js':['openChat','onlineChatInput','login será solicitado','keydown','MutationObserver','onlineRuntimeHealth'],
+    'src/online-controller-v4.js':['openChat','onlineChatInput','login será solicitado','keydown','MutationObserver','installRightMouseGuard','contextmenu','auxclick'],
     'src/online-v4.css':['--online-chat-alpha','online-chat','npc-dialogue','@media(max-width:760px)'],
-    'src/online-fixes-v4.css':['online-chat-launcher','online-runtime-health','online-access-badge','data-account-blocked'],
+    'src/online-fixes-v4.css':['online-chat-launcher','online-access-badge','data-account-blocked'],
     'src/admin-studio-v4.js':['ADMIN STUDIO 4.2','Diagnóstico','access','Admin exige Acesso 3'],
     'src/admin-auth-v4.js':['/api/admin-access','signInWithPassword','Acesso 3','admin-editor-locked','admin-accounts-v4.js'],
     'src/admin-accounts-v4.js':['admin_list_profiles','admin_set_access','Contas & Acesso','Em análise'],
@@ -96,6 +96,13 @@ contracts={
 }
 for file_name, needles in contracts.items():
     require_needles(file_name, needles)
+
+controller_text=(ROOT/'src/online-controller-v4.js').read_text(encoding='utf-8') if (ROOT/'src/online-controller-v4.js').exists() else ''
+fixes_text=(ROOT/'src/online-fixes-v4.css').read_text(encoding='utf-8') if (ROOT/'src/online-fixes-v4.css').exists() else ''
+for forbidden in ['onlineRuntimeHealth','Diagnóstico Online','onlineHealthRefresh']:
+    if forbidden in controller_text: ERRORS.append(f'src/online-controller-v4.js: diagnóstico visual proibido: {forbidden}')
+for forbidden in ['online-runtime-health','online-health-grid']:
+    if forbidden in fixes_text: ERRORS.append(f'src/online-fixes-v4.css: estilo de diagnóstico visual proibido: {forbidden}')
 
 index_text=(ROOT/'index.html').read_text(encoding='utf-8') if (ROOT/'index.html').exists() else ''
 if 'Editor Astral<small>' in index_text or '>Editor Astral<' in index_text:
