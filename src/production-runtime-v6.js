@@ -1,0 +1,56 @@
+(function(global){
+'use strict';
+const W=global.AstraeonWorld;
+const $=s=>document.querySelector(s);
+const imageCache=new Map();
+const state={installed:false,design:null,itemTimer:null,lastActivity:performance.now(),idle:false,zPhase:0};
+const ENTITY_RADIUS={player:12,mob:12,npc:11};
+function mp(){return global.AstraeonMultiplayerV4?.state||null;}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function loadDesign(){try{return W?.loadWorldDesign?.()||null;}catch(_){return null;}}
+function refreshDesign(){state.design=loadDesign();if(state.design){state.design.sceneObjects=Array.isArray(state.design.sceneObjects)?state.design.sceneObjects:[];state.design.zones=Array.isArray(state.design.zones)?state.design.zones:[];}return state.design;}
+function img(src){if(!src)return null;if(imageCache.has(src))return imageCache.get(src);const i=new Image();i.src=src;imageCache.set(src,i);return i;}
+function textureFill(ctx,obj,x,y,w,h){
+  const color=obj.color||'#8d795c';ctx.fillStyle=color;ctx.fillRect(x,y,w,h);
+  const texture=String(obj.texture||'').toLowerCase();ctx.save();ctx.globalAlpha=.18;ctx.strokeStyle=obj.textureColor||'#ffffff';ctx.lineWidth=1;
+  if(texture==='grid'){for(let px=x;px<x+w;px+=8){ctx.beginPath();ctx.moveTo(px,y);ctx.lineTo(px,y+h);ctx.stroke();}for(let py=y;py<y+h;py+=8){ctx.beginPath();ctx.moveTo(x,py);ctx.lineTo(x+w,py);ctx.stroke();}}
+  else if(texture==='wood'){for(let py=y+5;py<y+h;py+=7){ctx.beginPath();ctx.moveTo(x+2,py);ctx.bezierCurveTo(x+w*.35,py-2,x+w*.7,py+2,x+w-2,py);ctx.stroke();}}
+  else if(texture==='stone'){for(let py=y+8,n=0;py<y+h;py+=10,n++){for(let px=x-(n%2?8:0);px<x+w;px+=16){ctx.strokeRect(px,py-8,15,9);}}}
+  ctx.restore();
+}
+function drawSceneObject(ctx,obj){
+  if(obj.visible===false)return;const w=Math.max(4,Number(obj.width)||36),h=Math.max(4,Number(obj.height)||36),x=Number(obj.x)||0,y=Number(obj.y)||0,rot=(Number(obj.rotation)||0)*Math.PI/180,opacity=clamp(Number(obj.opacity??1),0,1);ctx.save();ctx.translate(x,y);ctx.rotate(rot);ctx.globalAlpha=opacity;const shape=obj.shape||'rect';
+  if(shape==='circle'||shape==='ellipse'){ctx.beginPath();ctx.ellipse(0,0,w/2,h/2,0,0,Math.PI*2);ctx.clip();textureFill(ctx,obj,-w/2,-h/2,w,h);}else if(shape==='diamond'){ctx.beginPath();ctx.moveTo(0,-h/2);ctx.lineTo(w/2,0);ctx.lineTo(0,h/2);ctx.lineTo(-w/2,0);ctx.closePath();ctx.clip();textureFill(ctx,obj,-w/2,-h/2,w,h);}else{textureFill(ctx,obj,-w/2,-h/2,w,h);}
+  const source=obj.imageData||obj.imageUrl||'';if(source){const im=img(source);if(im?.complete&&im.naturalWidth){ctx.filter=`brightness(${Number(obj.brightness)||100}%) contrast(${Number(obj.contrast)||100}%) saturate(${Number(obj.saturation)||100}%)`;ctx.scale(obj.flipX?-1:1,obj.flipY?-1:1);ctx.drawImage(im,-w/2,-h/2,w,h);ctx.filter='none';}}
+  if(obj.borderColor&&Number(obj.borderWidth)>0){ctx.globalAlpha=1;ctx.strokeStyle=obj.borderColor;ctx.lineWidth=Number(obj.borderWidth);if(shape==='circle'||shape==='ellipse'){ctx.beginPath();ctx.ellipse(0,0,w/2,h/2,0,0,Math.PI*2);ctx.stroke();}else ctx.strokeRect(-w/2,-h/2,w,h);}
+  ctx.restore();
+}
+function drawSceneObjects(game,ctx){const design=state.design||refreshDesign();if(!design)return;for(const o of design.sceneObjects||[]){if(Math.abs((Number(o.x)||0)-game.player.x)>game.viewW+600||Math.abs((Number(o.y)||0)-game.player.y)>game.viewH+600)continue;drawSceneObject(ctx,o);}}
+
+function pointInPolygon(x,y,pts){let inside=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const xi=pts[i].x,yi=pts[i].y,xj=pts[j].x,yj=pts[j].y;const hit=((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi||1e-9)+xi);if(hit)inside=!inside;}return inside;}
+function insideZone(x,y,z){if(!z)return false;const shape=z.shape||'rect';if(shape==='circle'){const dx=x-(Number(z.cx)||0),dy=y-(Number(z.cy)||0),r=Math.max(1,Number(z.radius)||1);return dx*dx+dy*dy<=r*r;}if(shape==='polygon')return pointInPolygon(x,y,Array.isArray(z.points)?z.points:[]);const left=Math.min(Number(z.x1)||0,Number(z.x2)||0),right=Math.max(Number(z.x1)||0,Number(z.x2)||0),top=Math.min(Number(z.y1)||0,Number(z.y2)||0),bottom=Math.max(Number(z.y1)||0,Number(z.y2)||0);return x>=left&&x<=right&&y>=top&&y<=bottom;}
+function mobForbidden(x,y){const design=state.design||refreshDesign();return !!design?.zones?.some(z=>z.type==='mob_exclusion'&&z.enabled!==false&&insideZone(x,y,z));}
+function spawnZone(){return (state.design||refreshDesign())?.zones?.find(z=>z.type==='player_spawn'&&z.enabled!==false)||null;}
+function zoneCenter(z){if(!z)return null;if(z.shape==='circle')return{x:Number(z.cx)||0,y:Number(z.cy)||0};if(z.shape==='polygon'&&z.points?.length){return{x:z.points.reduce((a,p)=>a+Number(p.x||0),0)/z.points.length,y:z.points.reduce((a,p)=>a+Number(p.y||0),0)/z.points.length};}return{x:((Number(z.x1)||0)+(Number(z.x2)||0))/2,y:((Number(z.y1)||0)+(Number(z.y2)||0))/2};}
+function resolveObjectCollision(ent,radius,obj){if(!obj.collision||obj.visible===false)return;const x=Number(obj.x)||0,y=Number(obj.y)||0,w=Math.max(4,Number(obj.width)||36),h=Math.max(4,Number(obj.height)||36);if((obj.shape||'rect')==='circle'||obj.shape==='ellipse'){const rx=w/2+radius,ry=h/2+radius,dx=ent.x-x,dy=ent.y-y,q=(dx*dx)/(rx*rx)+(dy*dy)/(ry*ry);if(q>=1)return;const len=Math.hypot(dx/rx,dy/ry)||.001;ent.x=x+(dx/(len||1))*rx;ent.y=y+(dy/(len||1))*ry;return;}const left=x-w/2-radius,right=x+w/2+radius,top=y-h/2-radius,bottom=y+h/2+radius;if(ent.x<=left||ent.x>=right||ent.y<=top||ent.y>=bottom)return;const dl=Math.abs(ent.x-left),dr=Math.abs(right-ent.x),dt=Math.abs(ent.y-top),db=Math.abs(bottom-ent.y),m=Math.min(dl,dr,dt,db);if(m===dl)ent.x=left;else if(m===dr)ent.x=right;else if(m===dt)ent.y=top;else ent.y=bottom;}
+function applySceneCollisions(game){const objects=(state.design||refreshDesign())?.sceneObjects||[];const entities=[];if(game.player)entities.push([game.player,ENTITY_RADIUS.player]);for(const m of game.mobs||[])if(!m.dead)entities.push([m,ENTITY_RADIUS.mob]);for(const n of game.npcsV4||[])entities.push([n,ENTITY_RADIUS.npc]);for(const [e,r] of entities)for(const o of objects)resolveObjectCollision(e,r,o);}
+
+function installWorldRules(game){if(game.productionWorldV6Installed)return;game.productionWorldV6Installed=true;refreshDesign();
+  const originalTerrain=game.drawTerrain.bind(game);game.drawTerrain=function(ctx){const result=originalTerrain(ctx);drawSceneObjects(this,ctx);return result;};
+  const originalStart=game.startNew.bind(game);game.startNew=function(){const result=originalStart();refreshDesign();const z=spawnZone(),c=zoneCenter(z);if(this.player&&c){const tx=Math.floor(c.x/W.TILE),ty=Math.floor(c.y/W.TILE),safe=this.findSafeSpawn?.(tx,ty);if(safe){this.player.x=safe.x*W.TILE+W.TILE/2;this.player.y=safe.y*W.TILE+W.TILE/2;}}this.mobs=(this.mobs||[]).filter(m=>!mobForbidden(m.x,m.y));return result;};
+  const originalContinue=game.continueGame.bind(game);game.continueGame=function(){const result=originalContinue();refreshDesign();this.mobs=(this.mobs||[]).filter(m=>!mobForbidden(m.x,m.y));return result;};
+  const originalUpdate=game.update.bind(game);game.update=function(dt){const before=new Map((this.mobs||[]).filter(m=>!m.dead).map(m=>[m.id,{x:m.x,y:m.y}]));const result=originalUpdate(dt);for(const m of this.mobs||[]){if(m.dead)continue;if(mobForbidden(m.x,m.y)){const b=before.get(m.id);if(b){m.x=b.x;m.y=b.y;m.aggro=false;}}}applySceneCollisions(this);return result;};
+}
+
+async function refreshItems(){const s=mp(),A=global.AstraeonItems;if(!s?.client||!s.session||!A?.items)return;try{const {data,error}=await s.client.from('item_configs').select('item_id,name,item_type,slot,rarity,allowed_classes,description,icon,image_url,stats,enabled').eq('enabled',true);if(error)return;for(const row of data||[]){const current=A.items[row.item_id]||{};const stats=row.stats&&typeof row.stats==='object'?row.stats:{};A.items[row.item_id]={...current,id:row.item_id,name:row.name,type:row.item_type,slot:row.slot||undefined,rarity:row.rarity,allowedClasses:row.allowed_classes||[],description:row.description||'',icon:row.icon||'◇',imageUrl:row.image_url||'',stats:{...(current.stats||{}),...stats}};if(Number(stats.heal)>0)A.items[row.item_id].heal=Number(stats.heal);if(Number(stats.mana)>0)A.items[row.item_id].mana=Number(stats.mana);A.items[row.item_id].stackable=row.item_type!=='equipment';}global.astraeon?.renderInventory?.();}catch(error){console.warn('[Astraeon ItemList]',error);}}
+function installItemEnhancements(game){if(game.itemV6Installed)return;game.itemV6Installed=true;const originalStats=game.itemStatsText?.bind(game);if(originalStats)game.itemStatsText=function(item){const parts=originalStats(item),labels={strength:'Força',magic:'Magia',dexterity:'Destreza',heal:'Cura',mana:'Mana',healPct:'Aumento de cura',manaPct:'Aumento de mana'};for(const [k,v] of Object.entries(item?.stats||{})){if(!v||!labels[k])continue;const suffix=k.endsWith('Pct')?'%':'';parts.push(`${labels[k]} +${v}${suffix}`);}return Array.from(new Set(parts));};const originalUse=game.useInventoryItem?.bind(game);if(originalUse)game.useInventoryItem=function(index){const item=this.inventory?.[index],stats=item?.stats||{};if(item?.type==='consumable'){if(Number(stats.healPct)>0&&this.player.hp<this.player.maxHp)item.heal=Math.max(Number(item.heal)||0,Math.round(this.player.maxHp*Number(stats.healPct)/100));if(Number(stats.manaPct)>0&&this.player.mana<this.player.maxMana)item.mana=Math.max(Number(item.mana)||0,Math.round(this.player.maxMana*Number(stats.manaPct)/100));}return originalUse(index);};void refreshItems();state.itemTimer=setInterval(refreshItems,30000);}
+
+function activity(){state.lastActivity=performance.now();if(state.idle)state.idle=false;}
+function drawIdleZ(ctx,p){const elapsed=(performance.now()-state.lastActivity)/1000;if(elapsed<60)return;state.idle=true;const t=performance.now()/1000;ctx.save();ctx.textAlign='center';ctx.font='700 12px Georgia,serif';for(let i=0;i<4;i++){const phase=(t*.55+i*.23)%1,alpha=Math.sin(Math.PI*phase)*.72,x=p.x+27+Math.sin(t*1.4+i)*5,y=p.y-48-phase*38-i*2,scale=.75+phase*.45;ctx.globalAlpha=alpha;ctx.fillStyle='#f4f7fb';ctx.shadowBlur=7;ctx.shadowColor='rgba(255,255,255,.35)';ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.rotate(Math.sin(t+i)*.12);ctx.fillText(i%2?'z':'Z',0,0);ctx.restore();}ctx.restore();}
+function installIdle(game){if(game.idleV6Installed)return;game.idleV6Installed=true;['keydown','pointerdown','pointermove','touchstart','wheel'].forEach(type=>global.addEventListener(type,activity,{passive:true,capture:true}));const original=game.drawPlayer.bind(game);game.drawPlayer=function(ctx){const result=original(ctx);if(this.player)drawIdleZ(ctx,this.player);return result;};}
+
+function install(){const game=global.astraeon;if(state.installed||!game||!W)return;state.installed=true;installWorldRules(game);installItemEnhancements(game);installIdle(game);}
+function wait(){if(global.astraeon&&W)install();else setTimeout(wait,80);}
+if(document.readyState==='loading')global.addEventListener('DOMContentLoaded',wait);else wait();
+global.AstraeonProductionV6={state,refreshDesign,refreshItems,insideZone,mobForbidden};
+})(window);

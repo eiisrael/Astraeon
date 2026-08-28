@@ -10,11 +10,20 @@
       link.rel = 'stylesheet'; link.href = 'src/typography-v3c.css'; link.dataset.astraeonTypographyV3c = '1';
       document.head.appendChild(link);
     }
+    if (!document.querySelector('link[data-astraeon-production-v6]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet'; link.href = 'src/production-v6.css'; link.dataset.astraeonProductionV6 = '1';
+      document.head.appendChild(link);
+    }
     if (!document.querySelector('script[data-astraeon-admin-runtime-v3c]')) {
       const script = document.createElement('script');
       script.src = 'src/admin-runtime-v3c.js'; script.dataset.astraeonAdminRuntimeV3c = '1';
       script.addEventListener('load',()=>window.AstraeonAdminRuntime?.install?.());
       document.head.appendChild(script);
+    }
+    for (const [src,key] of [['src/production-runtime-v6.js','productionRuntimeV6'],['src/character-system-v6.js','characterSystemV6']]) {
+      if (document.querySelector(`script[data-${key}]`)) continue;
+      const script=document.createElement('script');script.src=src;script.dataset[key]='1';document.head.appendChild(script);
     }
   }
   ensureV3CAssets();
