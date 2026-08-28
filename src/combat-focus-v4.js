@@ -15,8 +15,18 @@
   const JUMP_DURATION = 260;
   const TARGET_COLOR = '#f2c65d';
   const HOVER_COLOR = '#bcecff';
+  const SKILL_COSTS = Object.freeze([10, 20, 18, 24, 42]);
+  const SKILL_COOLDOWNS = Object.freeze([2.2, 5, 7, 7.5, 13]);
+  const SKILL_COUNT = SKILL_COOLDOWNS.length;
+  const MACRO_CAST_INTERVAL = 180;
+  const MACRO_RETRY_INTERVAL = 72;
+
   let installed = false;
   let waiting = false;
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
 
   function displayName(mob) {
     const data = W.MOB_DATA?.[mob?.type] || {};
@@ -47,6 +57,16 @@
       .mob-target-hp-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:7px;color:#a99f8d;font-size:9px}.mob-target-hp-row b{color:#e9dfcc;font-size:9px}
       .mob-target-hp-track{position:relative;height:9px;margin-top:4px;overflow:hidden;border:1px solid rgba(255,255,255,.1);border-radius:999px;background:#16080b;box-shadow:inset 0 1px 4px rgba(0,0,0,.8)}.mob-target-hp-fill{height:100%;width:100%;border-radius:inherit;background:linear-gradient(90deg,#b93646,#ef6674 58%,#ff8a8e);box-shadow:0 0 10px rgba(239,102,116,.3);transition:width .12s linear}.mob-target-hp-shine{position:absolute;inset:1px 2px auto;height:2px;border-radius:999px;background:rgba(255,255,255,.24);pointer-events:none}
       .mob-target-close{align-self:start;width:25px;height:25px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.08);border-radius:7px;background:rgba(255,255,255,.03);color:#8e8779;font:700 14px/1 sans-serif;cursor:pointer}.mob-target-close:hover{border-color:rgba(242,198,93,.3);color:#f0d47f;background:rgba(242,198,93,.06)}
+
+      #hotbar .skill{isolation:isolate;overflow:hidden;transition:border-color .13s ease,box-shadow .13s ease,filter .13s ease}
+      #hotbar .skill kbd,#hotbar .skill .cd{z-index:4}
+      #hotbar .skill.cooling::before{content:"";position:absolute;inset:0;z-index:1;border-radius:10px;background:rgba(0,0,0,.62);pointer-events:none}
+      #hotbar .skill.cooling::after{content:"";position:absolute;z-index:2;left:0;right:0;top:auto;bottom:0;height:var(--skill-recharge,0%);border-radius:0 0 10px 10px;background:linear-gradient(0deg,rgba(83,201,255,.46),rgba(116,216,255,.28) 68%,rgba(242,198,93,.34));border-top:1px solid rgba(190,239,255,.6);box-shadow:0 -4px 13px rgba(101,213,255,.25),inset 0 1px rgba(255,255,255,.18);pointer-events:none;transition:height .06s linear}
+      #hotbar .skill.skill-selected{border-color:rgba(151,235,255,.94)!important;filter:brightness(1.1);box-shadow:0 0 0 1px rgba(242,198,93,.38),0 0 16px rgba(101,216,255,.72),0 0 30px rgba(101,216,255,.25),inset 0 0 13px rgba(118,221,255,.14);animation:astraeonSkillSelected 1.05s ease-in-out infinite}
+      #hotbar .skill.skill-selected::selection{background:transparent}
+      #hotbar.skill-macro-active{box-shadow:0 15px 45px rgba(0,0,0,.5),0 0 20px rgba(92,210,255,.12)}
+      @keyframes astraeonSkillSelected{0%,100%{box-shadow:0 0 0 1px rgba(242,198,93,.28),0 0 12px rgba(101,216,255,.58),0 0 25px rgba(101,216,255,.18),inset 0 0 10px rgba(118,221,255,.1)}50%{box-shadow:0 0 0 1px rgba(242,198,93,.5),0 0 21px rgba(126,229,255,.9),0 0 38px rgba(101,216,255,.28),inset 0 0 16px rgba(118,221,255,.18)}}
+
       @media(max-width:900px) and (min-width:621px) and (pointer:fine){
         .mob-target-panel{left:auto;right:12px;top:12px;transform:translateY(-8px);width:min(420px,calc(100vw - 376px))}
         .mob-target-panel.is-entering{transform:translateY(0)}
@@ -64,10 +84,6 @@
         .mob-target-panel.is-entering{transform:translate(-50%,0)}
         .mob-target-portrait{width:46px;height:46px}.mob-target-portrait img{width:40px;height:40px}.mob-target-title strong{font-size:13px}.mob-target-hp-row{margin-top:5px}
         .hide-minimap .mob-target-panel{left:50%;width:min(420px,calc(100vw - 18px))}
-      }
-      @media(max-height:470px) and (pointer:coarse) and (orientation:landscape) and (min-width:601px){
-        .mob-target-panel{grid-template-columns:42px minmax(0,1fr) auto;gap:7px;padding:7px 8px}
-        .mob-target-portrait{width:42px;height:42px}.mob-target-portrait img{width:37px;height:37px}.mob-target-eyebrow{font-size:7px}.mob-target-title strong{font-size:12px}.mob-target-hp-row{margin-top:3px}.mob-target-hp-track{height:8px;margin-top:3px}
       }
     `;
     document.head.appendChild(style);
@@ -156,7 +172,7 @@
     const data = W.MOB_DATA?.[mob.type] || {};
     const hp = Math.max(0, Math.round(Number(mob.hp) || 0));
     const maxHp = Math.max(1, Math.round(Number(mob.maxHp) || Number(data.hp) || 1));
-    const pct = Math.max(0, Math.min(100, hp / maxHp * 100));
+    const pct = clamp(hp / maxHp * 100, 0, 100);
     const portrait = root.querySelector('#mobTargetPortrait');
     const name = root.querySelector('#mobTargetName');
     const level = root.querySelector('#mobTargetLevel');
@@ -231,16 +247,126 @@
     ctx.restore();
   }
 
+  function syncControlHints() {
+    const tip = document.querySelector('.hud-tip');
+    if (tip) tip.textContent = 'WASD mover · Shift correr · clique esquerdo atacar · segure clique direito: rotação automática de habilidades · 1–5 habilidades · I mochila · ESC pausar';
+
+    const combatHelp = Array.from(document.querySelectorAll('.help-card')).find(card =>
+      card.querySelector('b')?.textContent.trim().toLowerCase() === 'combate'
+    );
+    const text = combatHelp?.querySelector('span');
+    if (text) text.textContent = 'Clique esquerdo executa o ataque básico. Segure o clique direito para usar automaticamente as habilidades disponíveis em rotação, pulando skills em recarga ou sem mana. As teclas 1–5 continuam disponíveis.';
+  }
+
+  function skillUsable(game, index) {
+    if (!game?.player || !Array.isArray(game.cooldowns)) return false;
+    const cooldown = Number(game.cooldowns[index]) || 0;
+    const mana = Number(game.player.mana) || 0;
+    return cooldown <= .001 && mana >= SKILL_COSTS[index];
+  }
+
+  function findNextUsableSkill(game, state) {
+    for (let step = 0; step < SKILL_COUNT; step++) {
+      const index = (state.skillCursor + step) % SKILL_COUNT;
+      if (skillUsable(game, index)) return index;
+    }
+    return -1;
+  }
+
+  function updateSkillHud(game, state) {
+    const hotbar = document.querySelector('#hotbar');
+    hotbar?.classList.toggle('skill-macro-active', !!state.rightHeld);
+    const buttons = Array.from(document.querySelectorAll('#hotbar .skill'));
+
+    buttons.forEach((button, index) => {
+      const cooldown = Math.max(0, Number(game.cooldowns?.[index]) || 0);
+      const knownMax = Math.max(.001, Number(state.skillMaxCooldowns[index]) || SKILL_COOLDOWNS[index]);
+      const recharge = cooldown > 0 ? clamp((1 - cooldown / knownMax) * 100, 0, 100) : 100;
+      button.style.setProperty('--skill-recharge', `${recharge.toFixed(2)}%`);
+      button.classList.toggle('skill-selected', index === state.skillSelected);
+      button.setAttribute('aria-pressed', index === state.skillSelected ? 'true' : 'false');
+      button.dataset.skillIndex = String(index);
+    });
+  }
+
+  function installSkillButtons(game, state) {
+    document.querySelectorAll('#hotbar .skill').forEach((button, index) => {
+      if (button.dataset.mouseCombatBound === '1') return;
+      button.dataset.mouseCombatBound = '1';
+      button.type = 'button';
+      button.title = `Habilidade ${index + 1} · botão direito no mundo usa a rotação automática`;
+      button.addEventListener('click', () => {
+        if (!game.running || game.paused) return;
+        state.skillSelected = index;
+        game.castSkill(index);
+        updateSkillHud(game, state);
+      });
+    });
+  }
+
+  function runSkillMacro(game, state, force = false) {
+    if (!state.rightHeld || !game.running || game.paused || !game.player) return false;
+    const now = performance.now();
+    if (!force && now < state.nextMacroAt) return false;
+
+    const index = findNextUsableSkill(game, state);
+    if (index < 0) {
+      state.nextMacroAt = now + MACRO_RETRY_INTERVAL;
+      return false;
+    }
+
+    state.skillSelected = index;
+    const used = game.castSkill(index);
+    state.nextMacroAt = now + (used === false ? MACRO_RETRY_INTERVAL : MACRO_CAST_INTERVAL);
+    return used !== false;
+  }
+
   function installNow() {
     const game = global.astraeon;
-    if (installed || !game?.canvas || typeof game.drawMobs !== 'function') return false;
+    if (installed || !game?.canvas || typeof game.drawMobs !== 'function' || typeof game.castSkill !== 'function') return false;
     installed = true;
     injectStyles();
+    syncControlHints();
+
     const panel = ensurePanel();
-    const state = { hovered: null, selected: null, jumps: new Map() };
+    const state = {
+      hovered: null,
+      selected: null,
+      jumps: new Map(),
+      rightHeld: false,
+      nextMacroAt: 0,
+      skillCursor: 0,
+      skillSelected: 0,
+      skillMaxCooldowns: SKILL_COOLDOWNS.slice()
+    };
     game.mobCombatFocusV4 = state;
 
     panel.querySelector('#mobTargetClose')?.addEventListener('click', () => clearTarget(state));
+
+    const originalCastSkill = game.castSkill.bind(game);
+    game.castSkill = function (index, ...args) {
+      const skill = clamp(Math.trunc(Number(index) || 0), 0, SKILL_COUNT - 1);
+      const beforeCooldown = Math.max(0, Number(this.cooldowns?.[skill]) || 0);
+      const beforeMana = Math.max(0, Number(this.player?.mana) || 0);
+
+      state.skillSelected = skill;
+      const result = originalCastSkill(skill, ...args);
+
+      const afterCooldown = Math.max(0, Number(this.cooldowns?.[skill]) || 0);
+      const afterMana = Math.max(0, Number(this.player?.mana) || 0);
+      const used = beforeCooldown <= .001 && (afterCooldown > .001 || afterMana < beforeMana);
+
+      if (used) {
+        state.skillMaxCooldowns[skill] = afterCooldown > .001 ? afterCooldown : SKILL_COOLDOWNS[skill];
+        state.skillCursor = (skill + 1) % SKILL_COUNT;
+      }
+
+      updateSkillHud(this, state);
+      return used ? true : (result === true ? true : false);
+    };
+
+    installSkillButtons(game, state);
+    updateSkillHud(game, state);
 
     game.canvas.addEventListener('mousemove', (event) => {
       if (!game.running || game.paused) return;
@@ -257,14 +383,45 @@
 
     game.canvas.addEventListener('mouseleave', () => {
       state.hovered = null;
+      state.rightHeld = false;
       game.canvas.classList.remove('mob-focus-hover');
+      updateSkillHud(game, state);
     });
 
+    game.canvas.addEventListener('contextmenu', (event) => event.preventDefault());
+
     game.canvas.addEventListener('mousedown', (event) => {
-      if (event.button !== 0 || !game.running || game.paused) return;
+      if (!game.running || game.paused) return;
       const point = pointerWorld(game, event);
+      game.mouse.worldX = point.x;
+      game.mouse.worldY = point.y;
       const mob = mobAt(game, point.x, point.y, 38);
-      if (mob) setTarget(game, state, mob, true);
+
+      if (event.button === 0) {
+        if (mob) setTarget(game, state, mob, true);
+        return;
+      }
+
+      if (event.button === 2) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (mob) setTarget(game, state, mob, true);
+        state.rightHeld = true;
+        state.nextMacroAt = 0;
+        runSkillMacro(game, state, true);
+        updateSkillHud(game, state);
+      }
+    });
+
+    global.addEventListener('mouseup', (event) => {
+      if (event.button !== 2) return;
+      state.rightHeld = false;
+      updateSkillHud(game, state);
+    }, true);
+
+    global.addEventListener('blur', () => {
+      state.rightHeld = false;
+      updateSkillHud(game, state);
     });
 
     const originalBasicAttack = game.basicAttack.bind(game);
@@ -272,6 +429,14 @@
       const pointerTarget = mobAt(this, this.mouse.worldX, this.mouse.worldY, 72);
       if (pointerTarget) setTarget(this, state, pointerTarget, true);
       return originalBasicAttack(...args);
+    };
+
+    const originalUpdate = game.update.bind(game);
+    game.update = function (dt) {
+      const result = originalUpdate(dt);
+      if (state.rightHeld) runSkillMacro(this, state, false);
+      updateSkillHud(this, state);
+      return result;
     };
 
     const originalDrawMobs = game.drawMobs.bind(game);
@@ -293,7 +458,6 @@
 
       try {
         originalDrawMobs(ctx);
-        if (state.hovered && state.hovered !== state.selected) drawOverlay(ctx, state.hovered, false);
         if (state.selected) drawOverlay(ctx, state.selected, true);
       } finally {
         for (const [mob, y] of moved) mob.y = y;
