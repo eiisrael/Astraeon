@@ -6,22 +6,46 @@
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#071018">
 <meta name="robots" content="noindex,nofollow">
-<title>ASTRAEON — Admin Studio 4.1</title>
+<title>ASTRAEON — Admin Studio 4.2</title>
 <link rel="stylesheet" href="src/editor-v2.css">
 <link rel="stylesheet" href="src/typography-v3c.css">
 <link rel="stylesheet" href="src/editor-v3c.css">
 <link rel="stylesheet" href="src/editor-studio-v4.css">
+<link rel="stylesheet" href="src/admin-auth-v4.css">
 </head>
 <body>
-<div class="editor studio-v4">
+<section id="adminAccessGate" class="admin-access-gate" aria-label="Login administrativo">
+  <div class="admin-access-card">
+    <header class="admin-access-brand">
+      <div class="admin-access-brand-mark">A</div>
+      <div><span>Área protegida</span><b>ASTRAEON · ADMIN STUDIO</b><small>Apenas contas Supabase com Acesso 3</small></div>
+    </header>
+    <div class="admin-access-body">
+      <p class="admin-access-intro">Entre com sua conta administrativa. A autorização é validada contra o perfil no Supabase antes das ferramentas do Editor serem carregadas.</p>
+      <form id="adminLoginForm" class="admin-access-form">
+        <label>E-mail administrativo<input id="adminLoginEmail" type="email" autocomplete="email" required maxlength="120"></label>
+        <label>Senha<input id="adminLoginPassword" type="password" autocomplete="current-password" required minlength="10" maxlength="128"></label>
+        <div class="admin-access-actions">
+          <button id="adminLoginSubmit" class="admin-access-button primary" type="submit">Entrar no Admin Studio</button>
+          <button id="adminGateLogout" class="admin-access-button ghost hidden" type="button">Trocar conta</button>
+          <a class="admin-access-button ghost" href="/">Voltar ao jogo</a>
+        </div>
+      </form>
+      <p id="adminGateMessage" class="admin-access-message">Verificando configuração e sessão…</p>
+      <div class="admin-access-legend"><span><b>0</b>Banido</span><span><b>1</b>Jogador</span><span><b>2</b>Em análise</span><span><b>3</b>Admin</span></div>
+    </div>
+  </div>
+</section>
+
+<div id="adminEditorRoot" class="editor studio-v4 admin-editor-locked">
   <header class="topbar studio-topbar">
     <div class="brand studio-brand">
       <div class="brand-mark">A</div>
-      <div><strong>ASTRAEON</strong><small>Admin Studio 4.1 · World & Balance</small></div>
+      <div><strong>ASTRAEON</strong><small>Admin Studio 4.2 · World & Access</small></div>
     </div>
     <div class="studio-context">
       <span class="studio-status-dot"></span>
-      <div><b>Projeto local</b><small>Mundo, balanceamento e diagnóstico</small></div>
+      <div><b>Projeto protegido</b><small>Mundo, balanceamento, contas e diagnóstico</small></div>
     </div>
     <div class="studio-quick-actions">
       <button id="newMapBtn" class="btn optional">Novo mundo</button>
@@ -37,7 +61,7 @@
   </header>
 
   <div class="studio-commandbar">
-    <div><span class="studio-command-kicker">Editor de mundo</span><b>Modele Astra sem misturar ferramentas administrativas com a tela pública do jogo.</b></div>
+    <div><span class="studio-command-kicker">Editor de mundo</span><b>Ferramentas administrativas carregadas somente após autorização Acesso 3.</b></div>
     <div class="studio-shortcuts"><span><kbd>F10</kbd> Admin Studio</span><span><kbd>Ctrl+S</kbd> Salvar</span><span><kbd>Shift</kbd> Pan</span></div>
   </div>
 
@@ -107,11 +131,11 @@
       <section class="section studio-section"><div id="inspector" class="inspector-card"><h3>Inspetor</h3><p class="hint">Selecione um tile para examinar suas propriedades.</p></div></section>
       <section class="section studio-section"><div class="section-title">Resumo do mundo <span>tempo real</span></div><div id="stats" class="stats"></div></section>
       <section class="section studio-section"><div class="section-title">Histórico <span>sessão</span></div><div id="historyList" class="history-list"></div></section>
-      <section class="section studio-section studio-help-card"><div class="section-title">Fluxo profissional <span>4.1</span></div><ol><li>Defina a seed e o terreno.</li><li>Modele cidades, acessos e spawns.</li><li>Abra <b>Admin Studio</b> (F10) para balanceamento.</li><li>Salve e teste no jogo.</li><li>Use o diagnóstico online para conferir Supabase/Vercel.</li></ol></section>
+      <section class="section studio-section studio-help-card"><div class="section-title">Fluxo profissional <span>4.2</span></div><ol><li>Autentique com Acesso 3.</li><li>Defina seed, terreno, cidades e spawns.</li><li>Abra <b>Admin Studio</b> (F10) para balanceamento e contas.</li><li>Salve e teste no jogo.</li><li>Revise níveis de acesso no Supabase.</li></ol></section>
     </aside>
   </main>
 
-  <footer class="statusbar studio-statusbar"><span>Ferramenta <b id="statusTool">Pincel de bioma</b></span><span>Seed <b id="statusSeed">ASTRAEON-ONLINE</b></span><span>Mapa <b>96 × 96</b></span><span>Suite <b>ADMIN 4.1</b></span><span id="saveState" class="save-state">Pronto</span></footer>
+  <footer class="statusbar studio-statusbar"><span>Ferramenta <b id="statusTool">Pincel de bioma</b></span><span>Seed <b id="statusSeed">ASTRAEON-ONLINE</b></span><span>Mapa <b>96 × 96</b></span><span>Suite <b>ADMIN 4.2</b></span><span id="saveState" class="save-state">Pronto</span></footer>
 </div>
 
 <div id="jsonDialog" class="dialog hidden">
@@ -119,9 +143,6 @@
 </div>
 <div id="notice" class="notice">Mapa salvo.</div>
 
-<script src="src/world-v2.js"></script>
-<script src="src/editor-v2.js"></script>
-<script src="src/admin-v3c.js"></script>
-<script src="src/admin-studio-v4.js"></script>
+<script src="src/admin-auth-v4.js"></script>
 </body>
 </html>
