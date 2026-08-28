@@ -1,4 +1,4 @@
-name: Validate Astraeon Online 6.2 + Admin Studio 6.2
+name: Validate Astraeon 7.0 + Admin Studio
 
 on:
   pull_request:
@@ -36,6 +36,11 @@ jobs:
           node --check src/server-config-v62.js
           node --check src/menu-cinematic-v62.js
           node --check src/account-status-v4.js
+          node --check src/gameplay-v7.js
+          node --check src/inventory-v7.js
+          node --check src/menu-account-v7.js
+          node --check src/spawn-runtime-v7.js
+          node --check src/system-style-v7.js
           node --check api/config.js
           node --check api/admin-access.js
           node --check src/editor-diagnostics-v5.js
@@ -51,10 +56,13 @@ jobs:
           node --check src/admin-worldmaps-v61.js
           node --check src/admin-realtime-v62.js
           node --check src/admin-server-config-v62.js
-      - name: Validate HTML, access contracts, admin and deployment config
+          node --check src/admin-v7.js
+      - name: Validate legacy HTML, access and deployment contracts
         run: python3 scripts/validate_v2.py
       - name: Validate connected maps and MobList contracts
         run: python3 scripts/validate_worldmaps_v61.py
+      - name: Validate Astraeon 7.0 contracts
+        run: python3 scripts/validate_v7.py
       - name: Validate cinematic menu and realtime admin contracts
         run: |
           python3 - <<'PY'
@@ -85,17 +93,17 @@ jobs:
               ],
           }
           for path, needles in checks.items():
-              text = Path(path).read_text(encoding='utf-8')
-              missing = [n for n in needles if n not in text]
+              body = Path(path).read_text(encoding='utf-8')
+              missing = [n for n in needles if n not in body]
               if missing:
                   raise SystemExit(f'{path}: missing contracts: {missing}')
           auth = Path('src/admin-auth-v4.js').read_text(encoding='utf-8')
-          for src in ('src/admin-realtime-v62.js','src/admin-server-config-v62.js'):
+          for src in ('src/admin-realtime-v62.js','src/admin-server-config-v62.js','src/admin-v7.js'):
               if src not in auth:
                   raise SystemExit(f'admin loader missing {src}')
           ui = Path('src/ui-v3.js').read_text(encoding='utf-8')
-          for src in ('src/server-config-v62.js','src/menu-cinematic-v62.js'):
+          for src in ('src/server-config-v62.js','src/menu-cinematic-v62.js','src/gameplay-v7.js','src/inventory-v7.js','src/menu-account-v7.js','src/system-style-v7.js','src/spawn-runtime-v7.js'):
               if src not in ui:
                   raise SystemExit(f'game loader missing {src}')
-          print('Astraeon 6.2 contracts OK')
+          print('Astraeon 7.0 loader contracts OK')
           PY
