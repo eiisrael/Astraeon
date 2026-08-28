@@ -27,6 +27,7 @@ jobs:
           node --check src/npcs-v4.js
           node --check src/multiplayer-v4.js
           node --check src/online-controller-v4.js
+          node --check src/combat-focus-v4.js
           node --check src/account-status-v4.js
           node --check api/config.js
           node --check api/admin-access.js
