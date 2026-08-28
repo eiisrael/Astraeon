@@ -1,5 +1,34 @@
 -- ASTRAEON 6.3 — gameplay/admin/account expansion
 -- Execute after 009_admin_realtime_backups.sql.
+-- This migration is intentionally compatible with the discarded Astraeon 7.0 migration
+-- in case that SQL was already executed in the same Supabase project.
+
+-- V7 created request_astraeon_account_deletion() with RETURNS TABLE(delete_after timestamptz).
+-- PostgreSQL cannot change a function return type with CREATE OR REPLACE, so remove only
+-- the legacy no-argument function before recreating the canonical 6.3 implementation.
+drop function if exists public.request_astraeon_account_deletion();
+
+-- The discarded V7 cleanup function used a different queue/table and avatar bucket.
+-- Disable the legacy scheduled job and function so only the 6.3 deletion pipeline remains active.
+do $$
+declare
+  old_job bigint;
+begin
+  begin
+    if to_regnamespace('cron') is not null then
+      for old_job in
+        select jobid from cron.job
+        where jobname in ('astraeon-account-deletion-cleanup','astraeon-account-deletion')
+      loop
+        perform cron.unschedule(old_job);
+      end loop;
+    end if;
+  exception when others then
+    raise notice 'Legacy account deletion cron cleanup skipped: %', sqlerrm;
+  end;
+end $$;
+
+drop function if exists public.process_astraeon_account_deletions();
 
 -- System announcement visual configuration.
 alter table public.system_messages
@@ -28,10 +57,18 @@ end $$;
 
 -- Public-safe account presentation fields and delayed account deletion state.
 alter table public.profiles
-  add column if not exists avatar_url text not null default '',
-  add column if not exists bio text not null default '',
+  add column if not exists avatar_url text,
+  add column if not exists bio text,
   add column if not exists deletion_requested_at timestamptz,
   add column if not exists deletion_due_at timestamptz;
+
+-- Normalize columns when they already came from the discarded V7 migration.
+update public.profiles set avatar_url='' where avatar_url is null;
+update public.profiles set bio='' where bio is null;
+alter table public.profiles alter column avatar_url set default '';
+alter table public.profiles alter column avatar_url set not null;
+alter table public.profiles alter column bio set default '';
+alter table public.profiles alter column bio set not null;
 
 do $$
 begin
@@ -59,6 +96,25 @@ create policy "astraeon_account_delete_read_own" on public.account_deletion_queu
 for select to authenticated using (user_id=auth.uid());
 revoke all on public.account_deletion_queue from anon, authenticated;
 grant select on public.account_deletion_queue to authenticated;
+
+-- Preserve any still-active deletion request created by the discarded V7 migration.
+do $$
+begin
+  if to_regclass('public.account_deletion_requests') is not null then
+    execute $compat$
+      insert into public.account_deletion_queue(user_id,previous_access,requested_at,due_at)
+      select user_id, previous_access, requested_at, delete_after
+        from public.account_deletion_requests
+       where cancelled_at is null
+      on conflict(user_id) do update
+        set previous_access=excluded.previous_access,
+            requested_at=excluded.requested_at,
+            due_at=excluded.due_at
+    $compat$;
+  end if;
+exception when others then
+  raise notice 'Legacy account deletion requests were not migrated: %', sqlerrm;
+end $$;
 
 create or replace function public.request_astraeon_account_deletion()
 returns timestamptz
@@ -200,7 +256,10 @@ declare
 begin
   begin
     execute 'create extension if not exists pg_cron';
-    for old_job in select jobid from cron.job where jobname='astraeon-account-deletion' loop
+    for old_job in
+      select jobid from cron.job
+       where jobname in ('astraeon-account-deletion-cleanup','astraeon-account-deletion')
+    loop
       perform cron.unschedule(old_job);
     end loop;
     perform cron.schedule(
