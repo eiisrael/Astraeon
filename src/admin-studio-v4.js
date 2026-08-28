@@ -31,10 +31,7 @@ async function getOnlineStatus(){
 function worldStats(){
   const editor=global.astraeonEditor,W=global.AstraeonWorld,design=editor?.design||W?.loadWorldDesign?.()||{};
   const validation=editor?.validateDesign?.()||{errors:[],warnings:[]};
-  return{
-    seed:design.seed||'—',overrides:Object.keys(design.overrides||{}).length,spawns:Array.isArray(design.spawns)?design.spawns.length:0,
-    errors:validation.errors?.length||0,warnings:validation.warnings?.length||0,exportLinked:!!editor?.exportFileHandle,autoExport:editor?.autoExport!==false
-  };
+  return{seed:design.seed||'—',overrides:Object.keys(design.overrides||{}).length,spawns:Array.isArray(design.spawns)?design.spawns.length:0,errors:validation.errors?.length||0,warnings:validation.warnings?.length||0,exportLinked:!!editor?.exportFileHandle,autoExport:editor?.autoExport!==false};
 }
 
 async function decorateDashboard(){
@@ -50,7 +47,6 @@ async function decorateDashboard(){
     <section class="studio-diagnostic-card" data-state="${world.autoExport?'ok':'warn'}"><span>Publicação</span><b>${world.exportLinked?'Arquivo vinculado':world.autoExport?'Download no salvar':'Exportação manual'}</b><small>${world.autoExport?'Autoexport ativo':'Autoexport desativado'}</small></section>
     <section class="studio-diagnostic-card" data-state="${online.enabled?'ok':'warn'}"><span>Infraestrutura</span><b>${online.enabled?'Supabase conectado':'Modo local'}</b><small>${escapeHtml(online.project||online.reason||'Configure Vercel + Supabase')}</small></section>`;
   page.insertBefore(addon,page.querySelector('.admin-grid')||page.children[1]);
-
   const actions=document.createElement('div');actions.className='studio-dashboard-actions';actions.innerHTML='<button data-studio-action="validate" class="admin-btn">Validar mapa</button><button data-studio-action="save" class="admin-btn primary">Salvar + exportar</button><button data-studio-action="focus" class="admin-btn">Voltar ao Editor</button><button data-studio-action="play" class="admin-btn success">▶ Testar jogo</button>';
   actions.addEventListener('click',async event=>{
     const action=event.target.closest('[data-studio-action]')?.dataset.studioAction,editor=global.astraeonEditor;if(!action||!editor)return;
@@ -73,7 +69,10 @@ function bindLauncher(){
   launcher.onclick=()=>{hidden.click();launcher.classList.add('active');setTimeout(()=>void decorateDashboard(),0);};
   $('#adminClose')?.addEventListener('click',()=>launcher.classList.remove('active'));
   global.addEventListener('keydown',event=>{
-    if(event.key==='F10'){event.preventDefault();if(panel.classList.contains('hidden'))launcher.click();else{$('#adminClose')?.click();launcher.classList.remove('active');}}
+    if(event.key==='F10'){
+      event.preventDefault();event.stopImmediatePropagation();
+      if(panel.classList.contains('hidden'))launcher.click();else{$('#adminClose')?.click();launcher.classList.remove('active');}
+    }
     if(event.key==='Escape'&&!panel.classList.contains('hidden')){$('#adminClose')?.click();launcher.classList.remove('active');}
   },true);
 }
