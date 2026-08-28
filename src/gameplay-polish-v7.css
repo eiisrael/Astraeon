@@ -1,0 +1,12 @@
+/* ASTRAEON GAMEPLAY POLISH 7.0 — mobile skills + moving sun */
+#mobileControls [data-skill]{position:relative;touch-action:none;transform:translate(var(--skill-user-dx,0px),var(--skill-user-dy,0px)) scale(var(--skill-user-scale,1));transform-origin:center;will-change:transform;transition:filter .15s ease,box-shadow .15s ease}
+#mobileControls [data-skill].skill-user-positioned{z-index:92!important}
+#mobileControls [data-skill].skill-config-arming{z-index:96!important;filter:brightness(1.12)}
+#mobileControls [data-skill].skill-config-arming:before{content:"";position:absolute;inset:-5px;border-radius:12px;padding:2px;background:conic-gradient(from -90deg,#73daf8 calc(var(--skill-config-progress,0)*360deg),rgba(255,255,255,.08) 0);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;filter:drop-shadow(0 0 5px rgba(88,208,247,.48))}
+#mobileControls [data-skill].skill-config-arming:after{content:"SEGURE";position:absolute;left:50%;top:-18px;transform:translateX(-50%);padding:2px 5px;border-radius:6px;background:rgba(4,9,13,.86);border:1px solid rgba(95,205,241,.3);color:#c7f2ff;font:700 6px Inter,sans-serif;letter-spacing:.08em;pointer-events:none;white-space:nowrap}
+#mobileControls [data-skill].skill-config-editing{z-index:110!important;filter:brightness(1.18);box-shadow:0 0 0 2px rgba(240,202,106,.58),0 0 22px rgba(240,202,106,.28)!important;animation:astraeonSkillEditPulse .85s ease-in-out infinite alternate}
+#mobileControls [data-skill].skill-config-editing:after{content:"MOVER · PINÇA";position:absolute;left:50%;top:-20px;transform:translateX(-50%);padding:3px 6px;border-radius:7px;background:rgba(26,17,7,.94);border:1px solid rgba(240,202,106,.4);color:#ffe4a0;font:800 6px Inter,sans-serif;letter-spacing:.06em;pointer-events:none;white-space:nowrap}
+body.mobile-skill-config-active #mobileControls{touch-action:none!important}
+body.mobile-skill-config-active #mobileControls [data-skill]:not(.skill-config-editing){opacity:.62}
+@keyframes astraeonSkillEditPulse{from{box-shadow:0 0 0 2px rgba(240,202,106,.45),0 0 14px rgba(240,202,106,.16)}to{box-shadow:0 0 0 3px rgba(240,202,106,.72),0 0 28px rgba(240,202,106,.34)}}
+@media(max-width:760px),(pointer:coarse){#mobileControls [data-skill]{touch-action:none}}

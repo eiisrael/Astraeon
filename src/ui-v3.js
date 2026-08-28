@@ -4,6 +4,39 @@
   const STORAGE = 'astraeon:v3a:settings';
   const defaults = { uiScale:100, weather:true, damage:true, minimap:true, compact:false, touch:false };
 
+  function installChatEnterBridge() {
+    if (window.__astraeonChatEnterV7) return;
+    window.__astraeonChatEnterV7 = true;
+    window.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' || event.repeat) return;
+      const active = document.activeElement;
+      if (active?.closest?.('#onlineChat')) return;
+      if (active?.closest?.('input,textarea,select,[contenteditable="true"],#onlineAccountPanel,#npcDialogue')) return;
+      const game = window.astraeon;
+      if (!game?.running || game.paused) return;
+      const open = () => {
+        const chat = document.getElementById('onlineChat');
+        const input = document.getElementById('onlineChatInput');
+        if (!chat) return false;
+        try { window.AstraeonOnlineControllerV4?.openChat?.(true); } catch (_) {}
+        chat.classList.remove('collapsed','collapsed-mobile','chat-pro-collapsed');
+        chat.dataset.chatCollapsed = 'false';
+        const toggle = document.getElementById('onlineChatToggle');
+        if (toggle) { toggle.textContent = '▾'; toggle.setAttribute('aria-expanded','true'); }
+        if (input && input.dataset.accountBlocked !== 'true') { input.disabled = false; requestAnimationFrame(() => input.focus({preventScroll:true})); }
+        return true;
+      };
+      if (!open()) {
+        let tries = 0;
+        const retry = () => { if (open() || ++tries >= 20) return; setTimeout(retry,75); };
+        retry();
+      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }, true);
+  }
+  installChatEnterBridge();
+
   function ensureV3CAssets() {
     if (!document.querySelector('link[data-astraeon-typography-v3c]')) {
       const link = document.createElement('link');
@@ -15,15 +48,20 @@
       link.rel = 'stylesheet'; link.href = 'src/production-v6.css'; link.dataset.astraeonProductionV6 = '1';
       document.head.appendChild(link);
     }
+    if (!document.querySelector('link[data-astraeon-gameplay-polish-v7]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet'; link.href = 'src/gameplay-polish-v7.css'; link.dataset.astraeonGameplayPolishV7 = '1';
+      document.head.appendChild(link);
+    }
     if (!document.querySelector('script[data-astraeon-admin-runtime-v3c]')) {
       const script = document.createElement('script');
       script.src = 'src/admin-runtime-v3c.js'; script.dataset.astraeonAdminRuntimeV3c = '1';
       script.addEventListener('load',()=>window.AstraeonAdminRuntime?.install?.());
       document.head.appendChild(script);
     }
-    for (const [src,key] of [['src/production-runtime-v6.js','productionRuntimeV6'],['src/character-system-v6.js','characterSystemV6'],['src/worldmaps-runtime-v61.js','worldMapsRuntimeV61'],['src/server-config-v62.js','serverConfigV62'],['src/menu-cinematic-v62.js','menuCinematicV62']]) {
+    for (const [src,key] of [['src/gameplay-polish-v7.js','gameplayPolishV7'],['src/production-runtime-v6.js','productionRuntimeV6'],['src/character-system-v6.js','characterSystemV6'],['src/worldmaps-runtime-v61.js','worldMapsRuntimeV61'],['src/server-config-v62.js','serverConfigV62'],['src/menu-cinematic-v62.js','menuCinematicV62']]) {
       if (document.querySelector(`script[data-${key}]`)) continue;
-      const script=document.createElement('script');script.src=src;script.dataset[key]='1';document.head.appendChild(script);
+      const script=document.createElement('script');script.src=src;script.async=false;script.dataset[key]='1';document.head.appendChild(script);
     }
   }
   ensureV3CAssets();
