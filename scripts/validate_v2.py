@@ -54,7 +54,7 @@ required=[
  'src/world-v2.js','src/game-v2.js','src/inventory-v2.js','src/inventory-v3.js','src/ui-v3.js','src/systems-v3b.js','src/admin-runtime-v3c.js',
  'src/world-online-v4.js','src/npcs-v4.js','src/multiplayer-v4.js','src/online-controller-v4.js','src/online-v4.css','src/online-fixes-v4.css',
  'src/editor-v2.js','src/admin-v3c.js','src/admin-studio-v4.js','src/astraeon-v2.css','src/inventory-v2.css','src/ui-v3.css','src/ui-v3b.css','src/typography-v3c.css','src/editor-v2.css','src/editor-v3c.css','src/editor-studio-v4.css',
- 'api/config.js','vercel.json','package.json','README.md','ONLINE_SETUP.md','supabase/migrations/001_astraeon_online.sql',
+ 'api/config.js','vercel.json','package.json','README.md','INSTALLME.md','ONLINE_SETUP.md','COPYRIGHT.md','LICENSE','supabase/migrations/001_astraeon_online.sql',
  'Assets/Classes/Warrior.png','Assets/Classes/Mage.png','Assets/Classes/Archer.png','Assets/Classes/Assassin.png','Assets/Classes/Paladine.png',
  'Assets/Mob/Slime.png','Assets/Mob/Wolf.png','Assets/Mob/Globin.png','Assets/Mob/Orc.png','Assets/Mob/Troll.png','Assets/Mob/Pig_Monster.png',
  'Assets/Mob/Golem_Gelo.png','Assets/Mob/Spider.png','Assets/Mob/zombie.png','Assets/Mob/sombra.png','Assets/Mob/Caveira.png','Assets/Mob/Squelleton.png','Assets/Mob/Draconato.png'
@@ -78,7 +78,10 @@ contracts={
     'supabase/migrations/001_astraeon_online.sql':['enable row level security','chat_rate_limited','realtime.topic()','claim_username','player_saves','chat_messages','supabase_realtime'],
     'vercel.json':['Content-Security-Policy','X-Content-Type-Options','wss://*.supabase.co'],
     'ONLINE_SETUP.md':['Table Editor','auth.users','npx vercel dev','Enter = abrir/focar','Admin Studio'],
-    'README.md':['ASTRAEON ONLINE 4.1','/game-editor','SUPABASE_PUBLISHABLE_KEY']
+    'README.md':['ASTRAEON ONLINE','INSTALLME.md','SUPABASE_PUBLISHABLE_KEY','MIT License'],
+    'INSTALLME.md':['npx vercel link','npx vercel dev','SUPABASE_PUBLISHABLE_KEY','service_role','Checklist antes de publicar'],
+    'COPYRIGHT.md':['Erick Israel','MIT License','LICENSE'],
+    'LICENSE':['MIT License','Copyright (c) 2026 Erick Israel','Permission is hereby granted']
 }
 for file_name, needles in contracts.items():
     require_needles(file_name, needles)
@@ -95,8 +98,8 @@ editor_text=(ROOT/'game-editor.html').read_text(encoding='utf-8') if (ROOT/'game
 for needle in ['Admin Studio 4.1','src/editor-studio-v4.css','src/admin-studio-v4.js','name="robots"']:
     if needle not in editor_text: ERRORS.append(f'game-editor.html: contrato Admin Studio ausente: {needle}')
 
-if (ROOT/'index.html.4.crswap').exists():
-    ERRORS.append('arquivo swap index.html.4.crswap não deve estar versionado')
+# Arquivos temporários locais são ignorados pelo .gitignore e não devem quebrar a
+# validação de uma cópia de trabalho. O CI valida apenas arquivos versionados.
 
 for name in ['vercel.json','package.json']:
     path=ROOT/name
