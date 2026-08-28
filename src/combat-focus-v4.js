@@ -47,7 +47,28 @@
       .mob-target-hp-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:7px;color:#a99f8d;font-size:9px}.mob-target-hp-row b{color:#e9dfcc;font-size:9px}
       .mob-target-hp-track{position:relative;height:9px;margin-top:4px;overflow:hidden;border:1px solid rgba(255,255,255,.1);border-radius:999px;background:#16080b;box-shadow:inset 0 1px 4px rgba(0,0,0,.8)}.mob-target-hp-fill{height:100%;width:100%;border-radius:inherit;background:linear-gradient(90deg,#b93646,#ef6674 58%,#ff8a8e);box-shadow:0 0 10px rgba(239,102,116,.3);transition:width .12s linear}.mob-target-hp-shine{position:absolute;inset:1px 2px auto;height:2px;border-radius:999px;background:rgba(255,255,255,.24);pointer-events:none}
       .mob-target-close{align-self:start;width:25px;height:25px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.08);border-radius:7px;background:rgba(255,255,255,.03);color:#8e8779;font:700 14px/1 sans-serif;cursor:pointer}.mob-target-close:hover{border-color:rgba(242,198,93,.3);color:#f0d47f;background:rgba(242,198,93,.06)}
-      @media(max-width:760px){.mob-target-panel{top:48px;width:min(420px,calc(100vw - 18px));grid-template-columns:46px minmax(0,1fr) auto;gap:8px;padding:8px 9px}.mob-target-portrait{width:46px;height:46px}.mob-target-portrait img{width:40px;height:40px}.mob-target-title strong{font-size:13px}.mob-target-hp-row{margin-top:5px}}
+      @media(max-width:900px) and (min-width:621px) and (pointer:fine){
+        .mob-target-panel{left:auto;right:12px;top:12px;transform:translateY(-8px);width:min(420px,calc(100vw - 376px))}
+        .mob-target-panel.is-entering{transform:translateY(0)}
+      }
+      @media(pointer:coarse){
+        .mob-target-panel{grid-template-columns:46px minmax(0,1fr) auto;gap:8px;padding:8px 9px}
+        .mob-target-portrait{width:46px;height:46px}.mob-target-portrait img{width:40px;height:40px}.mob-target-title strong{font-size:13px}.mob-target-hp-row{margin-top:5px}
+      }
+      @media(pointer:coarse) and (orientation:landscape) and (min-width:601px){
+        .mob-target-panel{left:auto;right:max(8px,env(safe-area-inset-right));top:max(7px,env(safe-area-inset-top));transform:translateY(-8px);width:min(420px,calc(100vw - 390px))}
+        .mob-target-panel.is-entering{transform:translateY(0)}
+      }
+      @media(max-width:620px) and (pointer:fine), (pointer:coarse) and (orientation:portrait), (pointer:coarse) and (orientation:landscape) and (max-width:600px){
+        .mob-target-panel{top:max(116px,calc(env(safe-area-inset-top) + 108px));left:calc((100vw - 132px)/2);right:auto;transform:translate(-50%,-8px);width:min(420px,calc(100vw - 148px));grid-template-columns:46px minmax(0,1fr) auto;gap:8px;padding:8px 9px}
+        .mob-target-panel.is-entering{transform:translate(-50%,0)}
+        .mob-target-portrait{width:46px;height:46px}.mob-target-portrait img{width:40px;height:40px}.mob-target-title strong{font-size:13px}.mob-target-hp-row{margin-top:5px}
+        .hide-minimap .mob-target-panel{left:50%;width:min(420px,calc(100vw - 18px))}
+      }
+      @media(max-height:470px) and (pointer:coarse) and (orientation:landscape) and (min-width:601px){
+        .mob-target-panel{grid-template-columns:42px minmax(0,1fr) auto;gap:7px;padding:7px 8px}
+        .mob-target-portrait{width:42px;height:42px}.mob-target-portrait img{width:37px;height:37px}.mob-target-eyebrow{font-size:7px}.mob-target-title strong{font-size:12px}.mob-target-hp-row{margin-top:3px}.mob-target-hp-track{height:8px;margin-top:3px}
+      }
     `;
     document.head.appendChild(style);
   }
@@ -190,36 +211,23 @@
   }
 
   function drawOverlay(ctx, mob, selected) {
-    if (!mob || mob.dead) return;
+    if (!mob || mob.dead || !selected) return;
     const now = performance.now();
     const wave = (Math.sin(now * .01) + 1) * .5;
-    const color = selected ? TARGET_COLOR : HOVER_COLOR;
-    const spread = selected ? 24 + wave * 3 : 21;
-    const top = -34 - (selected ? wave * 2 : 0);
+    const top = -34 - wave * 2;
 
     ctx.save();
     ctx.translate(mob.x, mob.y);
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.lineWidth = selected ? 2 : 1.4;
-    ctx.globalAlpha = selected ? .72 + wave * .25 : .36;
-    ctx.shadowBlur = selected ? 12 : 6;
-    ctx.shadowColor = color;
-
-    if (selected) {
-      ctx.beginPath();
-      ctx.moveTo(0, top - 8);
-      ctx.lineTo(-5, top - 1);
-      ctx.lineTo(5, top - 1);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    const h = selected ? 10 : 7;
+    ctx.fillStyle = TARGET_COLOR;
+    ctx.globalAlpha = .72 + wave * .25;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = TARGET_COLOR;
     ctx.beginPath();
-    ctx.moveTo(-spread, -24); ctx.lineTo(-spread, -24 + h); ctx.moveTo(-spread, -24); ctx.lineTo(-spread + h, -24);
-    ctx.moveTo(spread, -24); ctx.lineTo(spread, -24 + h); ctx.moveTo(spread, -24); ctx.lineTo(spread - h, -24);
-    ctx.stroke();
+    ctx.moveTo(0, top - 8);
+    ctx.lineTo(-5, top - 1);
+    ctx.lineTo(5, top - 1);
+    ctx.closePath();
+    ctx.fill();
     ctx.restore();
   }
 
