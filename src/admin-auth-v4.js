@@ -24,7 +24,7 @@ async function loadAdminRuntime(){
   for(const src of ['src/world-v2.js','src/editor-v2.js','src/admin-v3c.js','src/admin-studio-v4.js','src/admin-accounts-v4.js'])await script(src);
 }
 function addSessionChip(){
-  if($('#adminSessionChip'))return;
+  if(document.getElementById('adminSessionChip'))return;
   const actions=document.querySelector('.studio-publish-actions');if(!actions)return;
   const chip=document.createElement('div');chip.id='adminSessionChip';chip.className='admin-session-chip';chip.innerHTML=`<div><b>${escapeHtml(state.profile?.username||'Administrador')}</b><small>Acesso 3 · sessão protegida</small></div><button type="button" title="Encerrar sessão Admin">Sair</button>`;
   chip.querySelector('button').addEventListener('click',logout);
