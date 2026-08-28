@@ -32,6 +32,7 @@ jobs:
           node --check src/account-status-v4.js
           node --check api/config.js
           node --check api/admin-access.js
+          node --check src/editor-diagnostics-v5.js
           node --check src/editor-v2.js
           node --check src/admin-v3c.js
           node --check src/admin-studio-v4.js
