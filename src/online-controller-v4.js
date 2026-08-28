@@ -3,6 +3,7 @@
 
   const $ = (s) => document.querySelector(s);
   const MAX_WAIT_MS = 15000;
+  const MIN_SPRINT_MULTIPLIER = 1.70;
   let installed = false;
   let sessionTimer = null;
 
@@ -128,6 +129,49 @@
     }, true);
   }
 
+  function installSprintFix() {
+    const game = global.astraeon;
+    if (!game || game.sprintV42Fixed) return;
+    game.sprintV42Fixed = true;
+
+    const originalUpdate = game.update.bind(game);
+    game.update = function (dt) {
+      const p = this.player;
+      if (!p) return originalUpdate(dt);
+
+      const moving = this.keys?.has('w') || this.keys?.has('a') || this.keys?.has('s') || this.keys?.has('d') ||
+        this.keys?.has('arrowup') || this.keys?.has('arrowdown') || this.keys?.has('arrowleft') || this.keys?.has('arrowright');
+      const wantsSprint = !!(moving && this.keys?.has('shift') && Number(this.stamina) > .35);
+      const baseSpeed = Math.max(0, Number(p.speed) || 0);
+      const beforeX = p.x;
+      const beforeY = p.y;
+
+      originalUpdate(dt);
+
+      if (!wantsSprint || !this.sprinting || !this.player || baseSpeed <= 0 || dt <= 0) return;
+      const dx = this.player.x - beforeX;
+      const dy = this.player.y - beforeY;
+      const actualDistance = Math.hypot(dx, dy);
+      if (actualDistance <= .001) return;
+
+      const configured = Number(this.adminSprintMultiplier);
+      const multiplier = Number.isFinite(configured)
+        ? Math.max(MIN_SPRINT_MULTIPLIER, configured)
+        : MIN_SPRINT_MULTIPLIER;
+      const desiredDistance = baseSpeed * dt * multiplier;
+      const missingDistance = desiredDistance - actualDistance;
+
+      if (missingDistance > .05) {
+        this.moveEntity(
+          this.player,
+          dx / actualDistance * missingDistance,
+          dy / actualDistance * missingDistance,
+          10
+        );
+      }
+    };
+  }
+
   function installGuestSubmitGuard(state) {
     const form = $('#onlineChatForm');
     if (!form) return;
@@ -151,6 +195,7 @@
     keepGuestChatUsable(state);
     installKeyboard(state);
     installRightMouseGuard();
+    installSprintFix();
     installGuestSubmitGuard(state);
     document.body.classList.add('astraeon-online-controller-ready');
   }
