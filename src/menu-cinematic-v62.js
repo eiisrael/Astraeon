@@ -8,7 +8,7 @@ const BEGINNER_NEWS=[
   ['ENTER','Pressione Enter para abrir o Chat de Astra.'],
   ['E','Aproxime-se de um NPC e pressione E para conversar.'],
   ['1–5','Use as teclas 1–5 para ativar suas habilidades.'],
-  ['I','Pressione I para abrir mochila, equipamento e ItemList.']
+  ['I','Pressione I para abrir mochila e equipamento.']
 ];
 const state={installed:false,lastSession:null,newsIndex:0,slideIndex:0,newsTimer:null,slideTimer:null,audio:null,audioUnlocked:false,audioCtx:null,lastHover:null};
 function ensureStyle(){if(document.querySelector('link[data-menu-cinematic-v62]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href='src/menu-cinematic-v62.css';l.dataset.menuCinematicV62='1';document.head.appendChild(l);}
