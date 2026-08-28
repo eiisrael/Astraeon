@@ -16,11 +16,11 @@
     panel.classList.add('admin-studio-v4');
     const title = panel.querySelector('.admin-head-copy b');
     const subtitle = panel.querySelector('.admin-head-copy small');
-    if (title) title.textContent = 'ASTRAEON · ADMIN STUDIO 4.1';
-    if (subtitle) subtitle.textContent = 'Balanceamento, personagem, mundo, dados locais e diagnóstico da infraestrutura online.';
+    if (title) title.textContent = 'ASTRAEON · ADMIN STUDIO 4.2';
+    if (subtitle) subtitle.textContent = 'Balanceamento, personagem, mundo, contas, níveis de acesso e diagnóstico online.';
     const brand = document.querySelector('.brand small');
-    if (brand) brand.textContent = 'Admin Studio 4.1 · World & Balance';
-    document.title = 'ASTRAEON — Admin Studio 4.1';
+    if (brand) brand.textContent = 'Admin Studio 4.2 · World & Access';
+    document.title = 'ASTRAEON — Admin Studio 4.2';
   }
 
   async function getOnlineStatus() {
@@ -71,7 +71,7 @@
         <span>Infraestrutura online</span><b>${online.enabled ? 'Supabase configurado' : 'Modo local / não configurado'}</b><small>${escapeHtml(online.project || online.reason || 'Configure Vercel + Supabase')}</small>
       </section>
       <section class="studio-diagnostic-card" data-state="ok">
-        <span>Banco de jogadores</span><b>profiles · player_saves · chat_messages</b><small>Schema: supabase/migrations/001_astraeon_online.sql</small>
+        <span>Banco & autorização</span><b>profiles · saves · chat · access</b><small>Migrations 001 + 002 · Admin exige Acesso 3</small>
       </section>`;
     page.insertBefore(addon, page.querySelector('.admin-grid') || page.children[1]);
   }
