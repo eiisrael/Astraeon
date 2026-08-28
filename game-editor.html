@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#071018">
 <meta name="robots" content="noindex,nofollow">
-<title>ASTRAEON — Admin Studio 4.2</title>
+<title>ASTRAEON — Admin Studio 5.0</title>
 <link rel="stylesheet" href="src/editor-v2.css">
 <link rel="stylesheet" href="src/typography-v3c.css">
 <link rel="stylesheet" href="src/editor-v3c.css">
@@ -18,10 +18,10 @@
   <div class="admin-access-card">
     <header class="admin-access-brand">
       <div class="admin-access-brand-mark">A</div>
-      <div><span>Área protegida</span><b>ASTRAEON · ADMIN STUDIO</b><small>Apenas contas Supabase com Acesso 3</small></div>
+      <div><span>Área protegida</span><b>ASTRAEON · ADMIN STUDIO</b><small>Acesso administrativo 3 obrigatório</small></div>
     </header>
     <div class="admin-access-body">
-      <p class="admin-access-intro">Entre com sua conta administrativa. A autorização é validada contra o perfil no Supabase antes das ferramentas do Editor serem carregadas.</p>
+      <p class="admin-access-intro">Entre com uma conta administrativa. O Editor, os dados de balanceamento e as ferramentas de publicação só são carregados depois da autorização no Supabase.</p>
       <form id="adminLoginForm" class="admin-access-form">
         <label>E-mail administrativo<input id="adminLoginEmail" type="email" autocomplete="email" required maxlength="120"></label>
         <label>Senha<input id="adminLoginPassword" type="password" autocomplete="current-password" required minlength="10" maxlength="128"></label>
@@ -37,75 +37,88 @@
   </div>
 </section>
 
-<div id="adminEditorRoot" class="editor studio-v4 admin-editor-locked">
+<div id="adminEditorRoot" class="editor studio-v5 admin-editor-locked">
   <header class="topbar studio-topbar">
     <div class="brand studio-brand">
       <div class="brand-mark">A</div>
-      <div><strong>ASTRAEON</strong><small>Admin Studio 4.2 · World & Access</small></div>
+      <div><strong>ASTRAEON</strong><small>Admin Studio 5.0 · World Production</small></div>
     </div>
-    <div class="studio-context">
+
+    <div class="studio-project-state">
       <span class="studio-status-dot"></span>
-      <div><b>Projeto protegido</b><small>Mundo, balanceamento, contas e diagnóstico</small></div>
+      <div><b id="studioProjectName">Mundo principal</b><small id="studioProjectMeta">96 × 96 · editor protegido</small></div>
     </div>
-    <div class="studio-quick-actions">
-      <button id="newMapBtn" class="btn optional">Novo mundo</button>
-      <button id="undoBtn" class="btn" title="Ctrl+Z">Desfazer</button>
-      <button id="redoBtn" class="btn" title="Ctrl+Y">Refazer</button>
-    </div>
+
+    <nav class="studio-mode-nav" aria-label="Áreas do Studio">
+      <button class="studio-mode active" type="button" data-studio-mode="world">Mundo</button>
+      <button id="studioAdminLauncher" class="studio-mode" type="button">Administração</button>
+    </nav>
+
     <div class="top-actions studio-publish-actions">
-      <button id="importBtn" class="btn optional">Importar</button>
-      <button id="exportBtn" class="btn optional">Exportar</button>
-      <button id="saveBtn" class="btn primary">Salvar mundo</button>
-      <button id="playBtn" class="btn primary">▶ Testar jogo</button>
+      <button id="undoBtn" class="btn" title="Ctrl+Z">↶</button>
+      <button id="redoBtn" class="btn" title="Ctrl+Y">↷</button>
+      <button id="validateMapBtn" class="btn">Validar</button>
+      <button id="saveBtn" class="btn primary">Salvar + exportar</button>
+      <button id="playBtn" class="btn success">▶ Testar</button>
     </div>
   </header>
 
   <div class="studio-commandbar">
-    <div><span class="studio-command-kicker">Editor de mundo</span><b>Ferramentas administrativas carregadas somente após autorização Acesso 3.</b></div>
-    <div class="studio-shortcuts"><span><kbd>F10</kbd> Admin Studio</span><span><kbd>Ctrl+S</kbd> Salvar</span><span><kbd>Shift</kbd> Pan</span></div>
+    <div class="studio-command-left">
+      <span class="studio-command-kicker">Mundo</span>
+      <b id="studioCommandText">Edite terreno, objetos, colisões e spawns. O rascunho é salvo automaticamente.</b>
+    </div>
+    <div class="studio-command-actions">
+      <button id="newMapBtn" class="studio-command-btn" type="button">Novo mundo</button>
+      <button id="importBtn" class="studio-command-btn" type="button">Importar JSON</button>
+      <button id="exportBtn" class="studio-command-btn" type="button">Ver JSON</button>
+      <span class="studio-shortcut"><kbd>Ctrl+S</kbd> salvar/exportar</span>
+      <span class="studio-shortcut"><kbd>F10</kbd> administração</span>
+    </div>
   </div>
 
   <main class="workspace studio-workspace">
     <aside class="sidebar studio-sidebar">
+      <section class="studio-side-head">
+        <div><span>Ferramentas</span><b>Construção do mundo</b></div>
+        <small id="studioActiveTool">Pincel de bioma</small>
+      </section>
+
       <section class="section studio-section">
-        <div class="section-title">Ferramentas <span>mundo</span></div>
-        <div class="tool-grid">
-          <button class="tool-btn active" data-tool="biome"><i>B</i>Bioma</button>
-          <button class="tool-btn" data-tool="road"><i>R</i>Estrada</button>
-          <button class="tool-btn" data-tool="water"><i>W</i>Água</button>
-          <button class="tool-btn" data-tool="object"><i>O</i>Objeto</button>
-          <button class="tool-btn" data-tool="collision"><i>C</i>Colisão</button>
-          <button class="tool-btn" data-tool="spawn"><i>S</i>Spawn</button>
-          <button class="tool-btn" data-tool="erase"><i>E</i>Borracha</button>
-          <button class="tool-btn" data-tool="select"><i>V</i>Seleção</button>
-          <button class="tool-btn" data-tool="pan"><i>P</i>Mover</button>
+        <div class="section-title">Ferramentas <span>atalhos</span></div>
+        <div class="tool-grid studio-tool-grid">
+          <button class="tool-btn active" data-tool="biome"><i>B</i><span>Bioma</span></button>
+          <button class="tool-btn" data-tool="road"><i>R</i><span>Estrada</span></button>
+          <button class="tool-btn" data-tool="water"><i>W</i><span>Água</span></button>
+          <button class="tool-btn" data-tool="object"><i>O</i><span>Objeto</span></button>
+          <button class="tool-btn" data-tool="collision"><i>C</i><span>Colisão</span></button>
+          <button class="tool-btn" data-tool="spawn"><i>S</i><span>Spawn</span></button>
+          <button class="tool-btn" data-tool="erase"><i>E</i><span>Borracha</span></button>
+          <button class="tool-btn" data-tool="select"><i>V</i><span>Seleção</span></button>
+          <button class="tool-btn studio-tool-wide" data-tool="pan"><i>P</i><span>Mover câmera</span></button>
         </div>
       </section>
 
       <section class="section studio-section">
-        <div class="section-title">Biomas <span>5 climas</span></div>
+        <div class="section-title">Biomas <span>5 regiões</span></div>
         <div id="biomePalette" class="palette"></div>
       </section>
 
-      <section class="section studio-section">
+      <section class="section studio-section studio-form-section">
         <div class="section-title">Pincel & conteúdo <span>precisão</span></div>
-        <label class="hint" for="brushSize">Tamanho do pincel</label>
-        <input id="brushSize" type="range" min="1" max="4" step="1" value="1">
-        <label class="hint" for="objectSelect">Objeto ambiental</label>
-        <select id="objectSelect" class="object-select"></select>
-        <label class="hint" for="mobSelect">Criatura de spawn</label>
-        <select id="mobSelect" class="object-select"></select>
+        <label class="studio-field-row" for="brushSize"><span>Tamanho</span><input id="brushSize" type="range" min="1" max="4" step="1" value="1"></label>
+        <label class="studio-field-stack" for="objectSelect"><span>Objeto ambiental</span><select id="objectSelect" class="object-select"></select></label>
+        <label class="studio-field-stack" for="mobSelect"><span>Criatura de spawn</span><select id="mobSelect" class="object-select"></select></label>
+      </section>
+
+      <section class="section studio-section studio-form-section">
+        <div class="section-title">Geração procedural <span>seed</span></div>
+        <label class="studio-field-stack" for="seedInput"><span>Semente global</span><input id="seedInput" class="seed-input" maxlength="28" value="ASTRAEON-ONLINE"></label>
+        <small class="studio-explain">A seed gera a base. O Editor armazena apenas os overrides e spawns manuais.</small>
       </section>
 
       <section class="section studio-section">
-        <div class="section-title">Geração <span>procedural</span></div>
-        <label class="hint" for="seedInput">Semente global</label>
-        <input id="seedInput" class="seed-input" maxlength="28" value="ASTRAEON-ONLINE">
-        <p class="hint">A seed gera o mapa-base; pinturas e spawns ficam como overrides versionáveis.</p>
-      </section>
-
-      <section class="section studio-section">
-        <div class="section-title">Camadas <span>visibilidade</span></div>
+        <div class="section-title">Camadas <span>viewport</span></div>
         <div class="layer-list">
           <label class="layer-row"><input class="layer-toggle" data-layer="terrain" type="checkbox" checked> Terreno <span>base</span></label>
           <label class="layer-row"><input class="layer-toggle" data-layer="objects" type="checkbox" checked> Objetos <span>flora</span></label>
@@ -117,29 +130,90 @@
     </aside>
 
     <section class="stage-wrap studio-stage">
-      <div class="studio-stage-head">
-        <div><span>Canvas do mundo</span><b>96 × 96 tiles</b></div>
-        <div class="studio-stage-head-actions"><span id="studioDirtyState">Sincronizado com o navegador</span></div>
+      <div class="studio-stage-topline">
+        <div class="studio-canvas-title"><span>Canvas do mundo</span><b id="studioCanvasMeta">96 × 96 tiles</b></div>
+        <div class="studio-stage-state"><span id="studioDirtyState">Sincronizado</span><span id="studioAutosaveBadge">Autosave ativo</span></div>
       </div>
+
       <canvas id="editorCanvas"></canvas>
-      <div class="stage-toolbar"><button id="zoomOut" title="Diminuir zoom">−</button><button id="zoomFit" title="Enquadrar mundo">⌗</button><button id="zoomIn" title="Aumentar zoom">+</button></div>
-      <div class="stage-info">Zoom <b id="zoomLabel">100%</b> · Shift/Mouse direito para mover · roda para zoom</div>
+
+      <div class="stage-toolbar studio-zoom-toolbar">
+        <button id="zoomOut" title="Diminuir zoom">−</button>
+        <button id="zoomFit" title="Enquadrar mundo">⌗</button>
+        <button id="zoomIn" title="Aumentar zoom">+</button>
+      </div>
+
+      <div class="studio-jumpbar">
+        <span>Ir para tile</span>
+        <input id="jumpTileX" type="number" min="0" max="95" value="48" aria-label="Coordenada X">
+        <input id="jumpTileY" type="number" min="0" max="95" value="48" aria-label="Coordenada Y">
+        <button id="jumpTileBtn" type="button">Ir</button>
+      </div>
+
+      <div class="stage-info">Zoom <b id="zoomLabel">100%</b> · Shift/Mouse direito move · roda aplica zoom</div>
       <div id="cursorCoord" class="cursor-coord">tile —, —</div>
     </section>
 
     <aside class="sidebar right studio-inspector">
-      <section class="section studio-section"><div id="inspector" class="inspector-card"><h3>Inspetor</h3><p class="hint">Selecione um tile para examinar suas propriedades.</p></div></section>
-      <section class="section studio-section"><div class="section-title">Resumo do mundo <span>tempo real</span></div><div id="stats" class="stats"></div></section>
-      <section class="section studio-section"><div class="section-title">Histórico <span>sessão</span></div><div id="historyList" class="history-list"></div></section>
-      <section class="section studio-section studio-help-card"><div class="section-title">Fluxo profissional <span>4.2</span></div><ol><li>Autentique com Acesso 3.</li><li>Defina seed, terreno, cidades e spawns.</li><li>Abra <b>Admin Studio</b> (F10) para balanceamento e contas.</li><li>Salve e teste no jogo.</li><li>Revise níveis de acesso no Supabase.</li></ol></section>
+      <section class="studio-side-head inspector-head">
+        <div><span>Contexto</span><b>Inspetor & publicação</b></div>
+        <small id="validationState">Não validado</small>
+      </section>
+
+      <section class="section studio-section studio-inspector-section">
+        <div id="inspector" class="inspector-card"><h3>Inspetor</h3><p class="hint">Use Seleção e clique em um tile para editar propriedades locais.</p></div>
+      </section>
+
+      <section class="section studio-section studio-publish-card">
+        <div class="section-title">Publicação do mapa <span>automática</span></div>
+        <label class="studio-switch-row"><span><b>Autoexportar</b><small>Atualiza o arquivo vinculado após alterações.</small></span><input id="autoExportToggle" type="checkbox" checked></label>
+        <button id="linkExportFileBtn" class="studio-full-btn" type="button">Vincular arquivo .json</button>
+        <button id="exportNowBtn" class="studio-full-btn secondary" type="button">Exportar agora</button>
+        <div class="studio-export-state"><span>Arquivo</span><b id="exportState">Download automático ao salvar</b></div>
+        <div class="studio-export-state"><span>Autosave</span><b id="autosaveState">Aguardando alterações</b></div>
+      </section>
+
+      <section class="section studio-section">
+        <div class="section-title">Saúde do mundo <span>validação</span></div>
+        <div id="worldHealth" class="studio-world-health"><div class="studio-health-ok">Execute “Validar” para verificar spawns, overrides e seed.</div></div>
+      </section>
+
+      <section class="section studio-section">
+        <div class="section-title">Resumo <span>tempo real</span></div>
+        <div id="stats" class="stats"></div>
+      </section>
+
+      <section class="section studio-section studio-maintenance">
+        <div class="section-title">Manutenção <span>ações destrutivas</span></div>
+        <div class="studio-maintenance-actions">
+          <button id="clearSpawnsBtn" type="button">Limpar spawns</button>
+          <button id="clearOverridesBtn" type="button">Limpar overrides</button>
+        </div>
+      </section>
+
+      <section class="section studio-section">
+        <div class="section-title">Histórico <span>sessão</span></div>
+        <div id="historyList" class="history-list"></div>
+      </section>
     </aside>
   </main>
 
-  <footer class="statusbar studio-statusbar"><span>Ferramenta <b id="statusTool">Pincel de bioma</b></span><span>Seed <b id="statusSeed">ASTRAEON-ONLINE</b></span><span>Mapa <b>96 × 96</b></span><span>Suite <b>ADMIN 4.2</b></span><span id="saveState" class="save-state">Pronto</span></footer>
+  <footer class="statusbar studio-statusbar">
+    <span>Ferramenta <b id="statusTool">Pincel de bioma</b></span>
+    <span>Seed <b id="statusSeed">ASTRAEON-ONLINE</b></span>
+    <span>Mapa <b id="statusMapSize">96 × 96</b></span>
+    <span>Exportação <b id="statusExport">automática</b></span>
+    <span id="saveState" class="save-state">Pronto</span>
+  </footer>
 </div>
 
 <div id="jsonDialog" class="dialog hidden">
-  <div class="dialog-card"><h2 id="jsonTitle">Mapa JSON</h2><p id="jsonHelp">Importe ou exporte o formato de mundo Astraeon.</p><textarea id="jsonText" spellcheck="false"></textarea><div class="dialog-actions"><button id="jsonClose" class="btn">Fechar</button><button id="jsonApply" class="btn primary">Aplicar</button></div></div>
+  <div class="dialog-card studio-json-dialog">
+    <header><div><span>Dados do mundo</span><h2 id="jsonTitle">Mapa JSON</h2></div><button id="jsonClose" type="button" aria-label="Fechar">×</button></header>
+    <p id="jsonHelp">Importe ou revise o formato de mundo Astraeon.</p>
+    <textarea id="jsonText" spellcheck="false"></textarea>
+    <div class="dialog-actions"><button id="jsonApply" class="btn primary">Aplicar</button></div>
+  </div>
 </div>
 <div id="notice" class="notice">Mapa salvo.</div>
 
