@@ -10,6 +10,19 @@
   const STAMINA_REGEN = 19;
   const STAMINA_DELAY = .65;
   const SPRINT_MULTIPLIER = 1.55;
+  const MOB_DISPLAY_NAMES = Object.freeze({
+    Slime:'Slime', Wolf:'Lobo', Globin:'Goblin', Orc:'Orc', Troll:'Troll', Pig_Monster:'Monstro Javali',
+    Golem_Gelo:'Golem de Gelo', Spider:'Aranha', zombie:'Zumbi', sombra:'Sombra', Caveira:'Caveira',
+    Squelleton:'Esqueleto', Draconato:'Draconato'
+  });
+
+  function getMobDisplayLevel(mob, data) {
+    const explicit = Number(mob?.level);
+    if (Number.isFinite(explicit) && explicit >= 1) return Math.max(1,Math.round(explicit));
+    const baseHp = Math.max(1,Number(data?.hp) || 1);
+    const scaledHp = Math.max(1,Number(mob?.maxHp) || baseHp);
+    return Math.max(1,Math.round(1 + ((scaledHp / baseHp) - 1) / .08));
+  }
 
   function install() {
     const game = window.astraeon;
@@ -37,6 +50,7 @@
     const originalAddInventoryItem = game.addInventoryItem?.bind(game);
     const originalUnequipItem = game.unequipItem?.bind(game);
     const originalKillMob = game.killMob.bind(game);
+    const originalDrawMobs = game.drawMobs.bind(game);
 
     game.updateStaminaUI = function () {
       const max = Math.max(1,this.staminaMax || STAMINA_MAX);
@@ -195,6 +209,30 @@
         meta.insertAdjacentHTML('beforeend',`<b class="bag-capacity ${full?'full':''}">${count}/${this.backpackCapacity} slots</b>`);
       }
       document.querySelector('.backpack-column')?.classList.toggle('bag-full',this.isBackpackFull());
+    };
+
+    game.drawMobs = function (ctx) {
+      originalDrawMobs(ctx);
+      if (!this.player) return;
+      const visible = this.mobs.filter(m => !m.dead && Math.abs(m.x - this.player.x) < this.viewW * .8 + 400 && Math.abs(m.y - this.player.y) < this.viewH * .8 + 400);
+      for (const mob of visible) {
+        if (!(mob.aggro || mob.hit > 0 || mob.hp < mob.maxHp)) continue;
+        const data = W.MOB_DATA[mob.type] || {};
+        const name = MOB_DISPLAY_NAMES[mob.type] || data.name || String(mob.type || 'Criatura').replaceAll('_',' ');
+        const level = getMobDisplayLevel(mob,data);
+        const label = `${name} • Nv. ${level}`;
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.font = '700 9px Inter, sans-serif';
+        ctx.lineWidth = 3;
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = 'rgba(0,0,0,.78)';
+        ctx.strokeText(label,mob.x,mob.y - 47);
+        ctx.fillStyle = '#f3ead8';
+        ctx.fillText(label,mob.x,mob.y - 47);
+        ctx.restore();
+      }
     };
 
     game.drawPickups = function (ctx) {
