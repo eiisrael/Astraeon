@@ -16,8 +16,8 @@ let rowsObserver=null;
 let schedulerRefreshTimer=null;
 let schedulerTickTimer=null;
 let sprintKeyDown=false;
-let connectionNoticeSeen=false;
-const accessCache=new Map();
+let managedJoinShown=false;
+const profileCache=new Map();
 const schedules=new Map();
 const ownBubble={text:'',until:0};
 const $=s=>document.querySelector(s);
@@ -67,17 +67,29 @@ function enhanceSettings(){
   settings.appendChild(actions);$('#onlineChatClear')?.addEventListener('click',clearChatView);$('#onlineChatExport')?.addEventListener('click',exportChat);
 }
 
-function profileAccess(username){
-  const key=String(username||'').trim().toLowerCase();if(!key||!mpState?.client||!mpState?.session)return Promise.resolve(1);if(accessCache.has(key))return accessCache.get(key);
-  const pending=(async()=>{try{const {data,error}=await mpState.client.from('profiles').select('access').ilike('username',username).limit(1).maybeSingle();if(error)return 1;return Number(data?.access)===3?3:Number(data?.access)||1;}catch(_){return 1;}})();accessCache.set(key,pending);return pending;
+function profileMeta(username){
+  const key=String(username||'').trim().toLowerCase();if(!key||!mpState?.client||!mpState?.session)return Promise.resolve({access:1,display_name:username,username});if(profileCache.has(key))return profileCache.get(key);
+  const pending=(async()=>{try{const {data,error}=await mpState.client.from('profiles').select('username,display_name,access').ilike('username',username).limit(1).maybeSingle();if(error||!data)return{access:1,display_name:username,username};return{access:Number(data.access)||1,display_name:String(data.display_name||data.username||username).slice(0,24),username:data.username||username};}catch(_){return{access:1,display_name:username,username};}})();profileCache.set(key,pending);return pending;
 }
-async function decorateAdm(row){
-  if(!row||row.dataset.admChecked==='true'||row.classList.contains('system'))return;row.dataset.admChecked='true';const head=row.querySelector(':scope > div'),name=head?.querySelector('b');if(!head||!name)return;const access=await profileAccess(name.textContent||'');if(access!==3||!row.isConnected||row.querySelector('.online-chat-adm-tag'))return;const tag=document.createElement('span');tag.className='online-chat-adm-tag';tag.textContent='[ADM]';head.insertBefore(tag,name);
+async function decoratePlayerRow(row){
+  if(!row||row.dataset.profileChecked==='true'||row.classList.contains('system'))return;row.dataset.profileChecked='true';const head=row.querySelector(':scope > div'),name=head?.querySelector('b');if(!head||!name)return;
+  const loginName=name.textContent?.trim()||'';const meta=await profileMeta(loginName);if(!row.isConnected)return;
+  const ownLogin=String(mpState?.profile?.username||'').toLowerCase(),isOwn=!!ownLogin&&ownLogin===loginName.toLowerCase();const localCharacter=isOwn?String(global.astraeon?.player?.name||'').trim():'';const displayName=(localCharacter||meta.display_name||loginName||'Viajante').slice(0,24);name.textContent=displayName;
+  if(meta.access===3&&!row.querySelector('.online-chat-adm-tag')){const tag=document.createElement('span');tag.className='online-chat-adm-tag';tag.textContent='[ADM]';head.insertBefore(tag,name);}
+}
+
+async function emitManagedJoinMessages(){
+  if(!mpState?.client||!mpState?.session)return;
+  try{
+    const {data,error}=await mpState.client.from('system_messages').select('id,body,message_kind,enabled,sort_order').eq('enabled',true).eq('message_kind','on_join').order('sort_order',{ascending:true}).order('id',{ascending:true});
+    if(error){console.warn('[Astraeon Chat] mensagens de entrada indisponíveis',error.message);return;}
+    for(const row of data||[])appendSystemRow(row.body,`managed-join-${row.id}`);
+  }catch(error){console.warn('[Astraeon Chat] mensagens de entrada',error);}
 }
 function processChatRow(row){
   if(!(row instanceof HTMLElement)||!row.classList.contains('online-chat-line'))return;
-  if(row.classList.contains('system')&&textOfRow(row)===CONNECT_NOTICE){if(connectionNoticeSeen){row.remove();return;}connectionNoticeSeen=true;}
-  void decorateAdm(row);
+  if(row.classList.contains('system')&&textOfRow(row)===CONNECT_NOTICE){row.remove();if(!managedJoinShown){managedJoinShown=true;void emitManagedJoinMessages();}return;}
+  void decoratePlayerRow(row);
 }
 function installRowsObserver(){
   const box=$('#onlineChatMessages');if(!box||rowsObserver)return;Array.from(box.children).forEach(processChatRow);rowsObserver=new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>processChatRow(node))));rowsObserver.observe(box,{childList:true});
@@ -98,7 +110,7 @@ function scheduleNext(row,now=Date.now()){
   const minutes=Number(row.interval_minutes)||10,step=minutes*60000,anchor=Date.parse(row.updated_at||row.created_at)||now;const jumps=Math.max(1,Math.floor((now-anchor)/step)+1);return anchor+jumps*step;
 }
 async function refreshSchedules(){
-  if(!mpState?.client||!mpState?.session)return;try{const {data,error}=await mpState.client.from('system_messages').select('id,body,interval_minutes,enabled,sort_order,created_at,updated_at').eq('enabled',true).order('sort_order',{ascending:true}).order('id',{ascending:true});if(error)return;const incoming=new Set();for(const row of data||[]){incoming.add(String(row.id));const signature=`${row.body}|${row.interval_minutes}|${row.updated_at}`;const existing=schedules.get(String(row.id));if(existing?.signature===signature)continue;schedules.set(String(row.id),{...row,signature,nextAt:scheduleNext(row)});}for(const id of Array.from(schedules.keys()))if(!incoming.has(id))schedules.delete(id);}catch(_){}
+  if(!mpState?.client||!mpState?.session)return;try{const {data,error}=await mpState.client.from('system_messages').select('id,body,message_kind,interval_minutes,enabled,sort_order,created_at,updated_at').eq('enabled',true).eq('message_kind','periodic').order('sort_order',{ascending:true}).order('id',{ascending:true});if(error)return;const incoming=new Set();for(const row of data||[]){incoming.add(String(row.id));const signature=`${row.body}|${row.interval_minutes}|${row.updated_at}`;const existing=schedules.get(String(row.id));if(existing?.signature===signature)continue;schedules.set(String(row.id),{...row,signature,nextAt:scheduleNext(row)});}for(const id of Array.from(schedules.keys()))if(!incoming.has(id))schedules.delete(id);}catch(_){}
 }
 function tickSchedules(){const now=Date.now();for(const item of schedules.values()){if(now<item.nextAt)continue;appendSystemRow(item.body,`scheduled-${item.id}-${item.nextAt}`);const step=Math.max(5,Number(item.interval_minutes)||10)*60000;while(item.nextAt<=now)item.nextAt+=step;}}
 function installSystemScheduler(){if(schedulerRefreshTimer)return;void refreshSchedules();schedulerRefreshTimer=setInterval(refreshSchedules,SYSTEM_REFRESH_MS);schedulerTickTimer=setInterval(tickSchedules,SYSTEM_TICK_MS);}
@@ -116,5 +128,5 @@ function install(mp){
 function wait(){const started=Date.now();const tick=()=>{const mp=global.AstraeonMultiplayerV4;if(mp?.state&&$('#onlineChat')){install(mp);return;}if(Date.now()-started<15000)setTimeout(tick,80);};tick();}
 if(document.readyState==='loading')global.addEventListener('DOMContentLoaded',wait);else wait();
 global.addEventListener('beforeunload',()=>{rowsObserver?.disconnect();if(schedulerRefreshTimer)clearInterval(schedulerRefreshTimer);if(schedulerTickTimer)clearInterval(schedulerTickTimer);});
-global.AstraeonChatSystemV4={install,refreshSchedules,clearChatView,exportChat};
+global.AstraeonChatSystemV4={install,refreshSchedules,emitManagedJoinMessages,clearChatView,exportChat};
 })(window);
