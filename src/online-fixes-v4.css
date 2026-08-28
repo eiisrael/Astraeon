@@ -67,3 +67,19 @@ body.touch-forced .online-chat{bottom:calc(170px + env(safe-area-inset-bottom))}
 }
 
 @media(min-width:761px){.touch-chat{display:none!important}}
+
+/* Chat 4.3: professional collapse, 64-char counter, settings tools and Access 3 tag. */
+.online-chat{transition:height .26s cubic-bezier(.22,.78,.24,1),max-height .26s cubic-bezier(.22,.78,.24,1),opacity .18s ease,transform .18s ease,box-shadow .2s ease!important}
+.online-chat .online-chat-settings,.online-chat .online-chat-messages,.online-chat>form{transition:opacity .16s ease,transform .18s ease}
+.online-chat.chat-pro-collapsed{height:42px!important;max-height:42px!important;min-height:42px!important;grid-template-rows:42px 0 0 0!important;box-shadow:0 10px 28px rgba(0,0,0,.44)!important}
+.online-chat.chat-pro-collapsed .online-chat-settings,.online-chat.chat-pro-collapsed .online-chat-messages,.online-chat.chat-pro-collapsed>form{height:0!important;min-height:0!important;max-height:0!important;padding-top:0!important;padding-bottom:0!important;margin:0!important;border:0!important;opacity:0!important;transform:translateY(-6px);overflow:hidden!important;visibility:hidden;pointer-events:none!important}
+.online-chat.chat-pro-collapsed>header{border-bottom-color:transparent}
+.online-chat-settings-actions{display:flex;gap:6px;margin-top:7px;padding-top:7px;border-top:1px solid rgba(255,255,255,.055)}
+.online-chat-settings-actions button{flex:1;min-height:28px;border:1px solid rgba(118,214,255,.14);border-radius:5px;background:rgba(118,214,255,.04);color:#a9cad6;font-size:10px;font-weight:800;cursor:pointer}
+.online-chat-settings-actions button:hover{border-color:rgba(118,214,255,.32);color:#d8f4ff;background:rgba(118,214,255,.08)}
+.online-chat>form{grid-template-columns:minmax(0,1fr) auto auto!important;align-items:center}
+.online-chat-counter{min-width:34px;text-align:center;color:#82979e;font-size:9px;font-weight:800;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.online-chat-counter.near-limit{color:#e3bf75}.online-chat-counter.at-limit{color:#ff9b91}
+.online-chat-adm-tag{flex:0 0 auto;color:#ffd45f!important;font-size:9px!important;font-weight:900!important;letter-spacing:.035em;text-shadow:0 0 8px rgba(255,196,50,.18)}
+.online-chat-line>div{min-width:0}.online-chat-line>div b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:760px),(pointer:coarse){.online-chat>form{grid-template-columns:minmax(0,1fr) auto auto!important}.online-chat-counter{min-width:30px;font-size:8px}.online-chat-settings-actions button{min-height:30px}}
