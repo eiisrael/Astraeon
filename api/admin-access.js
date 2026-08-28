@@ -19,23 +19,25 @@ export default async function handler(req,res){
   res.setHeader('Content-Type','application/json; charset=utf-8');
   const supabaseUrl=process.env.SUPABASE_URL||'';
   const supabaseKey=process.env.SUPABASE_PUBLISHABLE_KEY||process.env.SUPABASE_ANON_KEY||'';
-  if(!supabaseUrl||!supabaseKey)return res.status(503).json({authenticated:false,allowed:false,error:'online_not_configured'});
+  if(!supabaseUrl||!supabaseKey)return res.status(503).json({authenticated:false,allowed:false,error:'verification_unavailable'});
   const authHeader=String(req.headers.authorization||'');
   const token=authHeader.startsWith('Bearer ')?authHeader.slice(7).trim():'';
-  if(!token)return res.status(401).json({authenticated:false,allowed:false,error:'missing_session'});
+  if(!token)return res.status(401).json({authenticated:false,allowed:false,error:'access_denied'});
   try{
     const headers={apikey:supabaseKey,Authorization:`Bearer ${token}`};
     const userResponse=await fetchTimed(`${supabaseUrl}/auth/v1/user`,{headers});
-    if(!userResponse.ok)return res.status(401).json({authenticated:false,allowed:false,error:'invalid_session'});
+    if(!userResponse.ok)return res.status(401).json({authenticated:false,allowed:false,error:'access_denied'});
     const user=await userResponse.json();
-    const profileResponse=await fetchTimed(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(user.id)}&select=id,username,display_name,access`,{headers:{...headers,Accept:'application/vnd.pgrst.object+json'}});
-    if(!profileResponse.ok)return res.status(403).json({authenticated:true,allowed:false,error:'profile_unavailable'});
+    const profileResponse=await fetchTimed(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(user.id)}&select=access`,{headers:{...headers,Accept:'application/vnd.pgrst.object+json'}});
+    if(!profileResponse.ok)return res.status(403).json({authenticated:true,allowed:false,error:'access_denied'});
     const profile=await profileResponse.json();
     const access=Number(profile?.access??1);
-    return res.status(200).json({authenticated:true,allowed:access===3,access,profile:{id:profile.id,username:profile.username,displayName:profile.display_name}});
+    const allowed=access===3;
+    if(!allowed)return res.status(403).json({authenticated:true,allowed:false,error:'access_denied'});
+    return res.status(200).json({authenticated:true,allowed:true});
   }catch(error){
     const timedOut=error?.name==='AbortError';
-    console.error('[Astraeon Admin Access]',error);
-    return res.status(timedOut?504:500).json({authenticated:false,allowed:false,error:timedOut?'verification_timeout':'verification_failed'});
+    console.error('[Astraeon Admin Access]',timedOut?'upstream_timeout':'verification_failed');
+    return res.status(timedOut?504:500).json({authenticated:false,allowed:false,error:'verification_unavailable'});
   }
 }
