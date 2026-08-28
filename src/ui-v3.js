@@ -21,7 +21,7 @@
       script.addEventListener('load',()=>window.AstraeonAdminRuntime?.install?.());
       document.head.appendChild(script);
     }
-    for (const [src,key] of [['src/production-runtime-v6.js','productionRuntimeV6'],['src/character-system-v6.js','characterSystemV6']]) {
+    for (const [src,key] of [['src/production-runtime-v6.js','productionRuntimeV6'],['src/character-system-v6.js','characterSystemV6'],['src/worldmaps-runtime-v61.js','worldMapsRuntimeV61']]) {
       if (document.querySelector(`script[data-${key}]`)) continue;
       const script=document.createElement('script');script.src=src;script.dataset[key]='1';document.head.appendChild(script);
     }
