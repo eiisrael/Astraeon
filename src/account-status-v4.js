@@ -4,6 +4,7 @@ const PENDING_KEY='astraeon:v4:pending-confirmation';
 const SHOWN_KEY='astraeon:v4:confirmation-shown';
 const ACCESS_LABELS={0:'Banido',1:'Jogador',2:'Em análise',3:'Admin'};
 const ACCESS_CLASS={0:'danger',1:'player',2:'review',3:'admin'};
+const confirmationReturn=(()=>{try{const q=new URLSearchParams(location.search),h=new URLSearchParams(String(location.hash||'').replace(/^#/,''));const type=q.get('type')||h.get('type');return type==='signup'||type==='email'||q.has('code')||q.has('token_hash')||h.has('access_token');}catch(_){return false;}})();
 let installed=false;
 let accessTimer=null;
 let currentAccess=1;
@@ -39,8 +40,8 @@ function setAccessBadge(access){
 }
 function showConfirmationSuccess(state){
   if(!state?.session?.user?.email_confirmed_at)return;
-  const pending=pendingEmail();
-  if(!pending||pending!==safeEmail(state.session.user.email))return;
+  const pending=pendingEmail(),email=safeEmail(state.session.user.email);
+  if(!confirmationReturn&&(!pending||pending!==email))return;
   try{if(sessionStorage.getItem(SHOWN_KEY)==='1')return;}catch(_){}
   const panel=$('#onlineAccountPanel');
   const msg=$('#onlineAuthMessage');
@@ -67,8 +68,7 @@ async function syncAccess(mp){
   if(state.profile)state.profile.access=access;
   setAccessBadge(access);
   showConfirmationSuccess(state);
-  installGuards();
-  applyBlockState(access===0);
+  installGuards();applyBlockState(access===0);
   if(access===0){
     mp.disconnectWorld?.();
     const msg=$('#onlineAuthMessage');
@@ -77,8 +77,7 @@ async function syncAccess(mp){
 }
 function install(mp){
   if(installed||!mp?.state)return;
-  installed=true;
-  rememberPending();ensureAccessBadge();installGuards();
+  installed=true;rememberPending();ensureAccessBadge();installGuards();
   const tick=()=>{rememberPending();installGuards();void syncAccess(mp);};
   tick();accessTimer=setInterval(tick,1600);
   global.addEventListener('beforeunload',()=>{if(accessTimer)clearInterval(accessTimer);},{once:true});
