@@ -16,6 +16,7 @@
   const TARGET_COLOR = '#f2c65d';
   const HOVER_COLOR = '#bcecff';
   let installed = false;
+  let waiting = false;
 
   function displayName(mob) {
     const data = W.MOB_DATA?.[mob?.type] || {};
@@ -222,7 +223,7 @@
     ctx.restore();
   }
 
-  function install() {
+  function installNow() {
     const game = global.astraeon;
     if (installed || !game?.canvas || typeof game.drawMobs !== 'function') return false;
     installed = true;
@@ -306,18 +307,22 @@
   }
 
   function installWhenReady() {
+    if (installed || waiting) return true;
+    waiting = true;
     const started = performance.now();
     const tick = () => {
       if (global.astraeon?.canvas && (document.body.classList.contains('astraeon-online-controller-ready') || performance.now() - started > 1800)) {
-        install();
+        waiting = false;
+        installNow();
         return;
       }
       if (performance.now() - started < 6000) setTimeout(tick, 60);
+      else waiting = false;
     };
     tick();
   }
 
-  global.AstraeonCombatFocusV4 = { install };
+  global.AstraeonCombatFocusV4 = { install: installWhenReady };
   if (document.readyState === 'loading') global.addEventListener('DOMContentLoaded', installWhenReady, { once: true });
   else installWhenReady();
 })(window);
