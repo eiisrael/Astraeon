@@ -32,6 +32,7 @@ jobs:
           node --check src/live-runtime-v5.js
           node --check src/production-runtime-v6.js
           node --check src/character-system-v6.js
+          node --check src/worldmaps-runtime-v61.js
           node --check src/account-status-v4.js
           node --check api/config.js
           node --check api/admin-access.js
@@ -45,5 +46,8 @@ jobs:
           node --check src/admin-live-tools-v5.js
           node --check src/admin-character-slots-v6.js
           node --check src/admin-production-v6.js
+          node --check src/admin-worldmaps-v61.js
       - name: Validate HTML, access contracts, admin and deployment config
         run: python3 scripts/validate_v2.py
+      - name: Validate connected maps and MobList contracts
+        run: python3 scripts/validate_worldmaps_v61.py
