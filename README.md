@@ -181,6 +181,18 @@ npx vercel dev
 
 Depois abra o endereço exibido pelo Vercel CLI.
 
+### Variáveis do modo online
+
+No Vercel, o modo online usa somente configuração pública no frontend:
+
+```text
+SUPABASE_URL=https://SEU-PROJETO.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_EXEMPLO
+ASTRAEON_REALTIME_TOPIC=world:astraeon:main
+```
+
+Os valores reais devem ser configurados em **Vercel → Project → Settings → Environment Variables** e nunca copiados para documentação pública.
+
 > Para configurar banco, variáveis de ambiente, cadastro, multiplayer e publicação em produção, siga o manual completo: **[INSTALLME.md](INSTALLME.md)**.
 
 Também existe uma documentação técnica complementar em **[ONLINE_SETUP.md](ONLINE_SETUP.md)**.
