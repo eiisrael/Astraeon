@@ -40,7 +40,7 @@ inv = require('src/inventory-v7.js', [
 for forbidden in ['10% do valor','10% do preço','valor de compra sempre']:
     if forbidden.lower() in inv.lower(): ERRORS.append(f'src/inventory-v7.js: regra interna de preço exposta na interface: {forbidden}')
 require('src/inventory-v7.css', ['grid-template-columns:repeat(5','item-tooltip-v7','inventory-v7-empty-slot'])
-require('src/admin-runtime-v3c.js', ['backpackCapacity:25','backpackCapacity)===30','g.backpackCapacity=25',"Number(g.backpackCapacity)||25"])
+require('src/admin-runtime-v3c.js', ['backpackCapacity:25','backpackCapacity)===30','cfg.gameplay.backpackCapacity=25',"Number(g.backpackCapacity)||25"])
 require('src/menu-account-v7.js', [
     'ASTRAEON UNIVERSE ONLINE · CIDADES VIVAS · QUESTS · MMORPG','Bem vindo(a)',
     'GUIA DO VIAJANTE','characterCreateFromPanel',"b.textContent='Jogar'",'avatar_url',
