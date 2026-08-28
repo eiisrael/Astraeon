@@ -15,13 +15,13 @@
       const game = window.astraeon;
       if (!game?.running || game.paused) return;
       const open = () => {
-        const chat = document.querySelector('#onlineChat');
-        const input = document.querySelector('#onlineChatInput');
+        const chat = document.getElementById('onlineChat');
+        const input = document.getElementById('onlineChatInput');
         if (!chat) return false;
         try { window.AstraeonOnlineControllerV4?.openChat?.(true); } catch (_) {}
         chat.classList.remove('collapsed','collapsed-mobile','chat-pro-collapsed');
         chat.dataset.chatCollapsed = 'false';
-        const toggle = document.querySelector('#onlineChatToggle');
+        const toggle = document.getElementById('onlineChatToggle');
         if (toggle) { toggle.textContent = '▾'; toggle.setAttribute('aria-expanded','true'); }
         if (input && input.dataset.accountBlocked !== 'true') { input.disabled = false; requestAnimationFrame(() => input.focus({preventScroll:true})); }
         return true;
