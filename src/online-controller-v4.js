@@ -5,6 +5,7 @@
   const MAX_WAIT_MS = 15000;
   const MIN_SPRINT_MULTIPLIER = 1.70;
   const CHAT_POSITION_KEY = 'astraeon:v4:chat-position-v2';
+  const PLAYER_PANEL_STATE_KEY = 'astraeon:v4:player-panel-collapsed';
   const CHAT_EDGE = 8;
   const MOB_DISPLAY_NAMES = Object.freeze({
     Slime:'Slime', Wolf:'Lobo', Globin:'Goblin', Orc:'Orc', Troll:'Troll', Pig_Monster:'Monstro Javali',
@@ -351,6 +352,39 @@
     };
   }
 
+  function installPlayerPanelToggle() {
+    const card = $('.player-card');
+    if (!card || card.dataset.collapseReady === 'true') return;
+    card.dataset.collapseReady = 'true';
+
+    const button = document.createElement('button');
+    button.id = 'playerPanelToggle';
+    button.className = 'player-panel-toggle';
+    button.type = 'button';
+    card.appendChild(button);
+
+    const apply = (collapsed, persist = false) => {
+      card.classList.toggle('player-panel-collapsed', collapsed);
+      button.textContent = collapsed ? '›' : '‹';
+      button.setAttribute('aria-expanded', String(!collapsed));
+      button.setAttribute('aria-label', collapsed ? 'Abrir informações do personagem' : 'Recolher informações do personagem');
+      button.title = collapsed ? 'Abrir informações do personagem' : 'Recolher informações do personagem';
+      if (persist) {
+        try { localStorage.setItem(PLAYER_PANEL_STATE_KEY, collapsed ? '1' : '0'); } catch (_) {}
+      }
+    };
+
+    let collapsed = false;
+    try { collapsed = localStorage.getItem(PLAYER_PANEL_STATE_KEY) === '1'; } catch (_) {}
+    apply(collapsed);
+
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      apply(!card.classList.contains('player-panel-collapsed'), true);
+    });
+  }
+
   function mobLevel(mob, data) {
     const explicit = Number(mob?.level);
     if (Number.isFinite(explicit) && explicit >= 1) return Math.max(1, Math.round(explicit));
@@ -422,6 +456,7 @@
     installRightMouseGuard();
     installSprintFix();
     installPlayerFacingFix();
+    installPlayerPanelToggle();
     installMobLabels();
     installGuestSubmitGuard(state);
     installChatDrag();
