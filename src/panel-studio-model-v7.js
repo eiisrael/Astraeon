@@ -2,7 +2,7 @@
 'use strict';
 
 const STORAGE_KEY='astraeon:v7:panel-studio';
-const VERSION=1;
+const VERSION=2;
 
 const CATALOG=[
   {id:'start-main',name:'Menu principal',category:'Entrada',selector:'#startScreen .start-panel',titleSelector:'.logo',kickerSelector:'.eyebrow',bodySelector:'.lead',buttonSelector:'#newGameBtn',title:'ASTRAEON',kicker:'Ecos da Convergência',body:'Explore Astra em cinco climas e construa a sua jornada.',button:'Nova jornada',width:520,height:500},
@@ -34,6 +34,39 @@ const finite=(value,fallback=0)=>Number.isFinite(Number(value))?Number(value):fa
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,finite(value,min)));
 const safeColor=(value,fallback)=>/^#[0-9a-f]{6}$/i.test(String(value||''))?String(value):fallback;
 const safeId=value=>String(value||'panel').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,52)||'panel';
+const ELEMENT_TYPES=['text','button','image','container','grid'];
+
+function createNode(source={},custom=false){
+  const type=ELEMENT_TYPES.includes(source.type)?source.type:'container';
+  return{
+    id:safeId(source.id||`${type}-${Date.now()}`),
+    name:String(source.name||({text:'Texto',button:'Botão',image:'Imagem',container:'Contêiner',grid:'Grid'}[type])).slice(0,80),
+    selector:String(source.selector||''),parentId:String(source.parentId||''),parentSelector:String(source.parentSelector||''),
+    custom:!!custom,type,hidden:!!source.hidden,locked:!!source.locked,contentSet:source.contentSet===true||!!custom,styleSet:Array.isArray(source.styleSet)?source.styleSet.map(String):[],
+    content:{text:String(source.content?.text??source.text??''),src:String(source.content?.src??''),alt:String(source.content?.alt??''),title:String(source.content?.title??''),ariaLabel:String(source.content?.ariaLabel??'')},
+    grid:{columns:Math.round(clamp(source.grid?.columns??3,1,24)),rows:Math.round(clamp(source.grid?.rows??2,1,24)),cells:Math.round(clamp(source.grid?.cells??6,0,240))},
+    style:{display:String(source.style?.display||''),position:String(source.style?.position||'flow'),x:finite(source.style?.x,0),y:finite(source.style?.y,0),width:String(source.style?.width??'auto'),height:String(source.style?.height??'auto'),minWidth:String(source.style?.minWidth??''),maxWidth:String(source.style?.maxWidth??''),minHeight:String(source.style?.minHeight??''),maxHeight:String(source.style?.maxHeight??''),gap:finite(source.style?.gap,8),padding:finite(source.style?.padding,0),margin:finite(source.style?.margin,0),zIndex:Math.round(finite(source.style?.zIndex,0)),order:Math.round(finite(source.style?.order,0)),flexDirection:String(source.style?.flexDirection||'row'),alignItems:String(source.style?.alignItems||''),justifyContent:String(source.style?.justifyContent||''),background:String(source.style?.background||''),color:String(source.style?.color||''),borderColor:String(source.style?.borderColor||''),borderWidth:finite(source.style?.borderWidth,0),borderRadius:finite(source.style?.borderRadius,0),fontFamily:String(source.style?.fontFamily||''),fontSize:finite(source.style?.fontSize,0),fontWeight:Math.round(finite(source.style?.fontWeight,0)),textAlign:String(source.style?.textAlign||''),lineHeight:finite(source.style?.lineHeight,0),letterSpacing:finite(source.style?.letterSpacing,0),opacity:clamp(source.style?.opacity??100,0,100),rotate:finite(source.style?.rotate,0),scale:clamp(source.style?.scale??100,10,400),shadow:String(source.style?.shadow||''),filter:String(source.style?.filter||'')}
+  };
+}
+
+function normalizeNode(input={},custom=false){
+  const node=createNode(input,custom||input.custom);
+  node.style.position=['flow','relative','absolute','fixed'].includes(node.style.position)?node.style.position:'flow';
+  node.style.x=clamp(node.style.x,-4000,4000);node.style.y=clamp(node.style.y,-4000,4000);node.style.gap=clamp(node.style.gap,0,240);node.style.padding=clamp(node.style.padding,0,320);node.style.margin=clamp(node.style.margin,-320,320);node.style.zIndex=Math.round(clamp(node.style.zIndex,-999,9999));node.style.order=Math.round(clamp(node.style.order,-999,999));
+  node.style.borderWidth=clamp(node.style.borderWidth,0,40);node.style.borderRadius=clamp(node.style.borderRadius,0,500);node.style.fontSize=clamp(node.style.fontSize,0,240);node.style.fontWeight=Math.round(clamp(node.style.fontWeight,0,900));node.style.lineHeight=clamp(node.style.lineHeight,0,5);node.style.letterSpacing=clamp(node.style.letterSpacing,-20,80);node.style.rotate=clamp(node.style.rotate,-360,360);
+  return node;
+}
+
+function createElement(type='text',parentSelector=''){
+  const labels={text:'Novo texto',button:'Novo botão',image:'Nova imagem',container:'Novo contêiner',grid:'Novo grid'};
+  const node=createNode({id:`${type}-${Date.now()}`,type,name:labels[type]||'Novo elemento',parentSelector},true);
+  if(type==='text')node.content.text='Novo texto';
+  if(type==='button')node.content.text='Novo botão';
+  if(type==='image')node.content.alt='Imagem do painel';
+  if(type==='grid'){node.style.display='grid';node.grid={columns:3,rows:2,cells:6};}
+  if(type==='container')node.style.display='flex';
+  return node;
+}
 
 function createPanel(source={},custom=false){
   const width=clamp(source.width||560,180,1600),height=clamp(source.height||420,80,1200);
@@ -49,7 +82,7 @@ function createPanel(source={},custom=false){
       kicker:String(source.kicker||'ASTRAEON').slice(0,120),
       title:String(source.title||source.name||'Novo painel').slice(0,180),
       body:String(source.body||'Edite o conteúdo deste painel no Admin Studio.').slice(0,1200),
-      button:String(source.button||'Continuar').slice(0,80),
+      button:String(source.button??'').slice(0,80),
       image:'',imageAlt:''
     },
     box:{width,height,padding:24,radius:12,borderWidth:1,x:0,y:0,z:60,opacity:100},
@@ -57,7 +90,8 @@ function createPanel(source={},custom=false){
     surface:{background:'#080807',gradient:'#1b1510',angle:145,border:'#c79b52',overlay:'#000000',overlayOpacity:16},
     image:{fit:'cover',positionX:50,positionY:50,opacity:34,blur:0,scale:100},
     shape:{topLeft:0,topRight:0,bottomRight:0,bottomLeft:0,rotate:0,skewX:0,skewY:0,scale:100},
-    effects:{shadowX:0,shadowY:24,shadowBlur:70,shadowSpread:0,shadowColor:'#000000',shadowOpacity:68,glow:0,backdropBlur:8,brightness:100,saturate:100}
+    effects:{shadowX:0,shadowY:24,shadowBlur:70,shadowSpread:0,shadowColor:'#000000',shadowOpacity:68,glow:0,backdropBlur:8,brightness:100,saturate:100},
+    nodes:{},customElements:[]
   };
 }
 
@@ -78,18 +112,23 @@ function normalizePanel(input,source={}){
   base.shape.rotate=clamp(base.shape.rotate,-180,180);base.shape.skewX=clamp(base.shape.skewX,-60,60);base.shape.skewY=clamp(base.shape.skewY,-60,60);base.shape.scale=clamp(base.shape.scale,10,300);
   base.effects.shadowX=clamp(base.effects.shadowX,-120,120);base.effects.shadowY=clamp(base.effects.shadowY,-120,120);base.effects.shadowBlur=clamp(base.effects.shadowBlur,0,240);base.effects.shadowSpread=clamp(base.effects.shadowSpread,-40,100);base.effects.shadowOpacity=clamp(base.effects.shadowOpacity,0,100);base.effects.glow=clamp(base.effects.glow,0,100);base.effects.backdropBlur=clamp(base.effects.backdropBlur,0,60);base.effects.brightness=clamp(base.effects.brightness,10,250);base.effects.saturate=clamp(base.effects.saturate,0,300);base.effects.shadowColor=safeColor(base.effects.shadowColor,'#000000');
   for(const key of ['kicker','title','body','button','image','imageAlt'])base.content[key]=String(base.content[key]??'');
+  base.nodes={};
+  for(const [id,rawNode] of Object.entries(panel.nodes&&typeof panel.nodes==='object'?panel.nodes:{})){const node=normalizeNode({...rawNode,id},false);if(node.selector)base.nodes[node.id]=node;}
+  base.customElements=[];
+  const used=new Set(Object.keys(base.nodes));
+  for(const rawNode of Array.isArray(panel.customElements)?panel.customElements:[]){const node=normalizeNode(rawNode,true);let id=safeId(node.id),n=2;while(used.has(id))id=`${safeId(node.id)}-${n++}`;node.id=id;used.add(id);base.customElements.push(node);}
   return base;
 }
 
-function defaults(){return{version:VERSION,updatedAt:null,panels:{},customPanels:[],ui:{selectedId:CATALOG[0].id,inspector:'content',zoom:80,grid:true,snap:true,gridSize:8,viewport:'desktop'}};}
+function defaults(){return{version:VERSION,updatedAt:null,panels:{},customPanels:[],ui:{selectedId:CATALOG[0].id,selectedNodeId:'root',inspector:'content',zoom:80,grid:true,snap:true,gridSize:8,viewport:'desktop'}};}
 function normalize(input){
   const doc=defaults(),raw=input&&typeof input==='object'?input:{};
   doc.updatedAt=raw.updatedAt||null;
   if(raw.ui&&typeof raw.ui==='object')Object.assign(doc.ui,raw.ui);
   doc.ui.zoom=clamp(doc.ui.zoom,25,160);doc.ui.gridSize=Math.round(clamp(doc.ui.gridSize,2,64));doc.ui.inspector=['content','layout','style','effects'].includes(doc.ui.inspector)?doc.ui.inspector:'content';doc.ui.viewport=['desktop','tablet','mobile'].includes(doc.ui.viewport)?doc.ui.viewport:'desktop';doc.ui.grid=doc.ui.grid!==false;doc.ui.snap=doc.ui.snap!==false;
-  for(const item of CATALOG){const saved=raw.panels?.[item.id];if(saved)doc.panels[item.id]=normalizePanel({...saved,id:item.id,name:saved.name||item.name,custom:false},item);}
+  for(const item of CATALOG){const rawSaved=raw.panels?.[item.id];if(rawSaved){const saved=clone(rawSaved);if(finite(raw.version,1)<2&&item.button==null&&saved.content?.button==='Continuar')saved.content.button='';doc.panels[item.id]=normalizePanel({...saved,id:item.id,name:saved.name||item.name,custom:false},item);}}
   const used=new Set(CATALOG.map(item=>item.id));
-  for(const rawPanel of Array.isArray(raw.customPanels)?raw.customPanels:[]){let panel=normalizePanel({...rawPanel,custom:true},rawPanel);let id=safeId(panel.id);let n=2;while(used.has(id))id=`${safeId(panel.id)}-${n++}`;panel.id=id;used.add(id);doc.customPanels.push(panel);}
+  for(const sourcePanel of Array.isArray(raw.customPanels)?raw.customPanels:[]){const rawPanel=clone(sourcePanel);if(finite(raw.version,1)<2&&rawPanel.content?.button==='Continuar')rawPanel.content.button='';let panel=normalizePanel({...rawPanel,custom:true},rawPanel);let id=safeId(panel.id);let n=2;while(used.has(id))id=`${safeId(panel.id)}-${n++}`;panel.id=id;used.add(id);doc.customPanels.push(panel);}
   if(!getDefinition(doc,doc.ui.selectedId))doc.ui.selectedId=CATALOG[0].id;
   return doc;
 }
@@ -106,5 +145,5 @@ function background(panel,includeImage=true){const s=panel.surface,img=includeIm
 function transform(panel){const b=panel.box,s=panel.shape;return`translate(${b.x}px,${b.y}px) rotate(${s.rotate}deg) skew(${s.skewX}deg,${s.skewY}deg) scale(${s.scale/100})`;}
 function shadow(panel){const e=panel.effects;return`${e.shadowX}px ${e.shadowY}px ${e.shadowBlur}px ${e.shadowSpread}px ${rgba(e.shadowColor,e.shadowOpacity)}${e.glow?`,0 0 ${Math.round(e.glow*.7)}px ${rgba(panel.text.accent,Math.min(72,e.glow))}`:''}`;}
 
-global.AstraeonPanelStudioModel={STORAGE_KEY,VERSION,CATALOG:clone(CATALOG),FONT_OPTIONS:{...FONT_OPTIONS},clone,clamp,safeId,createPanel,normalizePanel,defaults,normalize,load,save,getCatalog,getDefinition,getPanel,hasOverride,list,clipPath,rgba,background,transform,shadow};
+global.AstraeonPanelStudioModel={STORAGE_KEY,VERSION,CATALOG:clone(CATALOG),FONT_OPTIONS:{...FONT_OPTIONS},ELEMENT_TYPES:[...ELEMENT_TYPES],clone,clamp,safeId,createNode,normalizeNode,createElement,createPanel,normalizePanel,defaults,normalize,load,save,getCatalog,getDefinition,getPanel,hasOverride,list,clipPath,rgba,background,transform,shadow};
 })(window);

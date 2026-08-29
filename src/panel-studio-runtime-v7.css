@@ -11,5 +11,18 @@
 .panel-studio-custom-copy p{margin-top:10px;white-space:pre-wrap}
 .panel-studio-custom-close{flex:none;width:32px;height:32px;border:1px solid rgba(255,255,255,.13);border-radius:7px;background:rgba(0,0,0,.2);color:inherit;font-size:19px;cursor:pointer}
 .panel-studio-custom-action{margin-top:18px;min-height:36px;padding:8px 14px;border:1px solid color-mix(in srgb,currentColor 28%,transparent);border-radius:7px;background:rgba(255,255,255,.045);color:inherit;font-weight:800;cursor:pointer}
+.panel-studio-custom-action[hidden]{display:none!important}
+.panel-studio-element{box-sizing:border-box;min-width:20px;min-height:20px;position:relative}
+.panel-studio-element-text{margin:8px 0;color:inherit;white-space:pre-wrap}
+.panel-studio-element-button{min-height:36px;padding:8px 14px;border:1px solid rgba(214,174,102,.35);border-radius:7px;background:rgba(214,174,102,.08);color:inherit;font:800 12px inherit;cursor:pointer}
+.panel-studio-element-image{display:block;max-width:100%;object-fit:cover}
+.panel-studio-element-container{display:flex;gap:8px}
+.panel-studio-element-grid{display:grid;gap:8px}
+.panel-studio-grid-cell{display:grid;place-items:center;min-height:48px;border:1px dashed rgba(214,174,102,.24);border-radius:6px;background:rgba(255,255,255,.025);color:rgba(238,225,201,.48);font:700 10px ui-monospace,monospace}
 [data-panel-studio-applied="1"]{transform-origin:center center}
+.panel-studio-embed body,.panel-studio-embed{overflow:auto!important;background:#05090c!important}
+body.panel-studio-embed #world,body.panel-studio-embed #worldVignette,body.panel-studio-embed #mobileControls,body.panel-studio-embed #biomeBanner,body.panel-studio-embed #toast,body.panel-studio-embed #lootWarning{display:none!important}
+body.panel-studio-embed #gameRoot{min-width:100vw;min-height:100vh;display:grid!important;place-items:center!important;padding:36px!important;background:radial-gradient(circle at 50% 40%,rgba(33,74,83,.22),transparent 48%),linear-gradient(145deg,#071014,#030506)}
+body.panel-studio-embed .panel-studio-embed-hide{display:none!important}
+body.panel-studio-embed .panel-studio-embed-target{visibility:visible!important;pointer-events:auto!important;opacity:1!important}
 @media(max-width:700px){.panel-studio-custom-overlay{padding:6px;align-items:end}.panel-studio-custom-card{max-width:100%!important;max-height:92dvh!important}}

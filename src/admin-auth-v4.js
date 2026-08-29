@@ -19,7 +19,7 @@ const SECONDARY_MODULES=[
   'src/admin-realtime-v62.js',
   'src/admin-server-config-v62.js',
   'src/panel-studio-model-v7.js',
-  'src/admin-panel-editor-v7.js'
+  'src/admin-panel-editor-v8.js'
 ];
 function diag(level,event,data={}){try{global.AstraeonEditorDiagnosticsV5?.[level]?.(event,data);}catch(_){}}
 function delay(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
