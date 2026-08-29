@@ -6,8 +6,7 @@
   let V3 = null;
 
   const CAPACITY = 25;
-  const LONG_PRESS_MS = 3000;
-  const HOVER_OPEN_MS = 420;
+  const INSPECT_HOLD_MS = 1000;
   const DRAG_MIME = 'application/x-astraeon-item';
   const ALL_CLASSES = ['Warrior', 'Mage', 'Archer', 'Assassin', 'Paladine'];
 
@@ -31,7 +30,7 @@
 
   let installed = false;
   let tooltip = null;
-  let inspectSheet = null;
+  let tooltipSourceElement = null;
   let armed = null;
   let armTimer = 0;
 
@@ -199,24 +198,14 @@
       tooltip = document.createElement('section');
       tooltip.id = 'inventoryItemTooltip';
       tooltip.className = 'inventory-item-tooltip hidden';
-      tooltip.setAttribute('role', 'tooltip');
+      tooltip.setAttribute('role', 'dialog');
+      tooltip.setAttribute('aria-label', 'Informações do item');
       document.body.appendChild(tooltip);
-    }
-    if (!inspectSheet) {
-      inspectSheet = document.createElement('section');
-      inspectSheet.id = 'inventoryInspectSheet';
-      inspectSheet.className = 'inventory-inspect-sheet hidden';
-      inspectSheet.innerHTML = '<div class="inspect-backdrop"></div><div class="inspect-card"></div>';
-      document.body.appendChild(inspectSheet);
-      inspectSheet.querySelector('.inspect-backdrop')?.addEventListener('click', hideInspectSheet);
     }
   }
 
-  function inspectMarkup(game, item, includeActions = false, ref = null) {
+  function inspectMarkup(game, item) {
     const req = requirementStatus(game, item);
-    const equipped = ref?.source === 'equipment';
-    const primaryLabel = item?.type === 'equipment' ? (equipped ? 'Desequipar' : 'Equipar') : item?.type === 'consumable' ? 'Usar' : '';
-    const blocked = item?.type === 'equipment' && !equipped && !req.ok;
     const classNames = req.allowed.map(cls => CLASS_LABELS[cls] || cls).join(' · ');
     return `
       <div class="inspect-head" data-rarity="${escapeHtml(item?.rarity || 'common')}">
@@ -226,7 +215,6 @@
           <h3>${escapeHtml(item?.name || 'Item')}</h3>
           <span>${escapeHtml(item?.description || 'Item encontrado em Astraeon.')}</span>
         </div>
-        ${includeActions ? '<button class="inspect-close" type="button" aria-label="Fechar">×</button>' : ''}
       </div>
       <div class="inspect-quick-meta">
         <span><small>CLASSES</small><b>${escapeHtml(classNames)}</b></span>
@@ -241,121 +229,83 @@
         <b>Requisitos de uso</b>
         <div class="inspect-requirements">${requirementsMarkup(game, item)}</div>
       </div>
-      ${includeActions ? `<div class="inspect-actions">
-        ${primaryLabel ? `<button class="inventory-action primary inspect-primary" type="button" ${blocked ? 'disabled' : ''}>${blocked ? 'Requisitos não atendidos' : primaryLabel}</button>` : ''}
-        <button class="inventory-action danger inspect-discard" type="button">Descartar</button>
-      </div>` : ''}
     `;
   }
 
   function positionTooltip(x, y) {
     if (!tooltip || tooltip.classList.contains('hidden')) return;
     const pad = 12;
+    tooltip.style.transform = 'none';
     const rect = tooltip.getBoundingClientRect();
+    const scale = Math.min(1, (innerWidth - pad * 2) / rect.width, (innerHeight - pad * 2) / rect.height);
+    const width = rect.width * scale;
+    const height = rect.height * scale;
     let left = x + 16;
     let top = y + 12;
-    if (left + rect.width > innerWidth - pad) left = x - rect.width - 16;
-    if (top + rect.height > innerHeight - pad) top = innerHeight - rect.height - pad;
+    if (left + width > innerWidth - pad) left = x - width - 16;
+    if (top + height > innerHeight - pad) top = innerHeight - height - pad;
     tooltip.style.left = `${Math.max(pad, Math.round(left))}px`;
     tooltip.style.top = `${Math.max(pad, Math.round(top))}px`;
+    tooltip.style.transform = scale < 1 ? `scale(${scale})` : 'none';
   }
 
-  function showTooltip(game, item, ref, x, y) {
-    if (isCoarsePointer()) return;
+  function showTooltip(game, element, item, x, y) {
     ensureFloatingUi();
-    tooltip.innerHTML = inspectMarkup(game, item, false, ref);
+    tooltip.innerHTML = inspectMarkup(game, item);
+    tooltip.dataset.rarity = item?.rarity || 'common';
+    tooltipSourceElement = element;
     tooltip.classList.remove('hidden');
     positionTooltip(x, y);
   }
 
   function hideTooltip() {
     tooltip?.classList.add('hidden');
-  }
-
-  function showInspectSheet(game, item, ref) {
-    ensureFloatingUi();
-    hideTooltip();
-    const card = inspectSheet.querySelector('.inspect-card');
-    card.innerHTML = inspectMarkup(game, item, true, ref);
-    inspectSheet.classList.remove('hidden');
-    document.body.classList.add('inventory-inspecting');
-
-    card.querySelector('.inspect-close')?.addEventListener('click', hideInspectSheet);
-    card.querySelector('.inspect-primary')?.addEventListener('click', () => {
-      if (item.type === 'equipment') {
-        if (ref?.source === 'equipment') game.unequipItem(ref.slot);
-        else if (ref?.source === 'inventory') game.equipItem(ref.index);
-      } else if (item.type === 'consumable' && ref?.source === 'inventory') {
-        game.useInventoryItem(ref.index);
-      }
-      hideInspectSheet();
-    });
-    card.querySelector('.inspect-discard')?.addEventListener('click', () => {
-      hideInspectSheet();
-      game.discardInventoryRef?.(ref);
-    });
-  }
-
-  function hideInspectSheet() {
-    inspectSheet?.classList.add('hidden');
-    document.body.classList.remove('inventory-inspecting');
+    tooltipSourceElement = null;
   }
 
   function clearArming() {
     if (armTimer) global.clearTimeout(armTimer);
     armTimer = 0;
     if (armed?.element) {
-      armed.element.classList.remove('inspect-arming', 'inspect-arming-hover', 'inspect-arming-touch');
+      armed.element.classList.remove('inspect-arming', 'inspect-arming-press');
       armed.element.style.removeProperty('--inspect-arm-duration');
     }
     armed = null;
   }
 
-  function beginArming(game, element, item, ref, delay, mode, x, y) {
+  function beginArming(game, element, item, delay, x, y) {
     clearArming();
-    armed = { game, element, item, ref, mode, x, y, startX: x, startY: y };
+    armed = { game, element, item, x, y, startX: x, startY: y };
     element.style.setProperty('--inspect-arm-duration', `${delay}ms`);
-    element.classList.add('inspect-arming', mode === 'touch' ? 'inspect-arming-touch' : 'inspect-arming-hover');
+    element.classList.add('inspect-arming', 'inspect-arming-press');
     armTimer = global.setTimeout(() => {
       const snapshot = armed;
       clearArming();
       if (!snapshot) return;
-      if (snapshot.mode === 'touch') {
+      if (snapshot.pointerType !== 'mouse') {
         try { navigator.vibrate?.(24); } catch (_) {}
-        showInspectSheet(snapshot.game, snapshot.item, snapshot.ref);
-      } else {
-        showTooltip(snapshot.game, snapshot.item, snapshot.ref, snapshot.x, snapshot.y);
       }
+      showTooltip(snapshot.game, snapshot.element, snapshot.item, snapshot.x, snapshot.y);
     }, delay);
   }
 
-  function bindInspectEvents(game, element, item, ref) {
-    element.addEventListener('mouseenter', event => {
-      if (isCoarsePointer()) return;
-      beginArming(game, element, item, ref, HOVER_OPEN_MS, 'hover', event.clientX, event.clientY);
-    });
-    element.addEventListener('mousemove', event => {
-      if (armed?.element === element && armed.mode === 'hover') {
-        armed.x = event.clientX;
-        armed.y = event.clientY;
-      }
-      if (!tooltip?.classList.contains('hidden')) positionTooltip(event.clientX, event.clientY);
-    });
-    element.addEventListener('mouseleave', () => {
+  function bindInspectEvents(game, element, item) {
+    element.addEventListener('pointerleave', event => {
       if (armed?.element === element) clearArming();
-      hideTooltip();
+      if (event.pointerType === 'mouse' && tooltipSourceElement === element) hideTooltip();
     });
 
     element.addEventListener('pointerdown', event => {
-      if (event.pointerType === 'mouse' && !isCoarsePointer()) return;
-      beginArming(game, element, item, ref, LONG_PRESS_MS, 'touch', event.clientX, event.clientY);
+      if (event.button != null && event.button !== 0) return;
+      beginArming(game, element, item, INSPECT_HOLD_MS, event.clientX, event.clientY);
+      if (armed) armed.pointerType = event.pointerType || 'mouse';
     }, { passive: true });
     element.addEventListener('pointermove', event => {
-      if (armed?.element !== element || armed.mode !== 'touch') return;
-      if (Math.hypot(event.clientX - armed.startX, event.clientY - armed.startY) > 14) clearArming();
+      if (armed?.element !== element) return;
+      if (Math.hypot(event.clientX - armed.startX, event.clientY - armed.startY) > 5) clearArming();
     }, { passive: true });
-    ['pointerup', 'pointercancel', 'pointerleave'].forEach(type => element.addEventListener(type, () => {
-      if (armed?.element === element && armed.mode === 'touch') clearArming();
+    ['pointerup', 'pointercancel'].forEach(type => element.addEventListener(type, () => {
+      if (armed?.element === element) clearArming();
     }, { passive: true }));
   }
 
@@ -472,7 +422,6 @@
 
       if (sameRef(this.selectedInventoryRef, ref)) this.selectedInventoryRef = null;
       hideTooltip();
-      hideInspectSheet();
       this.renderInventory?.();
       this.save?.();
       this.toast?.(`${item.name} foi descartado.`);
@@ -498,10 +447,10 @@
       if (!root) return;
       const item = this.getSelectedItem?.();
       if (!item) {
-        root.innerHTML = '<span>Inspeção disponível por hover ou pressionamento.</span>';
+        root.innerHTML = '<span>Pressione e segure um item por 1 segundo para inspecionar.</span>';
         return;
       }
-      root.innerHTML = inspectMarkup(this, item, false, this.selectedInventoryRef);
+      root.innerHTML = inspectMarkup(this, item);
     };
 
     game.renderInventory = function () {
@@ -553,7 +502,7 @@
             event.preventDefault();
             if (!isCoarsePointer()) this.unequipItem(slotId);
           });
-          bindInspectEvents(this, el, item, ref);
+          bindInspectEvents(this, el, item);
           bindDragSource(this, el, ref);
         } else {
           el.classList.add('empty');
@@ -618,7 +567,7 @@
           if (item.type === 'equipment') this.equipItem(index);
           else if (item.type === 'consumable') this.useInventoryItem(index);
         });
-        bindInspectEvents(this, slot, item, ref);
+        bindInspectEvents(this, slot, item);
         bindDragSource(this, slot, ref);
         grid.appendChild(slot);
       });
@@ -726,7 +675,6 @@
       if (panel === this.ui.inventoryPanel) {
         clearArming();
         hideTooltip();
-        hideInspectSheet();
         if (!panel.classList.contains('hidden')) {
           this.backpackCapacity = CAPACITY;
           this.renderInventory?.();
@@ -751,7 +699,22 @@
     }));
 
     game.renderInventory?.();
-    global.AstraeonInventoryV4 = { CAPACITY, LONG_PRESS_MS, HOVER_OPEN_MS, requirementStatus, saleValue };
+    document.addEventListener('pointerdown', event => {
+      if (!tooltip || tooltip.classList.contains('hidden')) return;
+      if (!tooltipSourceElement?.contains(event.target)) hideTooltip();
+    }, true);
+    document.addEventListener('pointermove', event => {
+      if (event.pointerType === 'mouse' && tooltipSourceElement && !tooltipSourceElement.contains(event.target)) hideTooltip();
+    }, true);
+    document.addEventListener('click', event => {
+      if (!tooltip || tooltip.classList.contains('hidden') || !tooltipSourceElement?.contains(event.target)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }, true);
+    global.addEventListener('blur', hideTooltip);
+    global.addEventListener('astraeon:inventory-drag-start', () => { clearArming(); hideTooltip(); });
+
+    global.AstraeonInventoryV4 = { CAPACITY, INSPECT_HOLD_MS, requirementStatus, saleValue };
     return true;
   }
 

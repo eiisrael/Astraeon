@@ -59,8 +59,9 @@
   }
 
   function activatePointerDrag() {
-    if (!pointerDrag) return;
+    if (!pointerDrag || pointerDrag.active) return;
     pointerDrag.active = true;
+    global.dispatchEvent(new CustomEvent('astraeon:inventory-drag-start'));
     pointerDrag.element.classList.add('dragging');
     pointerDrag.element.setAttribute('aria-grabbed', 'true');
     pointerGhost = pointerDrag.element.cloneNode(true);
@@ -77,18 +78,17 @@
     const ref = refFor(element);
     if (!ref) return;
     finishPointerDrag(true);
-    pointerDrag = { pointerId: event.pointerId, element, ref, startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY, active: false };
-    pointerTimer = setTimeout(activatePointerDrag, TOUCH_HOLD_MS);
+    pointerDrag = { pointerId: event.pointerId, element, ref, startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY, ready: false, active: false };
+    pointerTimer = setTimeout(() => { if (pointerDrag?.pointerId === event.pointerId) pointerDrag.ready = true; }, TOUCH_HOLD_MS);
   }, true);
 
   document.addEventListener('pointermove', event => {
     if (!pointerDrag || pointerDrag.pointerId !== event.pointerId) return;
     pointerDrag.x = event.clientX;
     pointerDrag.y = event.clientY;
-    if (!pointerDrag.active) {
-      if (Math.hypot(event.clientX - pointerDrag.startX, event.clientY - pointerDrag.startY) > 12) finishPointerDrag(true);
-      return;
-    }
+    const distance = Math.hypot(event.clientX - pointerDrag.startX, event.clientY - pointerDrag.startY);
+    if (!pointerDrag.active && !pointerDrag.ready) { if (distance > 12) finishPointerDrag(true); return; }
+    if (!pointerDrag.active && pointerDrag.ready) { if (distance < 6) return; activatePointerDrag(); }
     event.preventDefault();
     if (pointerGhost) pointerGhost.style.setProperty('transform', `translate3d(${event.clientX + 14}px,${event.clientY + 14}px,0)`, 'important');
     const nextTarget = document.elementFromPoint(event.clientX, event.clientY)?.closest?.('#inventoryTrash,#inventoryGrid,#equipmentGrid .equipment-slot');
