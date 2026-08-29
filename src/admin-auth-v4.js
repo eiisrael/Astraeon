@@ -9,7 +9,7 @@ const RUNTIME_TIMEOUT=10000;
 const state={config:null,client:null,session:null,profile:null,access:null,unlocked:false,loading:false,runtimeFailed:false,retryButton:null,secondaryFailures:[]};
 const $=s=>document.querySelector(s);
 const SECONDARY_MODULES=[
-  'src/admin-studio-v4.js',
+  'src/admin-studio-v4.js?v=6.3.0',
   'src/admin-accounts-v4.js',
   'src/admin-system-messages-v4.js',
   'src/admin-live-tools-v5.js',
@@ -19,7 +19,8 @@ const SECONDARY_MODULES=[
   'src/admin-realtime-v62.js',
   'src/admin-server-config-v62.js',
   'src/panel-studio-model-v7.js',
-  'src/admin-panel-editor-v8.js'
+  'src/admin-panel-editor-v8.js?v=8.1.0',
+  'src/admin-hub-v63.js?v=6.3.0'
 ];
 function diag(level,event,data={}){try{global.AstraeonEditorDiagnosticsV5?.[level]?.(event,data);}catch(_){}}
 function delay(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
@@ -165,7 +166,7 @@ async function loadCoreRuntime(){
   await script('src/admin-v3c.js');
   await waitForAdminPanel();
   ensureAdminLauncherFallback();
-  document.title='ASTRAEON — Admin Studio 6.2';
+  document.title='ASTRAEON — Admin Studio 6.3';
 }
 async function loadSecondaryModules(){
   state.secondaryFailures=[];

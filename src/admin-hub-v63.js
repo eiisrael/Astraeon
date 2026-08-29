@@ -1,0 +1,54 @@
+(function(global){
+'use strict';
+
+let installed=false,currentSection='',tabObserver=null;
+const $=(selector,scope=document)=>scope?.querySelector(selector)||null;
+const $$=(selector,scope=document)=>Array.from(scope?.querySelectorAll(selector)||[]);
+const esc=value=>String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+const editorTitles=new Set(['avançado','personagens','moblist & drops','objetos & áreas','itemlist','mapas & locais','editor de painéis']);
+const descriptions={
+  'avançado':'Configuração técnica e contratos JSON',
+  'personagens':'Slots, fichas e progressão de personagens',
+  'moblist & drops':'Criaturas, recompensas e tabelas de drop',
+  'objetos & áreas':'Objetos de cena, zonas e propriedades',
+  'itemlist':'Catálogo mestre de itens do jogo',
+  'mapas & locais':'Mapas conectados, cidades e localizações',
+  'editor de painéis':'Layout, camadas, textos, grids e componentes',
+  'visão geral':'Saúde, persistência e estado da produção',
+  'personagem':'Balanceamento do jogador e atributos',
+  'gameplay':'Regras globais, combate e progressão',
+  'classes':'Classes, requisitos e multiplicadores',
+  'mobs':'Parâmetros globais de criaturas',
+  'itens':'Regras administrativas de itens',
+  'biomas':'Biomas, clima e parâmetros do mundo',
+  'contas & acesso':'Perfis, permissões e níveis de acesso',
+  'contas & personagens':'Contas, personagens vinculados e acesso',
+  'mensagens do sistema':'Avisos globais e comunicação operacional'
+};
+function normalize(value){return String(value||'').trim().toLocaleLowerCase('pt-BR');}
+function panel(){return $('#adminPanel');}
+function tabList(){return $('#adminPanel .admin-tabs');}
+function tabs(){return $$('.admin-tab',tabList());}
+function ensureStyle(){if($('link[data-admin-hub-v63]'))return;const link=document.createElement('link');link.rel='stylesheet';link.href='src/admin-hub-v63.css?v=6.3.0';link.dataset.adminHubV63='1';document.head.appendChild(link);}
+function classify(button){const title=normalize(button.textContent);return button.dataset.adminTab==='panel-editor'||button.dataset.prodV6||button.dataset.adminCharacterV6||button.dataset.adminMobList||button.dataset.adminWorldMaps||editorTitles.has(title)?'editors':'admin';}
+function titleFor(section){return section==='editors'?'Editores de Produção':'Ferramentas Administrativas';}
+function iconFor(title){const value=normalize(title);if(value.includes('painéis'))return'▦';if(value.includes('mapa')||value.includes('bioma'))return'⌖';if(value.includes('item'))return'◆';if(value.includes('mob'))return'♞';if(value.includes('personag'))return'♙';if(value.includes('conta'))return'◎';if(value.includes('mensagen'))return'✦';if(value.includes('gameplay'))return'⚙';if(value.includes('classe'))return'◇';if(value.includes('avançado'))return'⌘';return'◈';}
+function grouped(section){return tabs().filter(button=>button.dataset.adminHubGroup===section);}
+function assignTabs(){tabs().forEach((button,index)=>{button.dataset.adminHubGroup=classify(button);button.dataset.adminHubId=button.dataset.adminHubId||`admin-tool-${index}-${normalize(button.textContent).replace(/[^a-z0-9]+/g,'-')}`;});if(currentSection)filterTabs(currentSection);updateHub();}
+function toolSummary(section){const items=grouped(section);return items.slice(0,4).map(button=>`<span>${esc(button.textContent.trim())}</span>`).join('')+(items.length>4?`<span>+${items.length-4} ferramentas</span>`:'');}
+function updateHub(){const hub=$('#adminHub'),editors=grouped('editors'),admin=grouped('admin');if(!hub)return;const editorCount=$('[data-hub-count="editors"]',hub),adminCount=$('[data-hub-count="admin"]',hub),editorTools=$('[data-hub-tools="editors"]',hub),adminTools=$('[data-hub-tools="admin"]',hub);if(editorCount)editorCount.textContent=`${editors.length} módulos`;if(adminCount)adminCount.textContent=`${admin.length} módulos`;if(editorTools)editorTools.innerHTML=toolSummary('editors');if(adminTools)adminTools.innerHTML=toolSummary('admin');}
+function filterTabs(section){tabs().forEach(button=>button.toggleAttribute('data-hub-hidden',button.dataset.adminHubGroup!==section));const label=$('#adminSectionNav');if(label){$('[data-section-title]',label).textContent=titleFor(section);$('[data-section-count]',label).textContent=`${grouped(section).length} módulos disponíveis`;}}
+function preferred(section){const list=grouped(section);return section==='editors'?list.find(button=>button.dataset.adminTab==='panel-editor')||list[0]:list.find(button=>button.dataset.adminTab==='dashboard')||list[0];}
+function showSection(section,target=null){const root=panel();if(!root)return;currentSection=section;root.classList.remove('admin-hub-visible');root.classList.add('admin-hub-section-open');root.dataset.adminHubSection=section;filterTabs(section);const button=target?tabs().find(item=>item.dataset.adminHubId===target):preferred(section);button?.click();}
+function showHub(openPanel=true){const root=panel();if(!root)return;if(openPanel)root.classList.remove('hidden');currentSection='';root.classList.add('admin-hub-visible');root.classList.remove('admin-hub-section-open');delete root.dataset.adminHubSection;tabs().forEach(button=>button.removeAttribute('data-hub-hidden'));$('#studioAdminLauncher')?.classList.add('active');updateHub();}
+function openWorldStudio(){const root=panel();if(!root)return;root.classList.add('hidden');root.classList.remove('admin-hub-visible','admin-hub-section-open');$('#studioAdminLauncher')?.classList.remove('active');$('.studio-stage')?.focus?.({preventScroll:true});global.astraeonEditor?.notify?.('World Studio aberto.');}
+function build(){const root=panel(),shell=$('.admin-shell',root),head=$('.admin-head',root),actions=$('.admin-head-actions',root),nav=tabList();if(!root||!shell||!head||!actions||!nav)return false;root.classList.add('admin-hub-v63');const copy=$('.admin-head-copy',head);if(copy){$('b',copy).textContent='ASTRAEON · CENTRAL ADMINISTRATIVA';$('small',copy).textContent='Studio, editores de produção e operação do jogo em um único ambiente.';}
+  if(!$('#adminHubHome',root)){const home=document.createElement('button');home.id='adminHubHome';home.type='button';home.className='admin-btn admin-hub-home';home.title='Central Administrativa · Ctrl+Alt+H';home.innerHTML='<span>⌂</span> Central';actions.prepend(home);home.addEventListener('click',()=>showHub());}
+  if(!$('#adminSectionNav',nav)){const label=document.createElement('div');label.id='adminSectionNav';label.className='admin-section-nav';label.innerHTML='<button type="button" data-section-back title="Voltar à Central">←</button><span><b data-section-title>Editores</b><small data-section-count></small></span>';nav.prepend(label);label.querySelector('button').addEventListener('click',()=>showHub());}
+  if(!$('#adminHub',shell)){const hub=document.createElement('main');hub.id='adminHub';hub.className='admin-hub';hub.innerHTML=`<section class="admin-hub-hero"><div><span class="admin-hub-eyebrow">Acesso administrativo verificado</span><h1>Painel Administrador</h1><p>Escolha um ambiente para começar. Cada área reúne somente as ferramentas relacionadas ao seu fluxo de trabalho.</p></div><aside><i></i><span><b>Produção conectada</b><small>Autosave, backup e publicação ativos</small></span></aside></section><section class="admin-hub-grid"><button class="admin-hub-card studio" type="button" data-hub-section="studio"><span class="admin-hub-number">01</span><i class="admin-hub-icon">A</i><div><small>World production</small><h2>Studio</h2><p>Construa o mundo, edite o mapa 2D, posicione objetos e valide a experiência jogável.</p></div><div class="admin-hub-tools"><span>Canvas do mundo</span><span>Mapas conectados</span><span>Publicação</span></div><footer><b>Abrir World Studio</b><em>→</em></footer></button><button class="admin-hub-card editors" type="button" data-hub-section="editors"><span class="admin-hub-number">02</span><i class="admin-hub-icon">▦</i><div><small data-hub-count="editors">Editores</small><h2>Editores</h2><p>Edite visualmente painéis, personagens, itens, criaturas, objetos, áreas e locais.</p></div><div class="admin-hub-tools" data-hub-tools="editors"></div><footer><b>Abrir editores</b><em>→</em></footer></button><button class="admin-hub-card admin" type="button" data-hub-section="admin"><span class="admin-hub-number">03</span><i class="admin-hub-icon">⌘</i><div><small data-hub-count="admin">Administração</small><h2>Ferramentas Admin</h2><p>Controle gameplay, contas, permissões, mensagens e parâmetros operacionais do jogo.</p></div><div class="admin-hub-tools" data-hub-tools="admin"></div><footer><b>Abrir administração</b><em>→</em></footer></button></section><footer class="admin-hub-footer"><span><kbd>F10</kbd> abrir ou fechar</span><span><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>H</kbd> voltar à Central</span><b>ASTRAEON ADMIN STUDIO 6.3</b></footer>`;shell.appendChild(hub);hub.addEventListener('click',event=>{const card=event.target.closest('[data-hub-section]');if(!card)return;card.dataset.hubSection==='studio'?openWorldStudio():showSection(card.dataset.hubSection);});}
+  return true;
+}
+function bind(){const root=panel(),nav=tabList(),launcher=$('#studioAdminLauncher'),close=$('#adminClose');if(!root||!nav)return;launcher?.addEventListener('click',()=>setTimeout(()=>showHub(false),0));close?.addEventListener('click',()=>{root.classList.remove('admin-hub-visible','admin-hub-section-open');currentSection='';});nav.addEventListener('click',event=>{const button=event.target.closest('.admin-tab');if(button&&!root.classList.contains('admin-hub-visible')&&!currentSection){currentSection=button.dataset.adminHubGroup||classify(button);filterTabs(currentSection);}},true);global.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.altKey&&event.key.toLowerCase()==='h'&&Number(global.AstraeonAdminAuth?.access)===3){event.preventDefault();event.stopImmediatePropagation();showHub();}},true);tabObserver=new MutationObserver(assignTabs);tabObserver.observe(nav,{childList:true});}
+function install(){if(installed)return;const root=panel();if(!root||!tabList()||Number(global.AstraeonAdminAuth?.access)!==3){setTimeout(install,100);return;}if(!build())return void setTimeout(install,100);installed=true;ensureStyle();assignTabs();bind();requestAnimationFrame(()=>{const opener=$('#adminOpenBtn');if(root.classList.contains('hidden'))opener?.click();showHub();});global.AstraeonAdminHubV63={show:showHub,openSection:showSection,openWorldStudio,refresh:assignTabs};global.dispatchEvent(new CustomEvent('astraeon:admin-hub-ready',{detail:{version:'6.3',editors:grouped('editors').length,admin:grouped('admin').length}}));}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+})(window);

@@ -7,7 +7,7 @@ const APPLIED_PROPS=['display','position','isolation','width','height','max-widt
 const TEXT_PROPS=['font-family','font-size','font-weight','line-height','letter-spacing','text-align','color','border-color'];
 const NODE_PROPS=['display','position','left','top','width','height','min-width','max-width','min-height','max-height','gap','padding','margin','z-index','order','flex-direction','align-items','justify-content','grid-template-columns','grid-template-rows','background','color','border-color','border-width','border-style','border-radius','font-family','font-size','font-weight','text-align','line-height','letter-spacing','opacity','transform','box-shadow','filter'];
 const nodeOriginal=new WeakMap(),nodeOriginalContent=new WeakMap(),activeNodes=new Map();
-const query=new URLSearchParams(location.search),previewId=query.get('panelPreview')||'',embed=query.get('panelStudioEmbed')==='1';
+const query=new URLSearchParams(location.search),hostFrame=global.frameElement,previewId=query.get('panelPreview')||hostFrame?.dataset?.panelPreview||'',embed=query.get('panelStudioEmbed')==='1'||hostFrame?.dataset?.panelStudioEmbed==='1';
 let doc=M.load(),observer=null,scheduled=false;
 
 function clearApplied(element){
