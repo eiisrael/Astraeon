@@ -55,7 +55,7 @@
     }
     if (!document.querySelector('link[data-astraeon-inventory-layout-v43]')) {
       const link = document.createElement('link');
-      link.rel = 'stylesheet'; link.href = 'src/inventory-layout-v43.css'; link.dataset.astraeonInventoryLayoutV43 = '1';
+      link.rel = 'stylesheet'; link.href = 'src/inventory-layout-v43.css?v=4.3.9'; link.dataset.astraeonInventoryLayoutV43 = '1';
       document.head.appendChild(link);
     }
     if (!document.querySelector('script[data-astraeon-admin-runtime-v3c]')) {
@@ -64,8 +64,9 @@
       script.addEventListener('load',()=>window.AstraeonAdminRuntime?.install?.());
       document.head.appendChild(script);
     }
-    for (const [src,key] of [['src/gameplay-polish-v7.js','gameplayPolishV7'],['src/inventory-layout-v43.js','inventoryLayoutV43'],['src/production-runtime-v6.js','productionRuntimeV6'],['src/character-system-v6.js','characterSystemV6'],['src/worldmaps-runtime-v61.js','worldMapsRuntimeV61'],['src/server-config-v62.js','serverConfigV62'],['src/menu-cinematic-v62.js','menuCinematicV62']]) {
-      if (document.querySelector(`script[data-${key}]`)) continue;
+    for (const [src,key] of [['src/gameplay-polish-v7.js','gameplayPolishV7'],['src/production-runtime-v6.js','productionRuntimeV6'],['src/character-system-v6.js','characterSystemV6'],['src/worldmaps-runtime-v61.js','worldMapsRuntimeV61'],['src/server-config-v62.js','serverConfigV62'],['src/menu-cinematic-v62.js','menuCinematicV62']]) {
+      const dataAttribute = key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+      if (document.querySelector(`script[data-${dataAttribute}]`)) continue;
       const script=document.createElement('script');script.src=src;script.async=false;script.dataset[key]='1';document.head.appendChild(script);
     }
   }
@@ -176,7 +177,7 @@
     window.addEventListener('blur',()=>{held.forEach(k=>game.keys?.delete(k));held.clear();});
 
     document.querySelector('#touchAttack')?.addEventListener('pointerdown',e=>{e.preventDefault();game.basicAttack?.();});
-    document.querySelector('#touchInventory')?.addEventListener('pointerdown',e=>{e.preventDefault();game.togglePanel?.(game.ui.inventoryPanel);});
+    document.querySelector('#touchInventory')?.addEventListener('click',e=>{e.preventDefault();game.togglePanel?.(game.ui.inventoryPanel);});
     document.querySelectorAll('#mobileControls [data-skill]').forEach(btn=>btn.addEventListener('pointerdown',e=>{
       e.preventDefault(); game.castSkill?.(Number(btn.dataset.skill));
     }));

@@ -96,6 +96,10 @@
   }
 
   function install() {
+    // A estrutura visual não depende do estado do personagem. Aplicá-la já na
+    // primeira passagem evita que o painel herde por alguns frames o layout
+    // legado enquanto o runtime do inventário termina de iniciar.
+    decorateDom();
     if (installed) return;
     const game = global.astraeon;
     const A = global.AstraeonItems;

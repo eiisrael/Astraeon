@@ -2,8 +2,9 @@
   'use strict';
 
   const W = window.AstraeonWorld;
-  const A = window.AstraeonItems;
-  const V3 = window.AstraeonItemsV3;
+  let A = null;
+  let V3 = null;
+  let installRetry = 0;
   const BACKPACK_CAPACITY = 30;
   const STAMINA_MAX = 100;
   const STAMINA_DRAIN = 24;
@@ -26,7 +27,14 @@
 
   function install() {
     const game = window.astraeon;
-    if (!game || !W || !A || game.systemsV30BInstalled) return;
+    A = window.AstraeonItems;
+    V3 = window.AstraeonItemsV3;
+    if (!game || !W || !A || !V3) {
+      clearTimeout(installRetry);
+      installRetry = window.setTimeout(install, 60);
+      return;
+    }
+    if (game.systemsV30BInstalled) return;
     game.systemsV30BInstalled = true;
 
     game.backpackCapacity = BACKPACK_CAPACITY;
