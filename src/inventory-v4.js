@@ -19,8 +19,8 @@
     strength: 'Força', magic: 'Magia', dexterity: 'Destreza', heal: 'Cura', mana: 'Mana', healPct: 'Cura %', manaPct: 'Mana %'
   };
   const SLOT_CATEGORY = {
-    weapon: 'weapon', head: 'armor', chest: 'armor', hands: 'armor', boots: 'armor',
-    ring: 'accessory', amulet: 'accessory', relic: 'realm'
+    pet: 'companion', head: 'armor', cloak: 'armor', weapon: 'weapon', chest: 'armor', offhand: 'weapon',
+    hands: 'armor', legs: 'armor', boots: 'armor', necklace: 'accessory', ring: 'accessory', amulet: 'accessory', relic: 'realm'
   };
   const RARITY_LABELS = {
     common: 'Comum', uncommon: 'Incomum', rare: 'Raro', epic: 'Épico', legendary: 'Lendário'
@@ -41,6 +41,10 @@
 
   function isCoarsePointer() {
     return !!global.matchMedia?.('(pointer:coarse)').matches || document.body.classList.contains('touch-forced');
+  }
+
+  function hasFinePointer() {
+    return !!global.matchMedia?.('(any-pointer:fine)').matches || !global.matchMedia?.('(pointer:coarse)').matches;
   }
 
   function escapeHtml(value) {
@@ -369,7 +373,10 @@
   }
 
   function bindDragSource(game, element, ref) {
-    element.draggable = !isCoarsePointer();
+    // O modo de toque pode permanecer ativo em notebooks híbridos. O mouse
+    // continua sendo uma origem de drag válida quando qualquer ponteiro fino existe.
+    element.draggable = hasFinePointer();
+    element.setAttribute('aria-grabbed', 'false');
     element.querySelectorAll('img').forEach(img => {
       img.draggable = false;
       img.setAttribute('draggable', 'false');
@@ -385,10 +392,12 @@
       event.dataTransfer.effectAllowed = 'move';
       game.selectedInventoryRef = ref;
       element.classList.add('dragging');
+      element.setAttribute('aria-grabbed', 'true');
       document.querySelector('#inventoryTrash')?.classList.add('drag-active');
     });
     element.addEventListener('dragend', () => {
       element.classList.remove('dragging');
+      element.setAttribute('aria-grabbed', 'false');
       document.querySelector('#inventoryTrash')?.classList.remove('drag-active', 'dragover');
     });
   }
@@ -468,6 +477,20 @@
       this.save?.();
       this.toast?.(`${item.name} foi descartado.`);
       this.beep?.(96, .055, .018);
+      return true;
+    };
+
+    game.reorderInventoryItem = function (fromIndex, toIndex) {
+      const from = Number(fromIndex);
+      let to = Number(toIndex);
+      if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to < 0 || from >= (this.inventory?.length || 0) || to >= (this.inventory?.length || 0) || from === to) return false;
+      const [item] = this.inventory.splice(from, 1);
+      to = Math.min(to, this.inventory.length);
+      this.inventory.splice(to, 0, item);
+      this.selectedInventoryRef = { source: 'inventory', index: to };
+      this.renderInventory?.();
+      this.save?.();
+      this.toast?.(`${item.name} foi movido na mochila.`);
       return true;
     };
 
@@ -629,6 +652,10 @@
         if (!data) return;
         event.preventDefault();
         if (data.source === 'equipment') this.unequipItem(data.slot);
+        if (data.source === 'inventory') {
+          const target = event.target?.closest?.('.inventory-slot[data-index]');
+          if (target) this.reorderInventoryItem(Number(data.index), Number(target.dataset.index));
+        }
       };
 
       const trash = document.querySelector('#inventoryTrash');
@@ -703,6 +730,11 @@
         if (!panel.classList.contains('hidden')) {
           this.backpackCapacity = CAPACITY;
           this.renderInventory?.();
+          requestAnimationFrame(() => {
+            const layout = panel.querySelector('.inventory-layout');
+            if (layout) layout.scrollTop = 0;
+            panel.querySelectorAll('.equipment-column,.backpack-column').forEach(column => { column.scrollTop = 0; });
+          });
         }
       }
       return result;

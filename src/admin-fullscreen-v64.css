@@ -1,0 +1,34 @@
+/* Admin Studio 6.4 — área de trabalho imersiva */
+#adminPanel.admin-studio-v5{
+  padding:0!important;
+  place-items:stretch!important;
+  background:#03070a!important;
+}
+#adminPanel.admin-studio-v5 .admin-shell{
+  width:100vw!important;
+  max-width:none!important;
+  height:100dvh!important;
+  max-height:none!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+#adminPanel.admin-hub-v63.admin-hub-section-open[data-admin-hub-section="editors"] .admin-body{
+  grid-template-columns:minmax(0,1fr)!important;
+}
+#adminPanel.admin-hub-v63.admin-hub-section-open[data-admin-hub-section="editors"] .admin-tabs{
+  display:none!important;
+}
+#adminPanel.admin-hub-v63.admin-hub-section-open[data-admin-hub-section="editors"] .admin-content{
+  padding:0!important;
+  overflow:hidden!important;
+}
+#adminPanel.admin-hub-v63.admin-hub-section-open[data-admin-hub-section="editors"] .panel-editor-host{
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+}
+
+@media(max-width:700px){
+  #adminPanel.admin-studio-v5 .admin-shell{height:100dvh!important}
+}

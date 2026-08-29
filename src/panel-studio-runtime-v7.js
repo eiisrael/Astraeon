@@ -8,7 +8,7 @@ const TEXT_PROPS=['font-family','font-size','font-weight','line-height','letter-
 const NODE_PROPS=['display','position','left','top','width','height','min-width','max-width','min-height','max-height','gap','padding','margin','z-index','order','flex-direction','align-items','justify-content','grid-template-columns','grid-template-rows','background','color','border-color','border-width','border-style','border-radius','font-family','font-size','font-weight','text-align','line-height','letter-spacing','opacity','transform','box-shadow','filter'];
 const nodeOriginal=new WeakMap(),nodeOriginalContent=new WeakMap(),activeNodes=new Map();
 const query=new URLSearchParams(location.search),hostFrame=global.frameElement,previewId=query.get('panelPreview')||hostFrame?.dataset?.panelPreview||'',embed=query.get('panelStudioEmbed')==='1'||hostFrame?.dataset?.panelStudioEmbed==='1';
-let doc=M.load(),observer=null,scheduled=false;
+let doc=M.load(),observer=null,scheduled=false,preparedPreviewId='';
 
 function clearApplied(element){
   if(!(element instanceof HTMLElement))return;
@@ -166,7 +166,17 @@ function togglePanel(id){const root=rootFor(id);return root?.classList.contains(
 function hydratePreview(id){
   if(id!=='inventory')return;
   const equipment=document.querySelector('#equipmentGrid'),backpack=document.querySelector('#inventoryGrid'),stats=document.querySelector('#equipmentStats');
-  if(equipment&&!equipment.children.length){const fallback={weapon:{label:'Arma',icon:'⚔'},head:{label:'Elmo',icon:'♜'},chest:{label:'Peitoral',icon:'◈'},hands:{label:'Luvas',icon:'✦'},boots:{label:'Botas',icon:'⌁'},ring:{label:'Anel',icon:'◌'},amulet:{label:'Amuleto',icon:'◇'},relic:{label:'Relicário',icon:'✧'}},slots=global.AstraeonItems?.slots||fallback,categories={weapon:'weapon',ring:'accessory',amulet:'accessory',relic:'realm'};for(const [id,info] of Object.entries(slots)){const slot=document.createElement('button');slot.type='button';slot.className=`equipment-slot slot-${id} empty`;slot.dataset.slot=id;slot.dataset.category=categories[id]||'armor';slot.dataset.panelStudioPreviewFixture='1';slot.innerHTML=`<small>${info.label}</small><strong>${info.icon||'◇'}</strong><span>Vazio</span>`;equipment.appendChild(slot);}}
+  if(equipment){
+    const required={pet:{label:'Pet',icon:'◇'},head:{label:'Elmo',icon:'♜'},cloak:{label:'Manto',icon:'⌁'},weapon:{label:'Arma 1',icon:'⚔'},chest:{label:'Peito / Armadura',icon:'◈'},offhand:{label:'Arma 2 / Escudo',icon:'◐'},hands:{label:'Luva / Armadura',icon:'✦'},legs:{label:'Calça / Armadura',icon:'║'},boots:{label:'Bota / Armadura',icon:'⌁'},necklace:{label:'Colar',icon:'◌'},relic:{label:'Pingente',icon:'✧'},ring:{label:'Anel',icon:'◌'},amulet:{label:'Amuleto',icon:'◇'}};
+    const runtime=global.AstraeonItems?.slots||{};
+    const categories={pet:'companion',weapon:'weapon',offhand:'weapon',necklace:'accessory',relic:'realm',ring:'accessory',amulet:'accessory'};
+    for(const [slotId,fallback] of Object.entries(required)){
+      let slot=equipment.querySelector(`.equipment-slot[data-slot="${slotId}"]`);
+      const info=runtime[slotId]||fallback;
+      if(!slot){slot=document.createElement('button');slot.type='button';slot.className=`equipment-slot slot-${slotId} empty`;slot.dataset.slot=slotId;slot.dataset.panelStudioPreviewFixture='1';slot.innerHTML=`<small>${info.label}</small><strong>${info.icon||'◇'}</strong><span>Vazio</span>`;equipment.appendChild(slot);}
+      slot.classList.add(`slot-${slotId}`);slot.dataset.category=categories[slotId]||'armor';
+    }
+  }
   if(backpack&&!backpack.children.length){for(let index=0;index<25;index++){const slot=document.createElement('button');slot.type='button';slot.className='inventory-slot empty';slot.dataset.panelStudioPreviewFixture='1';slot.disabled=true;slot.setAttribute('aria-label',`Slot vazio ${index+1}`);backpack.appendChild(slot);}}
   if(stats&&!stats.children.length){for(const [label,value] of [['Poder','48'],['Defesa','34'],['Vida máx.','457'],['Mana máx.','183'],['Velocidade','192'],['Crítico','8%']]){const item=document.createElement('div');item.dataset.panelStudioPreviewFixture='1';item.innerHTML=`<span>${label}</span><b>${value}<i>+0</i></b>`;stats.appendChild(item);}}
 }
@@ -178,6 +188,10 @@ function prepareEmbed(id){
   for(const item of M.list(doc)){const definitionItem=M.getDefinition(doc,item.id);if(!definitionItem)continue;const selectors=[definitionItem.rootSelector,definitionItem.selector].filter(Boolean);for(const selector of selectors){try{document.querySelectorAll(selector).forEach(element=>candidates.add(element));}catch(_){}}}
   document.querySelectorAll('#startScreen,#classScreen,#hud,#inventoryPanel,#mapPanel,#helpPanel,#settingsPanel,#pauseScreen,#onlineAccountPanel,#npcDialogue,.panel-studio-custom-overlay').forEach(element=>candidates.add(element));
   if(def.custom)applyCustom(M.getPanel(doc,id),new Set());hydratePreview(id);
+  if(preparedPreviewId!==id){
+    preparedPreviewId=id;
+    document.querySelectorAll('.inventory-layout,.equipment-column,.backpack-column').forEach(element=>{element.scrollTop=0;element.scrollLeft=0;});
+  }
   const target=document.querySelector(def.selector)||rootFor(id);if(!target)return;
   candidates.forEach(element=>element.classList.add('panel-studio-embed-hide'));
   for(let current=target;current&&current!==document.body;current=current.parentElement){current.classList.remove('panel-studio-embed-hide','hidden','collapsed','collapsed-mobile','chat-pro-collapsed');current.removeAttribute('aria-hidden');}

@@ -55,7 +55,7 @@ required=[
  'src/world-v2.js','src/game-v2.js','src/inventory-v2.js','src/inventory-v3.js','src/ui-v3.js','src/systems-v3b.js','src/admin-runtime-v3c.js',
  'src/world-online-v4.js','src/npcs-v4.js','src/multiplayer-v4.js','src/online-controller-v4.js','src/chat-system-v4.js','src/combat-focus-v4.js','src/account-status-v4.js','src/online-v4.css','src/online-fixes-v4.css','src/live-runtime-v5.js',
  'src/production-runtime-v6.js','src/character-system-v6.js','src/production-v6.css',
- 'src/editor-v2.js','src/admin-v3c.js','src/admin-studio-v4.js','src/admin-auth-v4.js','src/admin-accounts-v4.js','src/admin-system-messages-v4.js','src/admin-live-tools-v5.js','src/admin-character-slots-v6.js','src/admin-production-v6.js','src/admin-auth-v4.css','src/astraeon-v2.css','src/inventory-v2.css','src/ui-v3.css','src/ui-v3b.css','src/typography-v3c.css','src/editor-v2.css','src/editor-v3c.css','src/editor-studio-v4.css',
+ 'src/editor-v2.js','src/admin-v3c.js','src/admin-studio-v4.js','src/admin-auth-v4.js','src/admin-accounts-v4.js','src/admin-system-messages-v4.js','src/admin-live-tools-v5.js','src/admin-character-slots-v6.js','src/admin-production-v6.js','src/admin-auth-v4.css','src/admin-fullscreen-v64.css','src/astraeon-v2.css','src/inventory-v2.css','src/ui-v3.css','src/ui-v3b.css','src/typography-v3c.css','src/editor-v2.css','src/editor-v3c.css','src/editor-studio-v4.css',
  'api/config.js','api/admin-access.js','vercel.json','package.json','.env.example','.gitignore','README.md','INSTALLME.md','ONLINE_SETUP.md','SECURITY.md','COPYRIGHT.md','LICENSE','scripts/check_secrets.py',
  'supabase/migrations/001_astraeon_online.sql','supabase/migrations/002_access_admin_security.sql','supabase/migrations/003_system_messages.sql','supabase/migrations/004_system_message_kinds.sql','supabase/migrations/005_admin_live_tools.sql','supabase/migrations/006_characters_itemlist.sql','supabase/migrations/007_admin_character_slots.sql',
  'Assets/Classes/Warrior.png','Assets/Classes/Mage.png','Assets/Classes/Archer.png','Assets/Classes/Assassin.png','Assets/Classes/Paladine.png',
@@ -127,7 +127,7 @@ for skill in ['data-skill="3"','data-skill="4"']:
     if skill not in index_text: ERRORS.append(f'index.html: controle mobile ausente: {skill}')
 
 editor_text=(ROOT/'game-editor.html').read_text(encoding='utf-8') if (ROOT/'game-editor.html').exists() else ''
-for needle in ['Admin Studio 5.0','src/admin-auth-v4.css','src/admin-auth-v4.js','adminAccessGate','admin-editor-locked','studio-commandbar','autoExportToggle','worldHealth','studioAdminLauncher','name="robots"']:
+for needle in ['Admin Studio 6.4','src/admin-auth-v4.css','src/admin-auth-v4.js','src/admin-fullscreen-v64.css','adminAccessGate','admin-editor-locked','studio-commandbar','autoExportToggle','worldHealth','studioAdminLauncher','name="robots"']:
     if needle not in editor_text: ERRORS.append(f'game-editor.html: contrato Admin Studio protegido ausente: {needle}')
 for forbidden in ['<script src="src/world-v2.js"','<script src="src/editor-v2.js"','<script src="src/admin-v3c.js"','<script src="src/admin-studio-v4.js"']:
     if forbidden in editor_text: ERRORS.append(f'game-editor.html: runtime administrativo não deve carregar antes da autenticação: {forbidden}')
@@ -145,8 +145,8 @@ if api_path.exists():
         if forbidden in api_text: ERRORS.append(f'api/config.js: segredo proibido referenciado: {forbidden}')
 
 if ERRORS:
-    print('ASTRAEON ADMIN STUDIO 6.0 validation FAILED')
+    print('ASTRAEON ADMIN STUDIO 6.4 validation FAILED')
     for err in ERRORS: print(' -',err)
     sys.exit(1)
-print('ASTRAEON ADMIN STUDIO 6.0 validation OK')
+print('ASTRAEON ADMIN STUDIO 6.4 validation OK')
 print(f'index IDs: {len(index_ids)} | editor IDs: {len(editor_ids)} | required files: {len(required)}')
