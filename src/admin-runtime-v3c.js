@@ -53,7 +53,7 @@ function install(){
   }
   this.stamina=Math.max(0,Math.min(this.staminaMax,this.stamina));this.updateStaminaUI?.();
  };
- game.damagePlayer=function(amount){if(g.godMode){this.floatText?.(this.player.x,this.player.y-25,'IMUNE','#ffd86b');return;}return originalDamagePlayer(Math.max(0,Math.round((Number(amount)||0)*finite(g.damageTakenMultiplier,1))))};
+ game.damagePlayer=function(amount,source=null){if(g.godMode){this.floatText?.(this.player.x,this.player.y-25,'IMUNE','#ffd86b');return;}return originalDamagePlayer(Math.max(0,Math.round((Number(amount)||0)*finite(g.damageTakenMultiplier,1))),source)};
  game.hitMob=function(mob,amount,crit){return originalHitMob(mob,Math.max(0,Math.round((Number(amount)||0)*finite(g.damageMultiplier,1))),crit)};
  game.gainXp=function(amount){return originalGainXp(Math.max(0,Math.round((Number(amount)||0)*finite(g.xpMultiplier,1))))};
  game.killMob=function(mob){

@@ -456,15 +456,25 @@
       if (this.player.hp <= 0) this.playerDeath();
     }
 
+    incomingDamagePosition(effect) {
+      const nx = Number.isFinite(Number(effect?.nx)) ? Number(effect.nx) : 0;
+      const ny = Number.isFinite(Number(effect?.ny)) ? Number(effect.ny) : -1;
+      const length = Math.max(1, Math.hypot(nx, ny));
+      const radius = 31;
+      return {
+        x: this.player.x + nx / length * radius,
+        y: this.player.y - 8 + ny / length * radius
+      };
+    }
+
     incomingDamage(source, amount) {
       const target = this.player;
-      const sx = Number.isFinite(Number(source?.x)) ? Number(source.x) : target.x;
-      const sy = Number.isFinite(Number(source?.y)) ? Number(source.y) : target.y - 36;
+      const sx = Number(source?.x), sy = Number(source?.y);
+      if (!Number.isFinite(sx) || !Number.isFinite(sy)) return;
       const dx = sx - target.x, dy = sy - target.y, distance = Math.max(1, Math.hypot(dx, dy));
-      const nx = dx / distance, ny = dy / distance, impactRadius = 27;
+      const nx = dx / distance, ny = dy / distance;
       this.effects.push({
-        type: 'incoming-damage', sx, sy, tx: target.x, ty: target.y,
-        x: target.x + nx * impactRadius, y: target.y + ny * impactRadius,
+        type: 'incoming-damage', sourceId: source?.id || null,
         nx, ny, angle: Math.atan2(ny, nx), text: `-${amount}`, color: '#ff4358', life: .58, max: .58
       });
     }
@@ -747,11 +757,11 @@
         if (e.type === 'text') {
           ctx.globalAlpha = e.life / e.max; ctx.font = '700 13px Inter,sans-serif'; ctx.textAlign = 'center'; ctx.fillText(e.text, e.x, e.y - t * 24);
         } else if (e.type === 'incoming-damage') {
-          const x = e.x, y = e.y;
+          const { x, y } = this.incomingDamagePosition(e);
           const alpha = Math.min(1, t * 8, (1 - t) * 3.2);
           ctx.globalAlpha = Math.max(0, alpha);
           ctx.save();ctx.translate(x,y);ctx.rotate(e.angle || 0);ctx.strokeStyle=e.color;ctx.lineWidth=4.5;ctx.lineCap='round';ctx.shadowBlur=12;ctx.shadowColor=e.color;ctx.beginPath();ctx.arc(0,0,17,-1.05,1.05);ctx.stroke();ctx.lineWidth=1.5;ctx.globalAlpha*=.55;ctx.beginPath();ctx.arc(0,0,23,-.82,.82);ctx.stroke();ctx.restore();
-          const labelX=x+(Number(e.nx)||0)*5,labelY=y+(Number(e.ny)||0)*5-10-t*8;ctx.globalAlpha=Math.max(0,alpha);ctx.textAlign='center';ctx.textBaseline='bottom';ctx.font='900 12px Inter,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(45,4,9,.85)';ctx.strokeText(e.text,labelX,labelY);ctx.fillStyle='#ffd8d8';ctx.fillText(e.text,labelX,labelY);
+          const labelX=x+(Number(e.nx)||0)*14,labelY=y+(Number(e.ny)||0)*14-t*5;ctx.globalAlpha=Math.max(0,alpha);ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 12px Inter,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(45,4,9,.85)';ctx.strokeText(e.text,labelX,labelY);ctx.fillStyle='#ffd8d8';ctx.fillText(e.text,labelX,labelY);
         } else if (e.type === 'ring' || e.type === 'nova' || e.type === 'burst' || e.type === 'shield' || e.type === 'trail') {
           ctx.lineWidth = e.type === 'nova' ? 5 : 3; const r = (e.radius || 48) * (e.type === 'shield' ? 1 : (.18 + t * .82));
           ctx.beginPath(); ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.stroke();
