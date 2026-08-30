@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="src/astraeon-v2.css">
 <link rel="stylesheet" href="src/inventory-v2.css">
 <link rel="stylesheet" href="src/inventory-v4.css?v=4.5.0" data-astraeon-inventory-v4="1">
+<link rel="stylesheet" href="src/characteristics-v1.css?v=1.0.0" data-astraeon-characteristics-v1="1">
 <link rel="stylesheet" href="src/ui-v3.css">
 <link rel="stylesheet" href="src/ui-v3b.css">
 <link rel="stylesheet" href="src/typography-v3c.css" data-astraeon-typography-v3c="1">
@@ -95,12 +96,13 @@
       </div>
       <div class="utility-stack">
         <button id="inventoryBtn" class="icon-btn" title="Mochila + Equipamento (I)">♜</button>
+        <button id="characteristicsBtn" class="icon-btn" title="Características do personagem (C)">✦</button>
         <button id="mapBtn" class="icon-btn" title="Mapa (M)">⌖</button>
         <button id="settingsBtn" class="icon-btn" title="Configurações">⚙</button>
         <button id="helpBtn" class="icon-btn" title="Ajuda (H)">?</button>
       </div>
     </div>
-    <div class="hud-tip">WASD mover · Shift correr · Enter chat · E falar · clique/espaço atacar · 1–5 habilidades · I mochila · ESC pausar</div>
+    <div class="hud-tip">WASD mover · Shift correr · Enter chat · E falar · clique/espaço atacar · 1–5 habilidades · I mochila · C características · ESC pausar</div>
   </div>
 
   <div id="biomeBanner"><strong>ASTRAEON</strong><span>Uma nova região foi descoberta</span></div>
@@ -164,12 +166,34 @@
   </section>
   <div id="inventoryLegacyItemListCompat" hidden aria-hidden="true"><input id="itemListSearch" tabindex="-1"><div id="itemListResults"></div></div>
 
+  <section id="characteristicsPanel" class="overlay-panel hidden" aria-label="Painel de características do personagem">
+    <div class="overlay-card characteristics-card">
+      <header class="characteristics-head">
+        <div class="characteristics-title"><div class="characteristics-emblem">✦</div><div><span>Essência do Viajante</span><h2>Características</h2><p>Distribua seus pontos e molde a evolução do personagem.</p></div></div>
+        <div class="characteristics-head-actions"><span class="characteristics-shortcut">Atalho <kbd>C</kbd></span><button id="characteristicsClose" class="panelClose" type="button" aria-label="Fechar características">×</button></div>
+      </header>
+      <div class="characteristics-body">
+        <aside class="characteristics-profile">
+          <div class="characteristics-portrait-frame"><img id="characteristicsPortrait" alt="Retrato da classe"></div>
+          <div class="characteristics-profile-name"><span>Personagem ativo</span><h3 id="characteristicsName">Viajante</h3><p id="characteristicsClass">Classe · Nível 1</p></div>
+          <section class="characteristics-points"><span>Pontos disponíveis</span><div class="characteristics-points-main"><b id="characteristicsAvailable">0</b><small>para distribuir agora</small></div><div class="characteristics-progress"><i id="characteristicsProgress"></i></div><div class="characteristics-point-meta"><span>Obtidos <b id="characteristicsEarned">0</b></span><span>Aplicados <b id="characteristicsSpent">0</b></span></div></section>
+          <div class="characteristics-rule"><b>Níveis 1–50:</b> 5 pontos por nível.<br><b>Após o nível 50:</b> 3 pontos por nível.</div>
+        </aside>
+        <main class="characteristics-workspace">
+          <section class="characteristics-derived-shell"><div class="characteristics-section-label"><span>Status resultantes</span><small>base + características + equipamentos</small></div><div id="characteristicsDerived" class="characteristics-derived-grid"></div></section>
+          <section class="characteristics-attributes"><div class="characteristics-section-label"><span>Distribuição de atributos</span><small>Use ±5 ou Shift + clique para distribuir rapidamente</small></div><div id="characteristicsAttributeGrid" class="characteristic-attribute-grid"></div></section>
+          <footer class="characteristics-actions"><span id="characteristicsPending">Nenhuma alteração pendente</span><div class="characteristics-action-buttons"><button id="characteristicsReset" type="button" disabled>Desfazer pendentes</button><button id="characteristicsApply" class="primary" type="button" disabled>Aplicar pontos</button></div></footer>
+        </main>
+      </div>
+    </div>
+  </section>
+
   <section id="mapPanel" class="overlay-panel hidden">
     <div class="overlay-card"><header class="overlay-head"><div><span class="panel-kicker">Cartografia</span><h2>Mapa Astral</h2><p>Cidades, cinco climas e sua posição atual.</p></div><button class="panelClose">×</button></header><div class="big-map"><canvas id="bigMapCanvas" width="620" height="620"></canvas><div id="mapLegend" class="map-legend"></div></div></div>
   </section>
 
   <section id="helpPanel" class="overlay-panel hidden">
-    <div class="overlay-card"><header class="overlay-head"><div><span class="panel-kicker">Codex</span><h2>Manual do viajante</h2><p>Controles e sistemas principais.</p></div><button class="panelClose">×</button></header><div class="help-grid"><div class="help-card"><b>Exploração</b><span>WASD/setas movem. Segure Shift para correr consumindo Fôlego. No mobile use o direcional touch.</span></div><div class="help-card"><b>Combate</b><span>Clique, Espaço ou botão de ataque. 1–5 ativa habilidades com mana e recarga.</span></div><div class="help-card"><b>Chat online</b><span>Pressione Enter ou use o botão de chat. Sem login, o chat abre e orienta como conectar sua conta; autenticado, a mensagem vai para o canal mundial.</span></div><div class="help-card"><b>NPCs</b><span>Aproxime-se de um habitante e pressione E; no mobile use Falar.</span></div><div class="help-card"><b>Equipamentos de classe</b><span>Itens podem exigir classe, nível e pontos de atributo. Requisitos incompatíveis aparecem em vermelho e impedem o equipamento.</span></div><div class="help-card"><b>Mochila</b><span>I abre o inventário 5×5. No desktop passe o mouse para inspecionar; no mobile mantenha pressionado por 3 segundos. Arraste itens indesejados para a lixeira.</span></div></div></div>
+    <div class="overlay-card"><header class="overlay-head"><div><span class="panel-kicker">Codex</span><h2>Manual do viajante</h2><p>Controles e sistemas principais.</p></div><button class="panelClose">×</button></header><div class="help-grid"><div class="help-card"><b>Exploração</b><span>WASD/setas movem. Segure Shift para correr consumindo Fôlego. No mobile use o direcional touch.</span></div><div class="help-card"><b>Combate</b><span>Clique, Espaço ou botão de ataque. 1–5 ativa habilidades com mana e recarga.</span></div><div class="help-card"><b>Características</b><span>C abre o painel exclusivo do personagem. Distribua 5 pontos por nível até o nível 50 e 3 pontos por nível depois disso.</span></div><div class="help-card"><b>Chat online</b><span>Pressione Enter ou use o botão de chat. Sem login, o chat abre e orienta como conectar sua conta; autenticado, a mensagem vai para o canal mundial.</span></div><div class="help-card"><b>NPCs</b><span>Aproxime-se de um habitante e pressione E; no mobile use Falar.</span></div><div class="help-card"><b>Equipamentos de classe</b><span>Itens podem exigir classe, nível e pontos de atributo. Requisitos incompatíveis aparecem em vermelho e impedem o equipamento.</span></div><div class="help-card"><b>Mochila</b><span>I abre o inventário 5×5. Pressione e segure um item por 1 segundo para inspecionar. Arraste itens indesejados para a lixeira.</span></div></div></div>
   </section>
 
   <section id="settingsPanel" class="overlay-panel hidden">
@@ -199,6 +223,7 @@
       <button data-key="d" class="touch-right">▶</button>
     </div>
     <div class="touch-actions">
+      <button id="touchCharacteristics" aria-label="Abrir características">✦</button>
       <button id="touchInventory">♜</button>
       <button data-key="shift" class="touch-sprint">⇧<small>Correr</small></button>
       <button id="touchAttack" class="touch-attack">⚔</button>
@@ -216,7 +241,9 @@
 <script src="src/inventory-layout-v43.js?v=4.3.9" data-inventory-layout-v43="1"></script>
 <script src="src/inventory-drag-guard-v41.js?v=4.3.0" data-astraeon-inventory-drag-guard-v41="1"></script>
 <script src="src/online-controller-v4.js"></script>
-<script src="src/panel-studio-model-v7.js" data-panel-studio-model-v7="1"></script>
-<script src="src/panel-studio-runtime-v7.js?v=7.2.0" data-panel-studio-runtime-v7="1"></script>
+<script src="src/panel-studio-model-v7.js?v=7.3.0" data-panel-studio-model-v7="1"></script>
+<script src="src/panel-studio-runtime-v7.js?v=7.3.0" data-panel-studio-runtime-v7="1"></script>
+<script src="src/characteristics-model-v1.js?v=1.0.0" data-astraeon-characteristics-model-v1="1"></script>
+<script src="src/characteristics-v1.js?v=1.0.0" data-astraeon-characteristics-v1="1"></script>
 </body>
 </html>

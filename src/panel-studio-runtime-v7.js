@@ -186,7 +186,7 @@ function prepareEmbed(id){
   document.querySelectorAll('.panel-studio-embed-hide').forEach(element=>element.classList.remove('panel-studio-embed-hide'));
   const candidates=new Set();
   for(const item of M.list(doc)){const definitionItem=M.getDefinition(doc,item.id);if(!definitionItem)continue;const selectors=[definitionItem.rootSelector,definitionItem.selector].filter(Boolean);for(const selector of selectors){try{document.querySelectorAll(selector).forEach(element=>candidates.add(element));}catch(_){}}}
-  document.querySelectorAll('#startScreen,#classScreen,#hud,#inventoryPanel,#mapPanel,#helpPanel,#settingsPanel,#pauseScreen,#onlineAccountPanel,#npcDialogue,.panel-studio-custom-overlay').forEach(element=>candidates.add(element));
+  document.querySelectorAll('#startScreen,#classScreen,#hud,#inventoryPanel,#characteristicsPanel,#mapPanel,#helpPanel,#settingsPanel,#pauseScreen,#onlineAccountPanel,#npcDialogue,.panel-studio-custom-overlay').forEach(element=>candidates.add(element));
   if(def.custom)applyCustom(M.getPanel(doc,id),new Set());hydratePreview(id);
   if(preparedPreviewId!==id){
     preparedPreviewId=id;
