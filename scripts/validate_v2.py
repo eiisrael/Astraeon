@@ -70,7 +70,7 @@ contracts={
     'src/admin-v3c.js':['astraeon:v3c:admin','Admin 3.0-C','adminJsonSave','adminJsonWorld'],
     'src/admin-runtime-v3c.js':['adminConfigV3C','godMode','lootChance','sprintMultiplier','ensureOnlineV4','src/realtime-security-v1.js','src/account-status-v4.js','src/chat-system-v4.js','src/live-runtime-v5.js'],
     'src/world-online-v4.js':['Astralum','Lúmenfall','Solvaris','Nivora','Umbra Vale','Cinzalta','cityStructures'],
-    'src/npcs-v4.js':['IA local contextual','E · Falar','npc-dialogue','updateNpcs'],
+    'src/npcs-v4.js':['Mestre de Habilidades','Segure E ou clique · Aprender','npc-dialogue','updateNpcs'],
     'src/realtime-security-v1.js':['statePerSecond:15','actionPerSecond:12','stale_seq','impossible_movement','maxEffects:300'],
     'src/multiplayer-v4.js':['signUp','signInWithPassword','player_state','postgres_changes','player_saves','CHAT_OPACITY_KEY','textContent','resolve_public_astraeon_profiles','publish_astraeon_player_state'],
     'src/chat-system-v4.js':['CHAT_LIMIT','64','exportChat','online-chat-counter','installSprintRuntime'],

@@ -22,13 +22,24 @@ O código atual possui prioridade sobre memória antiga.
 - Atualizar a memória após mudanças relevantes.
 
 ## Conhecimento
-Ainda não analisado.
+- Cinco classes jogáveis: Warrior, Mage, Archer, Assassin e Paladine.
+- A progressão por personagem combina save local/nuvem com tabelas autoritativas no Supabase.
+- A hotbar possui cinco slots; sistemas expansivos devem preservar esse limite visual.
 
 ## Sistemas conhecidos
-Ainda não analisado.
+- `src/game-v2.js`: engine, combate base, XP, ouro e hotbar.
+- `src/characteristics-v1.js`: pontos de características e recálculo de status.
+- `src/skills-catalog-v1.js` e `src/skills-v1.js`: catálogo, painel H, compra, loadout e execução das skills.
+- `src/npcs-v4.js`: runtime de NPC; temporariamente mantém apenas o Mestre de Habilidades.
+- `supabase/migrations/019_skill_domains_and_master.sql`: catálogo e posse autoritativa de skills.
 
 ## Decisões
-Nenhuma registrada.
+- Cada classe possui dois domínios, dez skills por domínio e recebe três pontos de skill por nível, inclusive no nível 1.
+- Custos por domínio: 1, 2, 3, 4, 5, 6, 8, 10, 13 e 18 pontos; requisitos: níveis 1, 3, 6, 10, 15, 21, 28, 36, 45 e 60.
+- A décima skill exige as nove anteriores do mesmo domínio e 5.000.000 de ouro autoritativo.
+- O painel abre com H; cinco skills aprendidas podem ser equipadas na hotbar 1–5.
+- `!allskill` é exclusivo de administrador com MFA/AAL2 e libera somente as skills da classe ativa.
+- Até nova decisão do usuário, Maeron em Astralum é o único NPC ativo.
 
 ## Bugs conhecidos
 Nenhum registrado.

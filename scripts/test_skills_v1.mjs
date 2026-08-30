@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+globalThis.window=globalThis;
+await import('../src/skills-catalog-v1.js');
+const C=globalThis.AstraeonSkillsCatalogV1;
+assert.ok(C,'catálogo de skills deve iniciar');
+assert.equal(Object.keys(C.CLASSES).length,5,'existem cinco classes');
+const ids=new Set();
+for(const[classId,group]of Object.entries(C.CLASSES)){
+  assert.equal(group.domains.length,2,`${classId} possui dois domínios`);
+  assert.equal(C.list(classId).length,20,`${classId} possui vinte skills`);
+  for(const domain of group.domains){
+    assert.equal(domain.skills.length,10,`${domain.name} possui dez skills`);
+    domain.skills.forEach((skill,index)=>{
+      assert.equal(skill.tier,index+1);
+      assert.ok(skill.description.length>24,`${skill.name} possui descrição mecânica`);
+      assert.ok(!ids.has(skill.id),`${skill.id} é único`);ids.add(skill.id);
+      if(skill.tier===10){assert.equal(skill.gold,5_000_000);assert.equal(skill.ultimate,true);}
+    });
+  }
+}
+assert.equal(ids.size,100,'catálogo totaliza cem skills únicas');
+assert.deepEqual(C.COSTS,[1,2,3,4,5,6,8,10,13,18]);
+assert.deepEqual(C.LEVELS,[1,3,6,10,15,21,28,36,45,60]);
+console.log('ASTRAEON SKILLS V1 catalog and balance validation OK');

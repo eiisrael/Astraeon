@@ -106,6 +106,7 @@ const files={
   authority:await readFile(new URL('../supabase/migrations/016_progression_authority_gateway.sql',import.meta.url),'utf8'),
   reconciliation:await readFile(new URL('../supabase/migrations/017_progression_idempotency_and_reconciliation.sql',import.meta.url),'utf8'),
   serviceAuthority:await readFile(new URL('../supabase/migrations/018_service_role_authority_guard.sql',import.meta.url),'utf8'),
+  skills:await readFile(new URL('../supabase/migrations/019_skill_domains_and_master.sql',import.meta.url),'utf8'),
   multiplayer:await readFile(new URL('../src/multiplayer-v4.js',import.meta.url),'utf8'),
   characters:await readFile(new URL('../src/character-system-v6.js',import.meta.url),'utf8'),
   adminClient:await readFile(new URL('../src/admin-character-slots-v6.js',import.meta.url),'utf8'),
@@ -143,6 +144,12 @@ assert.ok(files.reconciliation.includes('operation_id_conflict'));
 assert.ok(files.reconciliation.includes('reconcile_astraeon_progression'));
 assert.ok(files.serviceAuthority.includes('astraeon_require_service_authority'));
 assert.ok(files.serviceAuthority.includes("request_role <> 'service_role'"));
+assert.ok(files.skills.includes('create table if not exists public.skill_catalog'));
+assert.ok(files.skills.includes('create table if not exists public.character_skills'));
+assert.ok(files.skills.includes('purchase_astraeon_skill'));
+assert.ok(files.skills.includes('admin_unlock_all_astraeon_skills'));
+assert.ok(files.skills.includes("case when tier=10 then 5000000 else 0 end"));
+assert.ok(files.skills.includes('perform public.astraeon_require_admin(true)'));
 assert.ok(files.multiplayer.includes('active_character_id'));
 assert.ok(files.multiplayer.includes('resolve_public_astraeon_profiles'));
 assert.ok(files.multiplayer.includes('publish_astraeon_player_state'));
