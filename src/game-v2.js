@@ -346,11 +346,20 @@
       }
       p.mana = Math.min(p.maxMana, p.mana + dt * 4.4);
 
-      this.zoom += (this.zoomTarget - this.zoom) * Math.min(1, dt * 10);
+      const previousZoom = this.zoom;
+      const playerScreenX = (p.x - this.camera.x) * previousZoom;
+      const playerScreenY = (p.y - this.camera.y) * previousZoom;
+      this.zoom += (this.zoomTarget - this.zoom) * (1 - Math.exp(-dt * 6));
       if (Math.abs(this.zoomTarget - this.zoom) < .0005) this.zoom = this.zoomTarget;
       const visibleW = this.visibleWorldWidth(), visibleH = this.visibleWorldHeight();
-      this.camera.x += (p.x - visibleW / 2 - this.camera.x) * Math.min(1, dt * 7);
-      this.camera.y += (p.y - visibleH / 2 - this.camera.y) * Math.min(1, dt * 7);
+      const zoomChanged = Math.abs(this.zoom - previousZoom) > .00001;
+      if (zoomChanged) {
+        this.camera.x = p.x - playerScreenX / this.zoom;
+        this.camera.y = p.y - playerScreenY / this.zoom;
+      } else {
+        this.camera.x += (p.x - visibleW / 2 - this.camera.x) * Math.min(1, dt * 7);
+        this.camera.y += (p.y - visibleH / 2 - this.camera.y) * Math.min(1, dt * 7);
+      }
       this.camera.x = W.clamp(this.camera.x, 0, Math.max(0, this.world.width * W.TILE - visibleW));
       this.camera.y = W.clamp(this.camera.y, 0, Math.max(0, this.world.height * W.TILE - visibleH));
       this.mouse.worldX = this.mouse.x / this.zoom + this.camera.x;
@@ -449,14 +458,14 @@
 
     incomingDamage(source, amount) {
       const target = this.player;
-      const sx = Number(source?.x ?? target.x + (target.facing || 1) * 36);
-      const sy = Number(source?.y ?? target.y);
-      const dx = target.x - sx, dy = target.y - sy, distance = Math.max(1, Math.hypot(dx, dy));
-      const ux = dx / distance, uy = dy / distance;
+      const sx = Number.isFinite(Number(source?.x)) ? Number(source.x) : target.x;
+      const sy = Number.isFinite(Number(source?.y)) ? Number(source.y) : target.y - 36;
+      const dx = sx - target.x, dy = sy - target.y, distance = Math.max(1, Math.hypot(dx, dy));
+      const nx = dx / distance, ny = dy / distance, impactRadius = 27;
       this.effects.push({
         type: 'incoming-damage', sx, sy, tx: target.x, ty: target.y,
-        x: target.x - ux * 25, y: target.y - uy * 18 - 5,
-        angle: Math.atan2(dy, dx), text: `-${amount}`, color: '#ff4358', life: .58, max: .58
+        x: target.x + nx * impactRadius, y: target.y + ny * impactRadius,
+        nx, ny, angle: Math.atan2(ny, nx), text: `-${amount}`, color: '#ff4358', life: .58, max: .58
       });
     }
 
@@ -738,12 +747,11 @@
         if (e.type === 'text') {
           ctx.globalAlpha = e.life / e.max; ctx.font = '700 13px Inter,sans-serif'; ctx.textAlign = 'center'; ctx.fillText(e.text, e.x, e.y - t * 24);
         } else if (e.type === 'incoming-damage') {
-          const ease = 1 - Math.pow(1 - Math.min(1, t * 1.45), 3);
-          const x = W.lerp(e.sx, e.x, ease), y = W.lerp(e.sy - 5, e.y, ease);
+          const x = e.x, y = e.y;
           const alpha = Math.min(1, t * 8, (1 - t) * 3.2);
           ctx.globalAlpha = Math.max(0, alpha);
-          ctx.save();ctx.translate(x,y);ctx.rotate((e.angle || 0)+Math.PI);ctx.strokeStyle=e.color;ctx.lineWidth=4.5;ctx.lineCap='round';ctx.shadowBlur=12;ctx.shadowColor=e.color;ctx.beginPath();ctx.arc(0,0,17,-1.05,1.05);ctx.stroke();ctx.lineWidth=1.5;ctx.globalAlpha*=.55;ctx.beginPath();ctx.arc(0,0,23,-.82,.82);ctx.stroke();ctx.restore();
-          ctx.globalAlpha = Math.max(0, alpha);ctx.textAlign='center';ctx.textBaseline='bottom';ctx.font='900 12px Inter,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(45,4,9,.85)';ctx.strokeText(e.text,x,y-22-t*9);ctx.fillStyle='#ffd8d8';ctx.fillText(e.text,x,y-22-t*9);
+          ctx.save();ctx.translate(x,y);ctx.rotate(e.angle || 0);ctx.strokeStyle=e.color;ctx.lineWidth=4.5;ctx.lineCap='round';ctx.shadowBlur=12;ctx.shadowColor=e.color;ctx.beginPath();ctx.arc(0,0,17,-1.05,1.05);ctx.stroke();ctx.lineWidth=1.5;ctx.globalAlpha*=.55;ctx.beginPath();ctx.arc(0,0,23,-.82,.82);ctx.stroke();ctx.restore();
+          const labelX=x+(Number(e.nx)||0)*5,labelY=y+(Number(e.ny)||0)*5-10-t*8;ctx.globalAlpha=Math.max(0,alpha);ctx.textAlign='center';ctx.textBaseline='bottom';ctx.font='900 12px Inter,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(45,4,9,.85)';ctx.strokeText(e.text,labelX,labelY);ctx.fillStyle='#ffd8d8';ctx.fillText(e.text,labelX,labelY);
         } else if (e.type === 'ring' || e.type === 'nova' || e.type === 'burst' || e.type === 'shield' || e.type === 'trail') {
           ctx.lineWidth = e.type === 'nova' ? 5 : 3; const r = (e.radius || 48) * (e.type === 'shield' ? 1 : (.18 + t * .82));
           ctx.beginPath(); ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.stroke();
