@@ -42,7 +42,7 @@ A camada online usa **Supabase** para autenticação, saves e presença multipla
 | 🌍 **Mundo procedural** | Continente de 96 × 96 tiles, cinco biomas, clima e ciclo visual |
 | ⚔️ **Combate responsivo** | Ataques, habilidades, crítico, mana, fôlego, efeitos direcionais e zoom suave |
 | 🧬 **Progressão** | Níveis, pontos de características e evolução de atributos |
-| ✦ **Domínios de habilidades** | Dois domínios e 20 poderes por classe, compra persistente e loadout de cinco slots |
+| ✦ **Domínios de habilidades** | Loja exclusiva do Mestre, grimório pessoal e loadout de cinco slots por arrastar e soltar |
 | 🎒 **Inventário** | Equipamentos, raridades, slots padronizados, mochila e drag-and-drop |
 | 🏙️ **Mundo vivo** | Cidades, áreas seguras, comerciantes e NPCs contextuais |
 | 👥 **Online social** | Conta, save em nuvem, presença, movimento remoto e chat mundial |
@@ -74,12 +74,12 @@ Itens incompatíveis podem ser encontrados e guardados, mas somente classes comp
 | Ataque básico | Clique esquerdo ou `Espaço` |
 | Rotação automática de habilidades | Segurar clique direito |
 | Habilidades | `1` a `5` |
-| Domínios de habilidade | `H` |
+| Grimório pessoal / equipar skills | `H` e arrastar até o HUD |
 | Inventário | `I` |
 | Características | `C` |
 | Mapa | `M` |
 | Chat | `Enter` |
-| Mestre de Habilidades | Segurar `E` ou clicar no NPC |
+| Loja do Mestre de Habilidades | Segurar `E` ou clicar no NPC |
 | Ajuda | botão `?` |
 | Pausar | `Esc` |
 | Zoom | Scroll do mouse ou gesto de pinça |

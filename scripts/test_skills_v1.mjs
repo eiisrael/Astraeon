@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 globalThis.window=globalThis;
 await import('../src/skills-catalog-v1.js');
 const C=globalThis.AstraeonSkillsCatalogV1;
@@ -21,4 +22,11 @@ for(const[classId,group]of Object.entries(C.CLASSES)){
 assert.equal(ids.size,100,'catálogo totaliza cem skills únicas');
 assert.deepEqual(C.COSTS,[1,2,3,4,5,6,8,10,13,18]);
 assert.deepEqual(C.LEVELS,[1,3,6,10,15,21,28,36,45,60]);
+const runtime=fs.readFileSync(new URL('../src/skills-v1.js',import.meta.url),'utf8');
+assert.match(runtime,/id='skillsPanel'|id="skillsPanel"/,'grimório do jogador possui painel próprio');
+assert.match(runtime,/id='skillMerchantPanel'|id="skillMerchantPanel"/,'Mestre possui loja separada');
+assert.match(runtime,/function openPlayer\(\)/,'tecla H abre o grimório pessoal');
+assert.match(runtime,/function openMerchant\(\)/,'NPC abre a loja do Mestre');
+assert.match(runtime,/onSkillPointerMove/,'equipamento suporta arraste por ponteiro');
+assert.match(runtime,/\.skill-loadout-slot/,'arraste termina nos slots do HUD');
 console.log('ASTRAEON SKILLS V1 catalog and balance validation OK');
