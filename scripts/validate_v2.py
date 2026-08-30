@@ -130,6 +130,8 @@ if 'Editor Astral<small>' in index_text or '>Editor Astral<' in index_text:
     ERRORS.append('index.html: Editor Astral não deve aparecer no menu principal')
 if 'src/online-controller-v4.js' not in index_text:
     ERRORS.append('index.html: controlador online não carregado')
+if 'src/inventory-layout-v43.js' not in index_text:
+    ERRORS.append('index.html: runtime do layout de inventário não carregado')
 for skill in ['data-skill="3"','data-skill="4"']:
     if skill not in index_text: ERRORS.append(f'index.html: controle mobile ausente: {skill}')
 

@@ -128,9 +128,12 @@ jobs:
               if src not in auth:
                   raise SystemExit(f'admin loader missing {src}')
           ui = Path('src/ui-v3.js').read_text(encoding='utf-8')
-          for src in ('src/server-config-v62.js','src/menu-cinematic-v62.js','src/gameplay-polish-v7.js','src/inventory-layout-v43.js','src/inventory-layout-v43.css'):
+          for src in ('src/server-config-v62.js','src/menu-cinematic-v62.js','src/gameplay-polish-v7.js','src/inventory-layout-v43.css'):
               if src not in ui:
                   raise SystemExit(f'game loader missing {src}')
+          index = Path('index.html').read_text(encoding='utf-8')
+          if 'src/inventory-layout-v43.js' not in index:
+              raise SystemExit('game loader missing src/inventory-layout-v43.js')
           print('Astraeon 6.2 contracts OK')
           PY
       - name: Start disposable Supabase and apply every migration
