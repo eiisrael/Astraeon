@@ -1,175 +1,145 @@
 <div align="center">
 
-# ✦ ASTRAEON ONLINE
+<img src="Assets/img/logo/logo.png" alt="Astraeon — Ecos da Convergência" width="900">
 
-### Ecos da Convergência
+## ASTRAEON ONLINE
 
-**RPG 2D online em Canvas · mundo procedural · classes · cidades · NPCs · inventário · chat · contas · multiplayer social**
+### ECOS DA CONVERGÊNCIA
 
-[![Version](https://img.shields.io/badge/version-4.1-7dd3fc?style=for-the-badge)](#estado-atual)
-[![License](https://img.shields.io/badge/license-MIT-e7b75f?style=for-the-badge)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Web-9be7a5?style=for-the-badge)](#tecnologias)
-[![Deploy](https://img.shields.io/badge/deploy-Vercel-black?style=for-the-badge)](INSTALLME.md)
-[![Database](https://img.shields.io/badge/database-Supabase-3ecf8e?style=for-the-badge)](INSTALLME.md)
+**Um RPG 2D online onde cinco climas disputam o mesmo mundo — e cada viajante escreve a própria lenda.**
 
-> **Astra foi quebrada pela Convergência.** Cinco climas disputam o mesmo continente, cidades surgem como refúgios e cada viajante constrói sua própria lenda entre criaturas, relíquias e ecos de outros jogadores.
+[![Version](https://img.shields.io/badge/versão-4.3.0-4cc9f0?style=for-the-badge&labelColor=101722)](package.json)
+[![Status](https://img.shields.io/badge/status-em%20desenvolvimento-f4b942?style=for-the-badge&labelColor=101722)](#estado-do-projeto)
+[![Engine](https://img.shields.io/badge/engine-Canvas%202D-9b87f5?style=for-the-badge&labelColor=101722)](#tecnologia)
+[![Online](https://img.shields.io/badge/online-Supabase-3ecf8e?style=for-the-badge&labelColor=101722)](#arquitetura-online)
+[![License](https://img.shields.io/badge/código-MIT-e7b75f?style=for-the-badge&labelColor=101722)](LICENSE)
+[![Copyright](https://img.shields.io/badge/copyright-©%202026%20Erick%20Israel-c65353?style=for-the-badge&labelColor=101722)](COPYRIGHT.md)
+
+`EXPLORAR` · `EVOLUIR` · `EQUIPAR` · `CONECTAR`
 
 </div>
 
 ---
 
-## 🌌 O que é o Astraeon?
-
-**Astraeon Online** é um RPG 2D executado diretamente no navegador. O projeto combina uma engine própria em **HTML + CSS + JavaScript + Canvas 2D** com serviços de nuvem para autenticação, persistência e comunicação entre jogadores.
-
-O objetivo é manter uma base leve e compreensível, sem esconder a lógica principal atrás de um framework pesado: o mapa, combate, inventário, HUD, cidades, NPCs e sistemas de progressão são construídos em JavaScript e renderizados pelo Canvas.
-
-### Destaques
-
-- 🗺️ mundo procedural de **96 × 96 tiles**;
-- 🌲 cinco biomas/climas com identidade própria;
-- 🏙️ cidades e áreas seguras distribuídas pelo continente;
-- 🧙 cinco classes jogáveis;
-- ⚔️ combate, habilidades, mana, stamina e corrida;
-- 🎒 mochila, equipamentos, raridades e itens exclusivos por classe;
-- 💎 loot persistente no chão quando a mochila está cheia;
-- 🤖 NPCs que caminham e respondem a diálogos contextuais locais;
-- 💬 chat mundial com transparência configurável;
-- 👥 presença e movimento de jogadores em tempo real;
-- 🔐 cadastro/login por Supabase Auth;
-- ☁️ save individual na nuvem;
-- 🛠️ **Admin Studio** separado da tela pública;
-- 📱 interface adaptada a desktop e dispositivos móveis.
+> [!IMPORTANT]
+> **AVISO DE DIREITOS AUTORAIS**
+> Copyright © 2026 **Erick Israel (eiisrael)**. A publicação deste repositório não coloca o projeto em domínio público. O código-fonte e a documentação originais são disponibilizados sob a [MIT License](LICENSE), que exige a preservação do aviso de copyright e do texto da licença. O nome **Astraeon**, sua identidade visual, universo narrativo e elementos autorais originais não recebem automaticamente uma licença de marca por meio da licença do software. Assets de terceiros continuam sujeitos aos direitos e licenças de seus respectivos titulares. Leia [Direitos autorais e uso](#direitos-autorais-e-uso) e [`COPYRIGHT.md`](COPYRIGHT.md) antes de redistribuir o projeto.
 
 ---
 
-## 🎮 Controles
+## Entre na Convergência
+
+**Astraeon Online** é um RPG 2D executado diretamente no navegador. Sua engine própria combina **JavaScript**, **HTML**, **CSS** e **Canvas 2D** para construir um continente procedural com combate, classes, equipamentos, cidades, NPCs e progressão.
+
+A camada online usa **Supabase** para autenticação, saves e presença multiplayer, enquanto a aplicação e suas funções web podem ser publicadas na **Vercel**.
+
+> *Astra foi fragmentada. Florestas antigas, desertos solares, terras glaciais, pântanos sombrios e montanhas vulcânicas agora coexistem no mesmo continente. No centro da ruptura, a Convergência aguarda novos viajantes.*
+
+### O que já existe no jogo
+
+| Sistema | Experiência |
+|---|---|
+| 🌍 **Mundo procedural** | Continente de 96 × 96 tiles, cinco biomas, clima e ciclo visual |
+| ⚔️ **Combate responsivo** | Ataques, habilidades, crítico, mana, fôlego, efeitos direcionais e zoom suave |
+| 🧬 **Progressão** | Níveis, pontos de características e evolução de atributos |
+| 🎒 **Inventário** | Equipamentos, raridades, slots padronizados, mochila e drag-and-drop |
+| 🏙️ **Mundo vivo** | Cidades, áreas seguras, comerciantes e NPCs contextuais |
+| 👥 **Online social** | Conta, save em nuvem, presença, movimento remoto e chat mundial |
+| 🛠️ **Admin Studio** | Editores de mundo, painéis, contas, personagens, mobs, itens e balanceamento |
+| 📱 **Multiplataforma** | Interface e controles adaptados para desktop e mobile |
+
+---
+
+## Classes jogáveis
+
+| Classe | Arquétipo | Especialidade |
+|---|---|---|
+| 🛡️ **Guerreiro** | Linha de frente | resistência, impacto e armas pesadas |
+| 🔮 **Mago** | Conjurador | mana, controle de área e dano mágico |
+| 🏹 **Arqueiro** | Combatente à distância | precisão, mobilidade e alcance |
+| 🗡️ **Assassino** | Executor | velocidade, crítico e reposicionamento |
+| ✨ **Paladino** | Guardião | defesa, cura e poder sagrado |
+
+Itens incompatíveis podem ser encontrados e guardados, mas somente classes compatíveis conseguem equipá-los.
+
+---
+
+## Controles
 
 | Ação | Desktop |
 |---|---|
 | Mover | `WASD` ou setas |
 | Correr | `Shift` |
-| Ataque básico | Mouse / `Espaço` |
+| Ataque básico | Clique esquerdo ou `Espaço` |
+| Rotação automática de habilidades | Segurar clique direito |
 | Habilidades | `1` a `5` |
-| Mochila | `I` |
+| Inventário | `I` |
+| Características | `C` |
 | Mapa | `M` |
-| Chat mundial | `Enter` |
-| Falar com NPC | `E` |
+| Chat | `Enter` |
+| Interagir com NPC | `E` |
 | Ajuda | `H` |
-| Pausa | `Esc` |
+| Pausar | `Esc` |
+| Zoom | Scroll do mouse ou gesto de pinça |
 
-No mobile, o jogo cria controles touch para movimento, corrida, ataque, habilidades, chat e interação com NPCs.
-
----
-
-## 🧬 Classes
-
-O Astraeon possui cinco arquétipos, cada um com identidade visual, atributos e equipamentos compatíveis:
-
-| Classe | Estilo geral |
-|---|---|
-| **Guerreiro** | resistência, combate frontal e armas pesadas |
-| **Mago** | mana, alcance e dano mágico |
-| **Arqueiro** | mobilidade, precisão e ataque à distância |
-| **Assassino** | velocidade, crítico e execução |
-| **Paladino** | defesa, sustentação e poder sagrado |
-
-Itens incompatíveis ainda podem ser encontrados e armazenados, mas o sistema impede que sejam equipados pela classe errada.
+No mobile, controles touch oferecem movimentação, corrida, ataque, habilidades, interação e zoom por pinça.
 
 ---
 
-## 🏙️ Mundo vivo
+## Terras de Astra
 
-A camada online adiciona cidades ao mundo procedural:
+- 🌲 **Bosque de Lúmen** — árvores monumentais e clareiras luminescentes;
+- ☀️ **Ermos de Solvar** — planícies, ravinas e pedras queimadas;
+- ❄️ **Véu de Nivora** — lagos congelados e formações cristalinas;
+- 🌑 **Pântano de Umbria** — água rasa, névoa e ruínas esquecidas;
+- 🌋 **Altos de Cinza** — escarpas, fissuras vulcânicas e fortalezas antigas.
 
-- **Astralum** — coração da Convergência;
-- **Lúmenfall** — cidade das copas antigas;
-- **Solvaris** — mercado do sol ardente;
-- **Nivora** — fortaleza do véu gelado;
-- **Umbra Vale** — refúgio das águas escuras;
-- **Cinzalta** — bastião dos altos de cinza.
-
-As cidades possuem vias, estruturas, áreas protegidas e habitantes. NPCs caminham por pontos seguros e podem conversar com o jogador usando um sistema contextual local, sem depender obrigatoriamente de uma API externa de IA.
+Entre essas regiões encontram-se cidades como **Astralum**, **Lúmenfall**, **Solvaris**, **Nivora**, **Umbra Vale** e **Cinzalta**.
 
 ---
 
-## 🌐 Arquitetura online
+## Tecnologia
+
+O núcleo foi construído sem um framework pesado de frontend. A lógica principal permanece visível e acessível no repositório.
+
+```text
+Canvas 2D       renderização do mundo, personagens, mobs e efeitos
+JavaScript      engine, gameplay, inventário, multiplayer e editores
+HTML + CSS      interface, HUD, painéis e Admin Studio
+Supabase        Auth, PostgreSQL, RLS, Realtime e persistência
+Vercel          hospedagem, headers de segurança e funções web
+GitHub Actions  validação contínua
+```
+
+### Arquitetura online
 
 ```mermaid
 flowchart LR
-    P[Jogador / Navegador] --> V[Vercel]
-    V --> S[Arquivos do jogo]
-    V --> API[/api/config]
-    API --> E[Variáveis de ambiente]
-    P --> A[Supabase Auth]
-    P --> DB[(Supabase Postgres)]
-    P --> R[Supabase Realtime]
-    DB --> PS[player_saves]
-    DB --> PR[profiles]
-    DB --> CH[chat_messages]
+    J[Jogador] --> WEB[Jogo no navegador]
+    WEB --> CANVAS[Engine Canvas 2D]
+    WEB --> API[Vercel Functions]
+    WEB --> AUTH[Supabase Auth]
+    WEB --> DB[(Supabase PostgreSQL)]
+    WEB --> RT[Supabase Realtime]
+    DB --> SAVE[Cloud Save]
+    DB --> PROFILE[Perfis]
+    DB --> CHAT[Chat]
+    RT --> PRESENCE[Presença e movimento]
 ```
 
-### Responsabilidade de cada parte
-
-**Vercel** hospeda o jogo e executa a Function `/api/config`.
-
-**Supabase Auth** gerencia cadastro, login, sessão e senha.
-
-**Supabase Postgres** guarda perfis, saves e histórico do chat.
-
-**Supabase Realtime** sincroniza presença, movimento, mensagens e eventos visuais entre jogadores.
+O cliente sincroniza recursos sociais e persistentes. Combate, mobs, loot e economia ainda não possuem autoridade central completa; para um MMORPG competitivo, esses sistemas deverão migrar para um servidor autoritativo.
 
 ---
 
-## 🔐 Segurança
-
-O projeto foi estruturado para não depender de segredos no navegador.
-
-- nenhuma `service_role` deve ser enviada ao frontend;
-- o navegador usa somente chave pública/publishable do Supabase;
-- `player_saves` usa **Row Level Security (RLS)**;
-- cada jogador só pode ler e alterar o próprio save;
-- chat exige usuário autenticado;
-- o banco força o `auth.uid()` como autor da mensagem;
-- mensagens têm limite de tamanho e rate limit;
-- chat é renderizado com `textContent`, evitando interpretação de HTML enviado por jogadores;
-- canais Realtime são preparados para uso autenticado;
-- Vercel aplica CSP, HSTS, `nosniff`, proteção contra iframe e outras políticas HTTP.
-
-> Nunca publique chaves `service_role`, `sb_secret_...`, tokens privados, credenciais pessoais ou arquivos `.env` reais no GitHub.
-
----
-
-## 💾 Banco de dados
-
-O Astraeon usa **Supabase/PostgreSQL**. O banco não fica em um arquivo `.db` dentro do repositório.
-
-Migration principal:
-
-```text
-supabase/migrations/001_astraeon_online.sql
-```
-
-Estruturas principais:
-
-| Estrutura | Finalidade |
-|---|---|
-| `auth.users` | autenticação gerenciada pelo Supabase |
-| `public.profiles` | username, classe, nível e presença básica |
-| `public.player_saves` | save JSON individual de cada jogador |
-| `public.chat_messages` | histórico persistente do chat mundial |
-
----
-
-## 🚀 Instalação rápida
+## Executar localmente
 
 ### Requisitos
 
 - Git;
-- Node.js 20+;
+- Node.js **22.x**;
 - navegador moderno;
-- conta Vercel para execução/deploy web;
-- conta Supabase para recursos online.
+- Vercel CLI para reproduzir as funções locais;
+- projeto Supabase para habilitar os recursos online.
 
 ```bash
 git clone https://github.com/eiisrael/Astraeon.git
@@ -179,169 +149,173 @@ npx vercel link
 npx vercel dev
 ```
 
-Depois abra o endereço exibido pelo Vercel CLI.
+Abra o endereço fornecido pelo Vercel CLI.
 
-### Variáveis do modo online
+### Configuração pública do modo online
 
-No Vercel, o modo online usa somente configuração pública no frontend:
-
-```text
+```env
 SUPABASE_URL=https://SEU-PROJETO.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_EXEMPLO
 ASTRAEON_REALTIME_TOPIC=world:astraeon:main
 ```
 
-Os valores reais devem ser configurados em **Vercel → Project → Settings → Environment Variables** e nunca copiados para documentação pública.
+Configure valores reais no ambiente da Vercel. **Nunca publique** `.env` real, `service_role`, `sb_secret_...`, token privado, senha ou credencial pessoal.
 
-> Para configurar banco, variáveis de ambiente, cadastro, multiplayer e publicação em produção, siga o manual completo: **[INSTALLME.md](INSTALLME.md)**.
+Guias completos:
 
-Também existe uma documentação técnica complementar em **[ONLINE_SETUP.md](ONLINE_SETUP.md)**.
-
----
-
-## 🛠️ Admin Studio
-
-O editor administrativo foi separado da página pública do jogo.
-
-Em desenvolvimento:
-
-```text
-http://localhost:3000/game-editor
-```
-
-Em produção:
-
-```text
-https://SEU-DOMINIO/game-editor
-```
-
-Dentro do Editor:
-
-- ferramentas de terreno e bioma;
-- estradas e água;
-- objetos e colisões;
-- spawns de criaturas;
-- seed procedural;
-- importação/exportação JSON;
-- undo/redo;
-- inspeção de tiles;
-- balanceamento de personagem, classes, mobs e itens;
-- configuração de gameplay;
-- diagnóstico do ambiente online.
-
-`F10` abre o **Admin Studio**.
-
-> A rota separada e `noindex` melhoram organização e exposição, mas não substituem autenticação administrativa real. Um painel de produção deve ser protegido por autorização/roles no backend.
+- [`INSTALLME.md`](INSTALLME.md) — instalação, banco e deploy;
+- [`ONLINE_SETUP.md`](ONLINE_SETUP.md) — arquitetura e configuração online;
+- [`SECURITY.md`](SECURITY.md) — práticas e política de segurança.
 
 ---
 
-## 🧪 Validação
+## Admin Studio
 
-O projeto possui validação automatizada para sintaxe JavaScript, referências HTML, arquivos obrigatórios, contratos do multiplayer e configurações de deploy.
+O **Admin Studio 6.4** concentra os recursos de produção e administração em uma interface separada.
+
+```text
+Desenvolvimento: http://localhost:3000/game-editor
+Produção:        https://SEU-DOMINIO/game-editor
+Atalho ingame:  F10
+```
+
+Principais áreas:
+
+- editor visual de painéis e camadas;
+- editor de mapas, biomas, cidades e locais;
+- contas e personagens;
+- mobs, drops e itens;
+- mensagens de sistema;
+- balanceamento de classes e gameplay;
+- importação, exportação, autosave e backup.
+
+> [!WARNING]
+> Ocultar uma rota ou usar `noindex` não substitui autenticação. Ferramentas administrativas de produção devem permanecer protegidas por sessão, autorização e roles no backend.
+
+---
+
+## Segurança e validação
+
+O projeto inclui verificações de sintaxe, integridade estrutural, contratos de gameplay, referências obrigatórias e possíveis segredos rastreados.
 
 ```bash
 npm run validate
 ```
 
-GitHub Actions executa verificações equivalentes nas alterações do repositório.
+Entre as proteções existentes:
+
+- Row Level Security para dados de jogadores;
+- configuração pública separada de segredos administrativos;
+- CSP, HSTS, `nosniff` e proteção contra framing;
+- texto do chat tratado sem interpretação de HTML;
+- validação automatizada de arquivos e módulos;
+- testes de características, câmera, dano direcional e renderização de assets.
 
 ---
 
-## 📁 Estrutura resumida
+## Estrutura do projeto
 
 ```text
 Astraeon/
-├── index.html                     # jogo público
-├── game-editor.html               # World Editor / Admin Studio
-├── api/
-│   └── config.js                  # configuração pública para o frontend
+├── index.html                     # cliente público do jogo
+├── game-editor.html               # Admin Studio
+├── api/                            # funções web e controle administrativo
+├── Assets/
+│   ├── Classes/                    # retratos das classes
+│   ├── Mob/                        # retratos das criaturas
+│   └── img/                        # logos, habilidades e trilhas de áudio
 ├── src/
-│   ├── world-v2.js                # geração do mundo
 │   ├── game-v2.js                 # engine principal
-│   ├── inventory-v*.js            # inventário/equipamentos
-│   ├── systems-v3b.js             # stamina, sprint e loot
-│   ├── world-online-v4.js         # cidades
-│   ├── npcs-v4.js                 # NPCs e diálogos
-│   ├── multiplayer-v4.js          # Auth, Realtime, chat e cloud save
-│   ├── online-controller-v4.js    # UX online/chat 4.1
-│   └── admin-*.js                 # ferramentas administrativas
-├── supabase/
-│   └── migrations/                # schema Postgres/RLS
-├── scripts/
-│   └── validate_v2.py             # validação estrutural
-├── INSTALLME.md                   # instalação e deploy
-├── ONLINE_SETUP.md                # referência técnica online
-├── COPYRIGHT.md                   # aviso de copyright
-└── LICENSE                        # MIT License
+│   ├── world-v2.js                # mundo procedural
+│   ├── inventory-v*.js            # inventário e equipamentos
+│   ├── characteristics-v1.js      # distribuição de atributos
+│   ├── multiplayer-v4.js          # presença e persistência online
+│   ├── chat-system-v4.js          # Chat de Astra
+│   ├── panel-studio-*.js           # runtime dos painéis
+│   └── admin-*.js                  # módulos administrativos
+├── supabase/migrations/            # schema, RLS e recursos online
+├── scripts/                        # validações automatizadas
+├── COPYRIGHT.md                    # titularidade e escopo autoral
+├── LICENSE                         # licença MIT do software
+└── SECURITY.md                     # política de segurança
 ```
 
 ---
 
-## 📡 Estado atual
+## Estado do projeto
 
-### Já compartilhado entre jogadores
+### Implementado
 
-- autenticação;
-- perfil;
-- save individual na nuvem;
-- presença;
-- posição e movimento;
-- classe e nível visuais;
-- chat mundial;
-- efeitos visuais de ataques/habilidades.
+- [x] mundo procedural e cinco regiões;
+- [x] cinco classes e habilidades;
+- [x] combate, características e progressão;
+- [x] inventário, equipamento e drag-and-drop;
+- [x] cidades e NPCs;
+- [x] conta, cloud save e presença multiplayer;
+- [x] chat mundial e mensagens próximas;
+- [x] interface desktop/mobile;
+- [x] Admin Studio e Editor de Painéis;
+- [x] validação automatizada.
 
-### Ainda simulado localmente por cliente
+### Próximas fronteiras
 
-- estado dos mobs;
-- dano compartilhado;
-- loot compartilhado;
-- economia global;
-- PvP;
-- autoridade central de combate.
-
-Portanto, o estágio atual é um **RPG online com multiplayer social/presença**. A evolução para um MMORPG competitivo exige um servidor autoritativo para combate, economia, inventário e estado do mundo.
-
----
-
-## 🗺️ Roadmap sugerido
-
-- [x] mundo procedural;
-- [x] classes e habilidades;
-- [x] inventário/equipamentos;
-- [x] stamina e sprint;
-- [x] cidades;
-- [x] NPCs contextuais;
-- [x] cadastro/login;
-- [x] save em nuvem;
-- [x] chat mundial;
-- [x] presença multiplayer;
-- [x] Admin Studio;
-- [ ] autenticação administrativa por role;
-- [ ] servidor autoritativo de mobs/combate;
+- [ ] autoridade central para mobs e combate;
 - [ ] loot e economia compartilhados;
-- [ ] party/guilda;
-- [ ] comércio entre jogadores;
-- [ ] PvP seguro;
-- [ ] testes E2E completos com múltiplos clientes.
+- [ ] party, guildas e comércio;
+- [ ] PvP com regras de segurança;
+- [ ] testes E2E com múltiplos clientes;
+- [ ] expansão narrativa e novas regiões.
 
 ---
 
-## ⚖️ Licença e direitos autorais
+## Direitos autorais e uso
+
+### Titularidade
 
 Copyright © 2026 **Erick Israel (eiisrael)**.
 
-O código e a documentação originais deste repositório são disponibilizados sob a **MIT License**. O copyright permanece com o autor; a licença concede as permissões descritas em [`LICENSE`](LICENSE).
+O autor mantém o copyright sobre o código, a documentação e os elementos originais criados para **Astraeon Online**, exceto quando um arquivo ou componente identificar titularidade diferente.
 
-Arquivos, bibliotecas ou assets de terceiros, caso existam e estejam identificados separadamente, permanecem sujeitos às respectivas licenças e direitos de seus autores.
+### Código e documentação — MIT License
 
-Consulte também [`COPYRIGHT.md`](COPYRIGHT.md).
+A [MIT License](LICENSE) permite usar, copiar, modificar, mesclar, publicar, distribuir, sublicenciar e vender cópias do Software. Para exercer essas permissões, o aviso de copyright e o texto integral da licença devem acompanhar todas as cópias ou partes substanciais.
+
+| Você pode | Você deve |
+|---|---|
+| usar e modificar o software | preservar o aviso de copyright |
+| distribuir cópias e versões derivadas | incluir o texto da MIT License |
+| publicar ou comercializar o software | respeitar direitos de materiais de terceiros |
+
+A licença fornece o software **“como está”**, sem garantia, conforme detalhado em [`LICENSE`](LICENSE).
+
+### Nome, universo e identidade visual
+
+A licença do software não deve ser interpretada como concessão automática de direitos de marca sobre o nome **Astraeon**, seus logotipos, identidade visual ou apresentação comercial. A narrativa e os elementos criativos originais continuam associados ao projeto e ao seu autor, nos limites da legislação aplicável.
+
+### Imagens, músicas, fontes e outros materiais
+
+Imagens, sprites, músicas, efeitos sonoros, fontes, bibliotecas e outros materiais que possuam autoria ou licença própria permanecem sujeitos aos direitos dos respectivos titulares. A presença de um arquivo no repositório não elimina esses direitos nem autoriza presumir que ele esteja em domínio público.
+
+Antes de reutilizar ou redistribuir assets, confirme sua origem e licença aplicável. Este projeto não reivindica autoria sobre materiais de terceiros.
+
+### Referências legais
+
+- [`COPYRIGHT.md`](COPYRIGHT.md) — aviso autoral completo;
+- [`LICENSE`](LICENSE) — termos da MIT License;
+- [`SECURITY.md`](SECURITY.md) — política de segurança.
+
+> Este resumo facilita a leitura, mas não substitui os textos integrais de `LICENSE` e `COPYRIGHT.md`.
 
 ---
 
 <div align="center">
 
-### ✦ ASTRAEON
+## ✦ ASTRAEON
 
-**Explore · Evolua · Conecte-se · Atravesse a Convergência**
+**A Convergência abriu o caminho. Agora atravesse.**
+
+Feito com código, mundo procedural e ambição por **Erick Israel**.
+
+Copyright © 2026 · Todos os avisos legais devem ser preservados.
 
 </div>
