@@ -19,6 +19,12 @@
       this.keys = new Set();
       this.mouse = { x: 0, y: 0, worldX: 0, worldY: 0, down: false };
       this.camera = { x: 0, y: 0, shake: 0 };
+      this.zoom = 1;
+      this.zoomTarget = 1;
+      this.zoomMin = .72;
+      this.zoomMax = 1.32;
+      this.zoomPointers = new Map();
+      this.pinchZoom = null;
       this.effects = [];
       this.particles = [];
       this.mobs = [];
@@ -96,8 +102,44 @@
         this.mouse.down = true;
         this.basicAttack();
       });
+      this.canvas.addEventListener('wheel', e => {
+        if (!this.running || this.paused) return;
+        e.preventDefault();
+        const factor = Math.exp(-W.clamp(e.deltaY, -120, 120) * .00135);
+        this.setZoomTarget(this.zoomTarget * factor);
+      }, { passive: false });
+      this.canvas.addEventListener('pointerdown', e => {
+        if (e.pointerType === 'mouse' || !this.running || this.paused) return;
+        this.zoomPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (this.zoomPointers.size === 2) {
+          const points = Array.from(this.zoomPointers.values());
+          this.pinchZoom = { distance: Math.max(1, Math.hypot(points[1].x - points[0].x, points[1].y - points[0].y)), zoom: this.zoomTarget };
+        }
+      }, { passive: true });
+      this.canvas.addEventListener('pointermove', e => {
+        if (!this.zoomPointers.has(e.pointerId)) return;
+        this.zoomPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (this.zoomPointers.size < 2 || !this.pinchZoom) return;
+        const points = Array.from(this.zoomPointers.values());
+        const distance = Math.max(1, Math.hypot(points[1].x - points[0].x, points[1].y - points[0].y));
+        this.setZoomTarget(this.pinchZoom.zoom * distance / this.pinchZoom.distance);
+        e.preventDefault();
+      }, { passive: false });
+      const finishZoomPointer = e => {
+        this.zoomPointers.delete(e.pointerId);
+        if (this.zoomPointers.size < 2) this.pinchZoom = null;
+      };
+      this.canvas.addEventListener('pointerup', finishZoomPointer, { passive: true });
+      this.canvas.addEventListener('pointercancel', finishZoomPointer, { passive: true });
       window.addEventListener('mouseup', () => this.mouse.down = false);
     }
+
+    setZoomTarget(value) {
+      this.zoomTarget = W.clamp(Number(value) || 1, this.zoomMin, this.zoomMax);
+    }
+
+    visibleWorldWidth() { return (this.viewW || innerWidth) / Math.max(.01, this.zoom || 1); }
+    visibleWorldHeight() { return (this.viewH || innerHeight) / Math.max(.01, this.zoom || 1); }
 
     resize() {
       const r = this.canvas.getBoundingClientRect();
@@ -304,12 +346,15 @@
       }
       p.mana = Math.min(p.maxMana, p.mana + dt * 4.4);
 
-      this.camera.x += (p.x - this.viewW / 2 - this.camera.x) * Math.min(1, dt * 7);
-      this.camera.y += (p.y - this.viewH / 2 - this.camera.y) * Math.min(1, dt * 7);
-      this.camera.x = W.clamp(this.camera.x, 0, this.world.width * W.TILE - this.viewW);
-      this.camera.y = W.clamp(this.camera.y, 0, this.world.height * W.TILE - this.viewH);
-      this.mouse.worldX = this.mouse.x + this.camera.x;
-      this.mouse.worldY = this.mouse.y + this.camera.y;
+      this.zoom += (this.zoomTarget - this.zoom) * Math.min(1, dt * 10);
+      if (Math.abs(this.zoomTarget - this.zoom) < .0005) this.zoom = this.zoomTarget;
+      const visibleW = this.visibleWorldWidth(), visibleH = this.visibleWorldHeight();
+      this.camera.x += (p.x - visibleW / 2 - this.camera.x) * Math.min(1, dt * 7);
+      this.camera.y += (p.y - visibleH / 2 - this.camera.y) * Math.min(1, dt * 7);
+      this.camera.x = W.clamp(this.camera.x, 0, Math.max(0, this.world.width * W.TILE - visibleW));
+      this.camera.y = W.clamp(this.camera.y, 0, Math.max(0, this.world.height * W.TILE - visibleH));
+      this.mouse.worldX = this.mouse.x / this.zoom + this.camera.x;
+      this.mouse.worldY = this.mouse.y / this.zoom + this.camera.y;
 
       this.updateBiome();
       this.updateMobs(dt);
@@ -372,7 +417,7 @@
         }
         if (m.aggro && d < 34 && m.attackCd <= 0) {
           m.attackCd = 1.05 + Math.random() * .4;
-          this.damagePlayer(Math.max(1, m.power - p.defense));
+          this.damagePlayer(Math.max(1, m.power - p.defense), m);
         }
       }
       const living = this.mobs.filter(m => !m.dead).length;
@@ -394,11 +439,25 @@
       }
     }
 
-    damagePlayer(amount) {
+    damagePlayer(amount, source = null) {
       if (this.player.invuln > 0) return;
       this.player.hp -= amount; this.player.invuln = .22; this.camera.shake = 7;
-      this.floatText(this.player.x, this.player.y - 20, `-${amount}`, '#ff7685'); this.beep(92, .04, .025);
+      if (this.settingsV3?.damage !== false) this.incomingDamage(source, amount);
+      this.beep(92, .04, .025);
       if (this.player.hp <= 0) this.playerDeath();
+    }
+
+    incomingDamage(source, amount) {
+      const target = this.player;
+      const sx = Number(source?.x ?? target.x + (target.facing || 1) * 36);
+      const sy = Number(source?.y ?? target.y);
+      const dx = target.x - sx, dy = target.y - sy, distance = Math.max(1, Math.hypot(dx, dy));
+      const ux = dx / distance, uy = dy / distance;
+      this.effects.push({
+        type: 'incoming-damage', sx, sy, tx: target.x, ty: target.y,
+        x: target.x - ux * 25, y: target.y - uy * 18 - 5,
+        angle: Math.atan2(dy, dx), text: `-${amount}`, color: '#ff4358', life: .58, max: .58
+      });
     }
 
     playerDeath() {
@@ -555,7 +614,7 @@
       }
       const shakeX = this.camera.shake ? (Math.random() - .5) * this.camera.shake : 0;
       const shakeY = this.camera.shake ? (Math.random() - .5) * this.camera.shake : 0;
-      ctx.save(); ctx.translate(-this.camera.x + shakeX, -this.camera.y + shakeY);
+      ctx.save();ctx.translate(shakeX,shakeY);ctx.scale(this.zoom || 1,this.zoom || 1);ctx.translate(-this.camera.x,-this.camera.y);
       this.drawTerrain(ctx);
       this.drawPickups(ctx);
       this.drawMobs(ctx);
@@ -585,7 +644,7 @@
     drawTerrain(ctx) {
       const ts = W.TILE;
       const sx = Math.max(0, Math.floor(this.camera.x / ts) - 2), sy = Math.max(0, Math.floor(this.camera.y / ts) - 2);
-      const ex = Math.min(this.world.width, Math.ceil((this.camera.x + this.viewW) / ts) + 2), ey = Math.min(this.world.height, Math.ceil((this.camera.y + this.viewH) / ts) + 2);
+      const ex = Math.min(this.world.width, Math.ceil((this.camera.x + this.visibleWorldWidth()) / ts) + 2), ey = Math.min(this.world.height, Math.ceil((this.camera.y + this.visibleWorldHeight()) / ts) + 2);
       for (let y = sy; y < ey; y++) for (let x = sx; x < ex; x++) {
         const tile = this.world.get(x, y), b = W.BIOMES[tile.biome], px = x * ts, py = y * ts;
         let base = b.ground[tile.variant];
@@ -678,6 +737,13 @@
         ctx.save(); ctx.globalAlpha = Math.max(0, 1 - t); ctx.strokeStyle = e.color || '#fff'; ctx.fillStyle = e.color || '#fff';
         if (e.type === 'text') {
           ctx.globalAlpha = e.life / e.max; ctx.font = '700 13px Inter,sans-serif'; ctx.textAlign = 'center'; ctx.fillText(e.text, e.x, e.y - t * 24);
+        } else if (e.type === 'incoming-damage') {
+          const ease = 1 - Math.pow(1 - Math.min(1, t * 1.45), 3);
+          const x = W.lerp(e.sx, e.x, ease), y = W.lerp(e.sy - 5, e.y, ease);
+          const alpha = Math.min(1, t * 8, (1 - t) * 3.2);
+          ctx.globalAlpha = Math.max(0, alpha);
+          ctx.save();ctx.translate(x,y);ctx.rotate((e.angle || 0)+Math.PI);ctx.strokeStyle=e.color;ctx.lineWidth=4.5;ctx.lineCap='round';ctx.shadowBlur=12;ctx.shadowColor=e.color;ctx.beginPath();ctx.arc(0,0,17,-1.05,1.05);ctx.stroke();ctx.lineWidth=1.5;ctx.globalAlpha*=.55;ctx.beginPath();ctx.arc(0,0,23,-.82,.82);ctx.stroke();ctx.restore();
+          ctx.globalAlpha = Math.max(0, alpha);ctx.textAlign='center';ctx.textBaseline='bottom';ctx.font='900 12px Inter,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(45,4,9,.85)';ctx.strokeText(e.text,x,y-22-t*9);ctx.fillStyle='#ffd8d8';ctx.fillText(e.text,x,y-22-t*9);
         } else if (e.type === 'ring' || e.type === 'nova' || e.type === 'burst' || e.type === 'shield' || e.type === 'trail') {
           ctx.lineWidth = e.type === 'nova' ? 5 : 3; const r = (e.radius || 48) * (e.type === 'shield' ? 1 : (.18 + t * .82));
           ctx.beginPath(); ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.stroke();
@@ -701,7 +767,7 @@
       else if (hour > 19) darkness = Math.min(.34, (hour - 19) * .07);
       if (darkness > 0) {
         ctx.save(); ctx.fillStyle = `rgba(8,15,35,${darkness})`; ctx.fillRect(0,0,this.viewW,this.viewH);
-        const px = this.player.x - this.camera.x, py = this.player.y - this.camera.y;
+        const px = (this.player.x - this.camera.x) * this.zoom, py = (this.player.y - this.camera.y) * this.zoom;
         const g = ctx.createRadialGradient(px,py,35,px,py,210); g.addColorStop(0,'rgba(255,220,145,.13)');g.addColorStop(1,'rgba(255,220,145,0)');ctx.fillStyle=g;ctx.fillRect(px-220,py-220,440,440);ctx.restore();
       }
       const vg = ctx.createRadialGradient(this.viewW*.5,this.viewH*.46,this.viewH*.18,this.viewW*.5,this.viewH*.46,Math.max(this.viewW,this.viewH)*.72);
@@ -729,7 +795,7 @@
         const t=this.world.get(x,y),b=W.BIOMES[t.biome];ctx.fillStyle=t.kind==='water'?b.water:b.ground[1];ctx.fillRect(x*sx,y*sy,step*sx+1,step*sy+1);
       }
       ctx.fillStyle='#ffd86b';ctx.beginPath();ctx.arc(this.player.x/(W.TILE*this.world.width)*size,this.player.y/(W.TILE*this.world.height)*size,3.5,0,Math.PI*2);ctx.fill();
-      ctx.strokeStyle='rgba(255,255,255,.28)';ctx.lineWidth=1;ctx.strokeRect(this.camera.x/(W.TILE*this.world.width)*size,this.camera.y/(W.TILE*this.world.height)*size,this.viewW/(W.TILE*this.world.width)*size,this.viewH/(W.TILE*this.world.height)*size);
+      ctx.strokeStyle='rgba(255,255,255,.28)';ctx.lineWidth=1;ctx.strokeRect(this.camera.x/(W.TILE*this.world.width)*size,this.camera.y/(W.TILE*this.world.height)*size,this.visibleWorldWidth()/(W.TILE*this.world.width)*size,this.visibleWorldHeight()/(W.TILE*this.world.height)*size);
     }
 
     renderBigMap() {

@@ -111,9 +111,10 @@
 
   function pointerWorld(game, event) {
     const rect = game.canvas.getBoundingClientRect();
+    const zoom = Math.max(.01, Number(game.zoom) || 1);
     return {
-      x: event.clientX - rect.left + game.camera.x,
-      y: event.clientY - rect.top + game.camera.y
+      x: (event.clientX - rect.left) / zoom + game.camera.x,
+      y: (event.clientY - rect.top) / zoom + game.camera.y
     };
   }
 

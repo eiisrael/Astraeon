@@ -8,6 +8,7 @@ body.game-running #lootWarning{
   user-select:none;
   -webkit-touch-callout:none;
 }
+body.game-running #world{touch-action:none}
 body.game-running input,
 body.game-running textarea,
 body.game-running select,
