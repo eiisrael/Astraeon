@@ -89,7 +89,16 @@ select is(
 );
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal1"}',true);
-select throws_ok($$delete from public.character_saves where character_id='22000000-0000-4000-8000-000000000002'$$,'42501',null,'A cannot delete B save');
+delete from public.character_saves
+where character_id='22000000-0000-4000-8000-000000000002';
+reset role;
+select is(
+  (select count(*) from public.character_saves where character_id='22000000-0000-4000-8000-000000000002'),
+  1::bigint,
+  'A cannot delete B save'
+);
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal1"}',true);
 select is((select count(*) from public.profiles where id='10000000-0000-4000-8000-000000000001'),1::bigint,'A reads own internal profile');
 select is((select count(*) from public.profiles where id='20000000-0000-4000-8000-000000000002'),0::bigint,'A cannot enumerate B internal profile');
 select throws_ok($$update public.profiles set access=3 where id='10000000-0000-4000-8000-000000000001'$$,'42501',null,'A cannot self-promote');
