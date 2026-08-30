@@ -150,6 +150,7 @@ select throws_ok($$select public.apply_astraeon_progression_event('11000000-0000
 
 reset role;
 set local role service_role;
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
 select lives_ok($$select public.award_astraeon_xp('11000000-0000-4000-8000-000000000001',10,'80000000-0000-4000-8000-000000000008')$$,'trusted service can award XP to initialized progress');
 select throws_ok($$select public.award_astraeon_xp('22000000-0000-4000-8000-000000000002',10,'80000000-0000-4000-8000-000000000008')$$,'P0001','operation_id_conflict','operation ID cannot be reused for another character');
 select lives_ok($$select public.reconcile_astraeon_progression('11000000-0000-4000-8000-000000000001',100,2,50,'90000000-0000-4000-8000-000000000009','validated import batch 2026')$$,'trusted service can reconcile reviewed historical progression');

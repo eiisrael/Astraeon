@@ -1,4 +1,4 @@
-# Astraeon Security Hardening 7.2
+# Astraeon Security Hardening 7.3
 
 Este documento registra o modelo de segurança introduzido pelas migrations incrementais `011` a `015`. Ele complementa [`SECURITY.md`](../SECURITY.md) e não substitui a configuração segura do Supabase e da Vercel.
 
@@ -13,6 +13,7 @@ Este documento registra o modelo de segurança introduzido pelas migrations incr
 | `015_server_authoritative_progression.sql` | fundação server-side de progressão, inventário e operações idempotentes |
 | `016_progression_authority_gateway.sql` | gateway único, idempotente e auditado para XP e drops emitidos por servidor confiável |
 | `017_progression_idempotency_and_reconciliation.sql` | bootstrap de progressão para novos personagens, conflito seguro de operação e reconciliação auditada |
+| `018_service_role_authority_guard.sql` | defesa em profundidade: a claim do chamador deve ser `service_role`, além dos grants SQL |
 
 Execute-as em ordem. Nunca reescreva migrations antigas que já foram aplicadas.
 
@@ -63,4 +64,4 @@ O save JSON legado continua sendo usado pelo modo local e pela experiência atua
 
 ## Ativação em produção
 
-O repositório não contém credenciais ou vínculo com um projeto Supabase de produção. Antes do lançamento, aplique `011` a `017` no projeto correto, configure MFA TOTP no Dashboard, cadastre pelo menos duas contas administrativas com dois fatores, valide os dados históricos e configure os segredos privados do executor. Consulte o checklist em `ONLINE_SETUP.md` e nunca coloque qualquer segredo no Vercel Preview ou no navegador.
+O repositório não contém credenciais ou vínculo com um projeto Supabase de produção. Antes do lançamento, aplique `011` a `018` no projeto correto, configure MFA TOTP no Dashboard, cadastre pelo menos duas contas administrativas com dois fatores, valide os dados históricos e configure os segredos privados do executor. Consulte o checklist em `ONLINE_SETUP.md` e nunca coloque qualquer segredo no Vercel Preview ou no navegador.

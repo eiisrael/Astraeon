@@ -108,7 +108,7 @@ supabase/migrations/
 ```text
 supabase/migrations/001_astraeon_online.sql
 ...
-supabase/migrations/017_progression_idempotency_and_reconciliation.sql
+supabase/migrations/018_service_role_authority_guard.sql
 ```
 
 As migrations criam perfis, personagens, saves, chat, Admin Studio, RLS, rate limits, identidade Realtime vinculada ao usuário autenticado e a fundação de progressão autoritativa.
