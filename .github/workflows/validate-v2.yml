@@ -139,7 +139,19 @@ jobs:
       - name: Start disposable Supabase and apply every migration
         run: npm exec -- supabase start
       - name: Test database authorization and isolation with pgTAP
-        run: npm run test:db
+        run: |
+          set +e
+          npm run test:db 2>&1 | tee /tmp/astraeon-db-test.log
+          test_status=${PIPESTATUS[0]}
+          set -e
+          if [ "$test_status" -ne 0 ]; then
+            summary=$(tail -n 60 /tmp/astraeon-db-test.log | tr '\n' ' ' | cut -c1-4000)
+            summary=${summary//'%'/'%25'}
+            summary=${summary//$'\r'/'%0D'}
+            summary=${summary//$'\n'/'%0A'}
+            echo "::error file=supabase/tests/001_security_authorization.sql::$summary"
+            exit "$test_status"
+          fi
       - name: Lint the migrated database
         run: npm exec -- supabase db lint --local --level warning --fail-on error
       - name: Stop disposable Supabase
