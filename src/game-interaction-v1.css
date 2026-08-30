@@ -1,0 +1,79 @@
+/* Interação do mundo 1.0 — seleção protegida e cursor astral contextual. */
+body.game-running #gameRoot,
+body.game-running #onlineChat,
+body.game-running #biomeBanner,
+body.game-running #toast,
+body.game-running #lootWarning{
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+}
+body.game-running input,
+body.game-running textarea,
+body.game-running select,
+body.game-running [contenteditable="true"]{
+  -webkit-user-select:text;
+  user-select:text;
+  -webkit-touch-callout:default;
+}
+
+#astraeonCursor{display:none}
+@media(pointer:fine){
+  body.game-running:not(.panel-studio-embed) #world{cursor:none!important}
+  #astraeonCursor{
+    --cursor-color:#e8c270;
+    --cursor-glow:rgba(232,194,112,.42);
+    position:fixed;
+    z-index:80;
+    left:0;
+    top:0;
+    width:34px;
+    height:34px;
+    display:block;
+    opacity:0;
+    pointer-events:none;
+    translate:-50% -50%;
+    transition:opacity .12s ease,filter .16s ease;
+    filter:drop-shadow(0 2px 5px rgba(0,0,0,.8));
+    will-change:transform,left,top;
+  }
+  #astraeonCursor.visible{opacity:1}
+  #astraeonCursor .cursor-ring,
+  #astraeonCursor .cursor-rune,
+  #astraeonCursor .cursor-core{position:absolute;inset:0}
+  #astraeonCursor .cursor-ring{
+    border:1px solid color-mix(in srgb,var(--cursor-color) 82%,transparent);
+    border-radius:50%;
+    box-shadow:0 0 10px var(--cursor-glow),inset 0 0 8px rgba(0,0,0,.55);
+    animation:astraeonCursorOrbit 4.8s linear infinite;
+  }
+  #astraeonCursor .cursor-ring:before,
+  #astraeonCursor .cursor-ring:after{
+    content:"";
+    position:absolute;
+    background:var(--cursor-color);
+    box-shadow:0 0 7px var(--cursor-glow);
+  }
+  #astraeonCursor .cursor-ring:before{left:50%;top:-3px;width:1px;height:7px}
+  #astraeonCursor .cursor-ring:after{left:-3px;top:50%;width:7px;height:1px}
+  #astraeonCursor .cursor-rune{
+    inset:7px;
+    border:1px solid rgba(240,217,165,.72);
+    rotate:45deg;
+    animation:astraeonCursorCounter 3.4s linear infinite;
+  }
+  #astraeonCursor .cursor-core{
+    inset:14px;
+    border-radius:50%;
+    background:#fff2c4;
+    box-shadow:0 0 8px 2px var(--cursor-glow);
+  }
+  #astraeonCursor.moving .cursor-ring{animation-duration:1.4s}
+  #astraeonCursor.attacking{--cursor-color:#ff8174;--cursor-glow:rgba(255,86,72,.52);transform:scale(.72)}
+  #astraeonCursor.attacking .cursor-ring{animation-duration:.34s}
+  #astraeonCursor.interacting{--cursor-color:#76d6ff;--cursor-glow:rgba(118,214,255,.48);filter:drop-shadow(0 2px 5px rgba(0,0,0,.8)) drop-shadow(0 0 7px var(--cursor-glow))}
+  #astraeonCursor.interacting .cursor-rune{border-radius:50%;rotate:0deg}
+}
+@keyframes astraeonCursorOrbit{to{rotate:360deg}}
+@keyframes astraeonCursorCounter{to{rotate:-315deg}}
+@media(prefers-reduced-motion:reduce){#astraeonCursor *{animation:none!important}}

@@ -15,6 +15,10 @@
       const game = window.astraeon;
       if (!game?.running || game.paused) return;
       const open = () => {
+        if (window.AstraeonChatControllerV5?.open) {
+          window.AstraeonChatControllerV5.open(true);
+          return true;
+        }
         const chat = document.getElementById('onlineChat');
         const input = document.getElementById('onlineChatInput');
         if (!chat) return false;

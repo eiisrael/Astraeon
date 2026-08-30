@@ -1,7 +1,8 @@
 (function(global){
 'use strict';
 const CHAT_LIMIT=64;
-const BUBBLE_MS=4800;
+const BUBBLE_MS=1500;
+const EMPTY_IDLE_MS=5000;
 const SYSTEM_REFRESH_MS=60000;
 const SYSTEM_TICK_MS=1000;
 const CONNECT_NOTICE='Você entrou no mundo online de Astra.';
@@ -17,6 +18,7 @@ let schedulerRefreshTimer=null;
 let schedulerTickTimer=null;
 let sprintKeyDown=false;
 let managedJoinShown=false;
+let emptyIdleTimer=null;
 const profileCache=new Map();
 const schedules=new Map();
 const ownBubble={text:'',until:0};
@@ -43,19 +45,42 @@ function exportChat(){
   const blob=new Blob([lines.join('\n')||'Chat de Astra sem mensagens visíveis.'],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');const stamp=new Date().toISOString().replace(/[:.]/g,'-');a.href=url;a.download=`astraeon-chat-${stamp}.txt`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
-function setCollapsed(chat,collapsed){
+function setCollapsed(chat,collapsed,{focus=false}={}){
+  if(!chat)return;
+  const hadExplicitTop=chat.style.top&&chat.style.top!=='auto';
+  const bottomEdge=hadExplicitTop?chat.getBoundingClientRect().bottom:0;
+  chat.dataset.chatStateChanging='true';
   chat.classList.toggle('chat-pro-collapsed',!!collapsed);chat.classList.remove('collapsed','collapsed-mobile');chat.dataset.chatCollapsed=collapsed?'true':'false';
   const toggle=$('#onlineChatToggle');if(toggle){toggle.textContent=collapsed?'▸':'▾';toggle.setAttribute('aria-expanded',collapsed?'false':'true');toggle.setAttribute('aria-label',collapsed?'Abrir chat':'Minimizar chat');toggle.title=collapsed?'Abrir chat':'Minimizar chat';}
-  if(collapsed)$('#onlineChatSettingsBox')?.classList.add('hidden');
+  if(hadExplicitTop&&bottomEdge){const rect=chat.getBoundingClientRect(),edge=8;chat.style.top=`${Math.round(clamp(bottomEdge-rect.height,edge,Math.max(edge,innerHeight-rect.height-edge)))}px`;}
+  const input=$('#onlineChatInput');
+  if(collapsed){$('#onlineChatSettingsBox')?.classList.add('hidden');clearTimeout(emptyIdleTimer);emptyIdleTimer=null;if(document.activeElement===input)input.blur();}
+  else{scheduleEmptyCollapse();if(focus&&input&&input.dataset.accountBlocked!=='true'){input.disabled=false;requestAnimationFrame(()=>input.focus({preventScroll:true}));}}
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{delete chat.dataset.chatStateChanging;}));
+}
+function scheduleEmptyCollapse(){
+  clearTimeout(emptyIdleTimer);emptyIdleTimer=null;
+  const chat=$('#onlineChat'),input=$('#onlineChatInput');
+  if(!chat||chat.classList.contains('chat-pro-collapsed')||String(input?.value||'').trim())return;
+  emptyIdleTimer=setTimeout(()=>{if(!String(input?.value||'').trim())setCollapsed(chat,true);},EMPTY_IDLE_MS);
+}
+function openChat(focus=true){setCollapsed($('#onlineChat'),false,{focus});}
+function collapseChat(){setCollapsed($('#onlineChat'),true);}
+function toggleChat(focus=false){const chat=$('#onlineChat');if(chat)setCollapsed(chat,!chat.classList.contains('chat-pro-collapsed'),{focus});}
+function installChatBehavior(){
+  const chat=$('#onlineChat'),input=$('#onlineChatInput'),form=$('#onlineChatForm');if(!chat||!input||!form||chat.dataset.behaviorV5==='true')return;chat.dataset.behaviorV5='true';
+  input.addEventListener('input',()=>{updateCounter();if(String(input.value||'').trim())clearTimeout(emptyIdleTimer);else scheduleEmptyCollapse();});
+  input.addEventListener('keydown',event=>{if(event.key!=='Enter'||event.isComposing)return;if(!String(input.value||'').trim()){event.preventDefault();event.stopImmediatePropagation();collapseChat();}},true);
+  form.addEventListener('submit',()=>setTimeout(scheduleEmptyCollapse,0));
+  chat.addEventListener('pointerdown',()=>{if(!String(input.value||'').trim())scheduleEmptyCollapse();},{passive:true});
 }
 function installProfessionalCollapse(){
   const chat=$('#onlineChat'),toggle=$('#onlineChatToggle'),input=$('#onlineChatInput');if(!chat||!toggle||chat.dataset.proCollapse==='true')return;chat.dataset.proCollapse='true';
-  const touch=document.body.classList.contains('touch-forced')||!!global.matchMedia?.('(pointer:coarse)').matches||innerWidth<=760;
-  const initial=chat.classList.contains('collapsed')||(touch&&chat.classList.contains('collapsed-mobile'));
+  const initial=chat.classList.contains('collapsed')||chat.classList.contains('collapsed-mobile');
   setCollapsed(chat,initial);
-  toggle.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();setCollapsed(chat,!chat.classList.contains('chat-pro-collapsed'));},{capture:true});
-  input?.addEventListener('focus',()=>{if(chat.classList.contains('chat-pro-collapsed'))setCollapsed(chat,false);});
-  $('#onlineChatSettings')?.addEventListener('click',()=>{if(chat.classList.contains('chat-pro-collapsed'))setCollapsed(chat,false);},{capture:true});
+  toggle.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();toggleChat(false);},{capture:true});
+  input?.addEventListener('focus',()=>{if(chat.classList.contains('chat-pro-collapsed'))openChat(false);else scheduleEmptyCollapse();});
+  $('#onlineChatSettings')?.addEventListener('click',()=>{if(chat.classList.contains('chat-pro-collapsed'))openChat(false);else scheduleEmptyCollapse();},{capture:true});
 }
 
 function enhanceSettings(){
@@ -123,10 +148,11 @@ function installSprintRuntime(){
 }
 
 function install(mp){
-  if(installed||!mp?.state)return;installed=true;mpState=mp.state;enhanceSettings();installProfessionalCollapse();installRowsObserver();installSubmitCapture();installOwnBubble();installSystemScheduler();installSprintRuntime();document.body.classList.add('astraeon-chat-v43-ready');
+  if(installed||!mp?.state)return;installed=true;mpState=mp.state;enhanceSettings();installProfessionalCollapse();installChatBehavior();installRowsObserver();installSubmitCapture();installOwnBubble();installSystemScheduler();installSprintRuntime();document.body.classList.add('astraeon-chat-v43-ready');
 }
 function wait(){const started=Date.now();const tick=()=>{const mp=global.AstraeonMultiplayerV4;if(mp?.state&&$('#onlineChat')){install(mp);return;}if(Date.now()-started<15000)setTimeout(tick,80);};tick();}
 if(document.readyState==='loading')global.addEventListener('DOMContentLoaded',wait);else wait();
 global.addEventListener('beforeunload',()=>{rowsObserver?.disconnect();if(schedulerRefreshTimer)clearInterval(schedulerRefreshTimer);if(schedulerTickTimer)clearInterval(schedulerTickTimer);});
+global.AstraeonChatControllerV5={open:openChat,collapse:collapseChat,toggle:toggleChat,scheduleEmptyCollapse,isCollapsed:()=>$('#onlineChat')?.classList.contains('chat-pro-collapsed')!==false};
 global.AstraeonChatSystemV4={install,refreshSchedules,emitManagedJoinMessages,clearChatView,exportChat};
 })(window);

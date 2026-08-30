@@ -49,10 +49,15 @@
   }
 
   function openChat(focus = true) {
+    if (global.AstraeonChatControllerV5?.open) {
+      global.AstraeonChatControllerV5.open(focus);
+      return;
+    }
     const chat = $('#onlineChat');
     const input = $('#onlineChatInput');
     if (!chat || !input) return;
-    chat.classList.remove('collapsed', 'collapsed-mobile');
+    chat.classList.remove('collapsed', 'collapsed-mobile', 'chat-pro-collapsed');
+    chat.dataset.chatCollapsed = 'false';
     queueChatPlacement();
     if (focus) {
       input.disabled = false;
@@ -199,10 +204,10 @@
     header.addEventListener('pointerup', finishDrag);
     header.addEventListener('pointercancel', finishDrag);
 
-    chatResizeObserver = new ResizeObserver(() => queueChatPlacement());
+    chatResizeObserver = new ResizeObserver(() => {
+      if (chat.dataset.chatStateChanging !== 'true') queueChatPlacement();
+    });
     chatResizeObserver.observe(chat);
-    chatClassObserver = new MutationObserver(() => queueChatPlacement());
-    chatClassObserver.observe(chat, { attributes: true, attributeFilter: ['class'] });
     global.addEventListener('resize', () => queueChatPlacement());
     global.visualViewport?.addEventListener('resize', () => queueChatPlacement());
     queueChatPlacement();
