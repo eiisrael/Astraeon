@@ -4,7 +4,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(35);
+select plan(39);
 
 insert into auth.users(id,instance_id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
 values
@@ -146,6 +146,13 @@ select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-00000000
 select lives_ok($$select public.publish_astraeon_player_state(100,100,1::smallint,1,floor(extract(epoch from now())*1000)::bigint)$$,'runtime state accepts authenticated owner');
 select is((select user_id from public.player_runtime_states limit 1),'10000000-0000-4000-8000-000000000001'::uuid,'runtime identity is derived from auth.uid');
 select throws_ok($$update public.character_progress set gold=999999 where user_id='10000000-0000-4000-8000-000000000001'$$,'42501',null,'client cannot directly edit authoritative gold');
+select throws_ok($$select public.apply_astraeon_progression_event('11000000-0000-4000-8000-000000000001','award_xp',10,null,null,'{}'::jsonb,'70000000-0000-4000-8000-000000000007')$$,'42501',null,'client cannot invoke the service-only progression gateway');
+
+reset role;
+set local role service_role;
+select lives_ok($$select public.award_astraeon_xp('11000000-0000-4000-8000-000000000001',10,'80000000-0000-4000-8000-000000000008')$$,'trusted service can award XP to initialized progress');
+select throws_ok($$select public.award_astraeon_xp('22000000-0000-4000-8000-000000000002',10,'80000000-0000-4000-8000-000000000008')$$,'P0001','operation_id_conflict','operation ID cannot be reused for another character');
+select lives_ok($$select public.reconcile_astraeon_progression('11000000-0000-4000-8000-000000000001',100,2,50,'90000000-0000-4000-8000-000000000009','validated import batch 2026')$$,'trusted service can reconcile reviewed historical progression');
 
 select * from finish();
 rollback;

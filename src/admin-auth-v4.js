@@ -6,7 +6,8 @@ const LEGACY_LOGIN_CONTRACT='signInWithPassword';
 const LEGACY_ACCESS_CONTRACT='Acesso 3';
 const REQUEST_TIMEOUT=10000;
 const RUNTIME_TIMEOUT=10000;
-const state={config:null,client:null,session:null,profile:null,access:null,unlocked:false,loading:false,runtimeFailed:false,retryButton:null,secondaryFailures:[]};
+const MFA_RUNTIME='src/admin-mfa-v1.js?v=1.0.0';
+const state={config:null,client:null,session:null,profile:null,access:null,unlocked:false,loading:false,runtimeFailed:false,retryButton:null,secondaryFailures:[],mfa:null,mfaEnrollment:null,mfaBusy:false};
 const $=s=>document.querySelector(s);
 const SECONDARY_MODULES=[
   'src/admin-studio-v4.js?v=6.4.0',
@@ -133,6 +134,211 @@ function script(src,{bridgeDomReady=false}={}){
     document.body.appendChild(s);
   });
 }
+function mfaEl(tag,className,text){
+  const el=document.createElement(tag);
+  if(className)el.className=className;
+  if(text!==undefined)el.textContent=text;
+  return el;
+}
+function clearMfaFlow(){document.getElementById('adminMfaFlow')?.remove();}
+function showMfaFlow(title,description,{closable=false}={}){
+  const gate=$('#adminAccessGate');
+  const body=gate?.querySelector('.admin-access-body');
+  if(!gate||!body)return null;
+  clearMfaFlow();
+  gate.classList.remove('hidden');
+  const flow=mfaEl('section','admin-mfa-flow');
+  flow.id='adminMfaFlow';
+  const head=mfaEl('div','admin-mfa-flow-head');
+  const copy=mfaEl('div','');
+  copy.append(mfaEl('span','admin-mfa-kicker','SEGUNDO FATOR'),mfaEl('h2','',title),mfaEl('p','',description));
+  head.appendChild(copy);
+  if(closable){
+    const close=mfaEl('button','admin-mfa-close','×');
+    close.type='button';close.title='Voltar ao Admin Studio';close.setAttribute('aria-label','Voltar ao Admin Studio');
+    close.addEventListener('click',closeMfaManager);
+    head.appendChild(close);
+  }
+  flow.appendChild(head);
+  body.insertBefore(flow,$('#adminGateMessage'));
+  return flow;
+}
+function mfaButton(label,kind='primary'){
+  const button=mfaEl('button',`admin-access-button ${kind}`.trim(),label);
+  button.type='button';
+  return button;
+}
+function appendMfaExit(flow){
+  const exit=mfaButton('Sair desta conta','ghost');
+  exit.addEventListener('click',()=>void exitMfa());
+  flow.appendChild(exit);
+}
+function mfaCodeForm(flow,{factorId,enrollment=false,manage=false}){
+  const form=mfaEl('form','admin-mfa-code-form');
+  const label=mfaEl('label','',enrollment?'Código do novo autenticador':'Código do autenticador');
+  const input=document.createElement('input');
+  input.type='text';input.inputMode='numeric';input.autocomplete='one-time-code';input.pattern='[0-9]{6}';input.maxLength=6;input.placeholder='000000';input.required=true;
+  label.appendChild(input);
+  const submit=mfaButton(enrollment?'Ativar proteção':'Confirmar segundo fator');
+  submit.type='submit';
+  form.append(label,submit);
+  form.addEventListener('submit',event=>{
+    event.preventDefault();
+    void verifyMfaFactor(factorId,input.value,{manage});
+  });
+  flow.appendChild(form);
+  setTimeout(()=>input.focus(),0);
+}
+function renderMfaEnrollment(enrollment,{manage=false}={}){
+  const flow=showMfaFlow('Escaneie o autenticador','Use um aplicativo TOTP confiável. O QR Code não é enviado para nenhum serviço adicional.');
+  if(!flow)return;
+  const qr=mfaEl('img','admin-mfa-qr');
+  qr.src=enrollment.qrCode;qr.alt='QR Code para configurar o autenticador';qr.decoding='async';qr.referrerPolicy='no-referrer';
+  flow.appendChild(qr);
+  flow.appendChild(mfaEl('p','admin-mfa-note','Depois de escanear, digite o código de seis dígitos gerado pelo aplicativo.'));
+  mfaCodeForm(flow,{factorId:enrollment.id,enrollment:true,manage});
+  const discard=mfaButton('Cancelar inscrição','ghost');
+  discard.addEventListener('click',()=>void discardPendingMfa(enrollment.id,{manage}));
+  flow.appendChild(discard);
+  if(!manage)appendMfaExit(flow);
+  setMessage('Inscrição MFA iniciada. Confirme o código para liberar o Studio.');
+}
+function renderMfaChallenge(result){
+  const flow=showMfaFlow('Confirme seu segundo fator','Esta conta administrativa já possui um autenticador. Confirme o código para obter a sessão AAL2 exigida pelas operações do Studio.');
+  if(!flow)return;
+  flow.appendChild(mfaEl('p','admin-mfa-note',`Fator: ${String(result.factor?.friendly_name||'Autenticador TOTP').slice(0,80)}`));
+  mfaCodeForm(flow,{factorId:result.factor.id});
+  appendMfaExit(flow);
+  setMessage('O Admin Studio só será carregado após a confirmação MFA.');
+}
+function renderMfaRequired(result){
+  if(result.state==='challenge'){renderMfaChallenge(result);return;}
+  if(result.state==='pending'){
+    const flow=showMfaFlow('Inscrição MFA pendente','Há um autenticador ainda não confirmado nesta sessão. Descarte-o com segurança e gere um novo QR Code para continuar.');
+    if(!flow)return;
+    const restart=mfaButton('Gerar novo QR Code');
+    restart.addEventListener('click',()=>void discardPendingMfa(result.factor.id));
+    flow.appendChild(restart);
+    appendMfaExit(flow);
+    setMessage('A confirmação do segundo fator é obrigatória para esta área.');
+    return;
+  }
+  const flow=showMfaFlow('Proteja a conta administrativa','Antes de abrir o Studio, cadastre um autenticador TOTP. Isso é exigido para publicar, editar contas e alterar o mundo.');
+  if(!flow)return;
+  const enroll=mfaButton('Cadastrar autenticador');
+  enroll.addEventListener('click',()=>void beginMfaEnrollment());
+  flow.appendChild(enroll);
+  flow.appendChild(mfaEl('p','admin-mfa-note','Recomendação: mantenha um segundo autenticador de recuperação em um dispositivo separado.'));
+  appendMfaExit(flow);
+  setMessage('Esta conta precisa de MFA para acessar o Admin Studio.');
+}
+async function ensureMfa(){
+  const helper=global.AstraeonAdminMfaV1;
+  if(!helper)throw new Error('mfa_runtime_unavailable');
+  const result=await helper.inspect(state.client);
+  state.mfa=result;
+  if(result.state==='verified'){clearMfaFlow();return true;}
+  renderMfaRequired(result);
+  return false;
+}
+async function beginMfaEnrollment({manage=false}={}){
+  if(state.mfaBusy)return;
+  state.mfaBusy=true;
+  setMessage('Gerando inscrição MFA…');
+  try{
+    const enrollment=await global.AstraeonAdminMfaV1.enrollTotp(state.client);
+    state.mfaEnrollment=enrollment;
+    renderMfaEnrollment(enrollment,{manage});
+  }catch(error){
+    setMessage(global.AstraeonAdminMfaV1?.message(error,'Não foi possível iniciar a inscrição MFA.')||'Não foi possível iniciar a inscrição MFA.','error');
+  }finally{state.mfaBusy=false;}
+}
+async function verifyMfaFactor(factorId,code,{manage=false}={}){
+  if(state.mfaBusy)return;
+  state.mfaBusy=true;
+  setMessage('Confirmando segundo fator…');
+  try{
+    await global.AstraeonAdminMfaV1.verifyCode(state.client,factorId,code);
+    state.mfaEnrollment=null;
+    const nextSession=await currentSession();
+    state.mfaBusy=false;
+    if(manage)await openMfaManager();
+    else await evaluate(nextSession);
+  }catch(error){
+    setMessage(global.AstraeonAdminMfaV1?.message(error,'Código MFA inválido ou expirado.')||'Código MFA inválido ou expirado.','error');
+  }finally{state.mfaBusy=false;}
+}
+async function discardPendingMfa(factorId,{manage=false}={}){
+  if(state.mfaBusy)return;
+  state.mfaBusy=true;
+  setMessage('Descartando inscrição pendente…');
+  try{
+    await global.AstraeonAdminMfaV1.removeFactor(state.client,factorId);
+    state.mfaEnrollment=null;
+    if(manage)await openMfaManager();
+    else await ensureMfa();
+  }catch(error){
+    setMessage(global.AstraeonAdminMfaV1?.message(error,'Não foi possível descartar a inscrição MFA.')||'Não foi possível descartar a inscrição MFA.','error');
+  }finally{state.mfaBusy=false;}
+}
+function closeMfaManager(){
+  if(!state.unlocked)return;
+  clearMfaFlow();
+  $('#adminAccessGate')?.classList.add('hidden');
+  setMessage('Sessão MFA AAL2 ativa.','ok');
+}
+async function removeMfaFactor(factorId){
+  const verified=state.mfa?.verified||[];
+  if(verified.length<2){setMessage('Mantenha pelo menos dois fatores verificados antes de remover um autenticador.','error');return;}
+  if(!global.confirm('Remover este autenticador? A ação não pode ser desfeita.'))return;
+  if(state.mfaBusy)return;
+  state.mfaBusy=true;
+  setMessage('Removendo autenticador…');
+  try{await global.AstraeonAdminMfaV1.removeFactor(state.client,factorId);await openMfaManager();}
+  catch(error){setMessage(global.AstraeonAdminMfaV1?.message(error,'Não foi possível remover o autenticador.')||'Não foi possível remover o autenticador.','error');}
+  finally{state.mfaBusy=false;}
+}
+function renderMfaManager(result){
+  const flow=showMfaFlow('Gerenciar autenticadores','Mantenha dois fatores verificados para evitar perda de acesso administrativo.',{closable:true});
+  if(!flow)return;
+  const list=mfaEl('div','admin-mfa-factor-list');
+  for(const factor of result.verified){
+    const row=mfaEl('div','admin-mfa-factor');
+    const copy=mfaEl('div','');
+    copy.append(mfaEl('b','',String(factor.friendly_name||factor.factor_type||'Autenticador').slice(0,80)),mfaEl('small','',`${factor.factor_type||'totp'} · verificado`));
+    const remove=mfaButton('Remover','ghost');
+    remove.disabled=result.verified.length<2;
+    remove.title=remove.disabled?'Cadastre outro fator antes de remover este.':'Remover autenticador';
+    remove.addEventListener('click',()=>void removeMfaFactor(factor.id));
+    row.append(copy,remove);list.appendChild(row);
+  }
+  flow.appendChild(list);
+  const add=mfaButton('Adicionar autenticador de recuperação');
+  add.addEventListener('click',()=>void beginMfaEnrollment({manage:true}));
+  flow.appendChild(add);
+  setMessage('Sessão MFA AAL2 ativa.','ok');
+}
+async function openMfaManager(){
+  if(!state.client)return;
+  try{
+    const result=await global.AstraeonAdminMfaV1.inspect(state.client);
+    state.mfa=result;
+    if(result.state!=='verified'){renderMfaRequired(result);return;}
+    renderMfaManager(result);
+  }catch(error){setMessage(global.AstraeonAdminMfaV1?.message(error,'Não foi possível carregar os autenticadores.')||'Não foi possível carregar os autenticadores.','error');}
+}
+async function exitMfa(){
+  try{await state.client?.auth?.signOut?.({scope:'local'});}catch(_){}
+  location.assign('/');
+}
+function installMfaStatus(){
+  const host=document.querySelector('.studio-publish-actions');
+  if(!host||document.getElementById('adminMfaManage'))return;
+  const button=mfaButton('MFA · AAL2','ghost');
+  button.id='adminMfaManage';button.classList.add('admin-mfa-manage');button.title='Gerenciar autenticadores';
+  button.addEventListener('click',()=>void openMfaManager());
+  host.prepend(button);
+}
 async function waitForEditor(){
   for(let i=0;i<80;i++){
     if(global.astraeonEditor)return global.astraeonEditor;
@@ -192,6 +398,7 @@ async function unlock(session){
   try{
     await loadCoreRuntime();
     state.unlocked=true;
+    installMfaStatus();
     $('#adminAccessGate')?.classList.add('hidden');
     document.body.classList.add('admin-access-authorized');
     diag('info','auth.unlock.complete',{});
@@ -211,17 +418,20 @@ function showDenied(){
   state.session=null;
   state.profile=null;
   state.access=null;
+  clearMfaFlow();
   setMessage('Acesso não autorizado.','error');
 }
 async function evaluate(session){
-  if(state.loading)return;
+  if(state.loading||state.mfaBusy)return;
   state.session=session||null;
   if(!session){showDenied();return;}
   setBusy(true);
   setMessage('Verificando acesso…');
   try{
     const result=await verifySession(session);
-    if(result?.allowed===true)await unlock(session);
+    if(result?.allowed===true){
+      if(await ensureMfa())await unlock(session);
+    }
     else showDenied();
   }catch(error){
     console.error('[Astraeon Admin Auth] verificação indisponível');
@@ -253,6 +463,8 @@ async function init(){
     state.config=await fetchConfig();
     const sdk=await loadSdk();
     state.client=sdk.createClient(state.config.supabaseUrl,state.config.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    await script(MFA_RUNTIME);
+    if(!global.AstraeonAdminMfaV1)throw new Error('mfa_runtime_unavailable');
     const session=await currentSession();
     await evaluate(session);
     state.client.auth.onAuthStateChange((_event,nextSession)=>{

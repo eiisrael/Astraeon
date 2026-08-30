@@ -27,6 +27,12 @@
       ]
     },
     {
+      "source": "/api/progression-authority",
+      "headers": [
+        {"key":"Cache-Control","value":"no-store, max-age=0"}
+      ]
+    },
+    {
       "source": "/game-editor",
       "headers": [
         {"key":"X-Robots-Tag","value":"noindex, nofollow, noarchive"},

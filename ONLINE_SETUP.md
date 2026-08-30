@@ -108,7 +108,7 @@ supabase/migrations/
 ```text
 supabase/migrations/001_astraeon_online.sql
 ...
-supabase/migrations/015_server_authoritative_progression.sql
+supabase/migrations/017_progression_idempotency_and_reconciliation.sql
 ```
 
 As migrations criam perfis, personagens, saves, chat, Admin Studio, RLS, rate limits, identidade Realtime vinculada ao usuário autenticado e a fundação de progressão autoritativa.
@@ -140,9 +140,30 @@ Use a chave pública/publishable (`sb_publishable_...`). Nunca coloque `sb_secre
 SUPABASE_URL=https://SEU-PROJETO.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ASTRAEON_REALTIME_TOPIC=world:astraeon:main
+ASTRAEON_AUTHORITY_TOKEN=<segredo-aleatório-com-pelo-menos-32-bytes>
+SUPABASE_SECRET_KEY=sb_secret_<somente-servidor>
 ```
 
 `ASTRAEON_REALTIME_TOPIC` é opcional, mas deve manter o prefixo `world:astraeon:` para corresponder às policies do banco.
+
+`ASTRAEON_AUTHORITY_TOKEN` e `SUPABASE_SECRET_KEY` são privados: configure-os apenas no ambiente Production da Vercel ou no host do servidor de jogo. Nunca os adicione ao cliente, ao GitHub, aos ambientes Preview ou a `/api/config`. O endpoint responde `404` nos ambientes Preview por padrão; habilite ambiente não produtivo somente em um host privado e com `ASTRAEON_AUTHORITY_ALLOW_NONPRODUCTION=true`.
+
+### Progressão autoritativa
+
+O navegador não entrega XP nem drops. Um worker/servidor de combate confiável deve fazer `POST /api/progression-authority` com o header `X-Astraeon-Authority` e um evento idempotente:
+
+```json
+{
+  "kind": "award_xp",
+  "characterId": "uuid-do-personagem",
+  "operationId": "uuid-unico-do-evento",
+  "amount": 25
+}
+```
+
+Para drops, use `kind: "grant_drop"`, `itemId`, `quantity` e um objeto `metadata` de no máximo 8 KiB. O mesmo `operationId` pode ser reenviado sem duplicar a recompensa. Não exponha esse endpoint a comandos vindos diretamente do browser.
+
+Para migrar dados históricos, use apenas a RPC `reconcile_astraeon_progression` via processo server-only, com uma fonte revisada, `request_id` único e motivo rastreável. Ela não lê ouro ou XP do JSON legado automaticamente.
 
 7. Faça um novo deploy depois de alterar variáveis.
 

@@ -129,6 +129,8 @@ flowchart LR
 
 O cliente sincroniza recursos sociais e persistentes. Combate, mobs, loot e economia ainda não possuem autoridade central completa; para um MMORPG competitivo, esses sistemas deverão migrar para um servidor autoritativo.
 
+O Admin Studio exige MFA/TOTP (AAL2) e a emissão autoritativa de XP/drops possui um gateway privado para servidor de jogo. Veja [SECURITY.md](SECURITY.md) e [ONLINE_SETUP.md](ONLINE_SETUP.md) antes de configurar produção.
+
 ---
 
 ## Executar localmente

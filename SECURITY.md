@@ -118,7 +118,7 @@ Para produção:
 
 ## MFA administrativo
 
-Contas com `profiles.access = 3` conseguem abrir e consultar o Admin Studio com uma sessão válida, mas as migrations de hardening exigem **AAL2/MFA** para mutações administrativas. Alterar DOM, JavaScript, `localStorage` ou `AstraeonAdminAuth.access` não muda a autorização do Postgres.
+Contas com `profiles.access = 3` precisam concluir **AAL2/MFA** antes que o Admin Studio carregue. O fluxo interno oferece inscrição TOTP por QR Code, desafio com código e gestão de fatores; as migrations também exigem AAL2 para mutações administrativas. Alterar DOM, JavaScript, `localStorage` ou `AstraeonAdminAuth.access` não muda a autorização do Postgres.
 
 Antes de editar contas, personagens, saves, mapas, mobs, itens ou configurações em produção:
 
@@ -126,6 +126,7 @@ Antes de editar contas, personagens, saves, mapas, mobs, itens ou configuraçõe
 2. cadastre um segundo fator para cada conta administrativa;
 3. confirme que a sessão possui claim `aal = aal2`;
 4. mantenha pelo menos duas contas administrativas de recuperação protegidas.
+5. mantenha ao menos dois fatores TOTP verificados por conta administrativa antes de remover qualquer um.
 
 ## Modelo de autoridade
 
@@ -136,6 +137,7 @@ Antes de editar contas, personagens, saves, mapas, mobs, itens ou configuraçõe
 - estado social Realtime é publicado por RPC e vinculado a `auth.uid()`;
 - listagens administrativas não carregam todos os saves;
 - progressão competitiva usa as tabelas autoritativas preparadas em migration própria.
+- XP e drops só podem ser emitidos por um processo de jogo confiável via `/api/progression-authority`, com segredo privado configurado no host.
 
 O JSON legado do save continua necessário para o jogo local, mas **não deve ser usado como autoridade de economia, ranking, PvP, trade ou marketplace**.
 
