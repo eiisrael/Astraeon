@@ -19,6 +19,9 @@ service-account*.json
 # Vercel local project metadata and downloaded env values
 .vercel/
 
+# Supabase CLI local metadata (machine-specific, never deployment state)
+supabase/.temp/
+
 # Dependencies / logs
 node_modules/
 npm-debug.log*

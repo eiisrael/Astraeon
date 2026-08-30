@@ -59,7 +59,7 @@ Aqui ficam as contas de autenticação criadas por e-mail e senha. O Supabase ma
 
 ### Table Editor → `profiles`
 
-Perfil público do jogador:
+Perfil interno do jogador. Usuários comuns só podem consultar o próprio registro:
 
 - `id` — mesmo UUID da conta Auth;
 - `username`;
@@ -67,6 +67,8 @@ Perfil público do jogador:
 - `class_id`;
 - `level`;
 - `last_seen`.
+
+Metadados de apresentação de outros jogadores são entregues somente pelas RPCs públicas mínimas. `access`, `active_character_id`, timestamps internos e outros campos privados não podem ser enumerados por jogadores.
 
 ### Table Editor → `player_saves`
 
@@ -89,10 +91,10 @@ Histórico do chat mundial:
 - canal;
 - horário.
 
-O esquema completo versionado está em:
+O esquema completo e incremental está em:
 
 ```text
-supabase/migrations/001_astraeon_online.sql
+supabase/migrations/
 ```
 
 ---
@@ -101,19 +103,21 @@ supabase/migrations/001_astraeon_online.sql
 
 1. Crie um projeto em Supabase.
 2. Abra **SQL Editor**.
-3. Copie e execute todo o arquivo:
+3. Execute **todas** as migrations em ordem numérica. Em um banco já existente, execute apenas as migrations ainda não aplicadas; nunca edite uma migration antiga como se ela não tivesse sido executada.
 
 ```text
 supabase/migrations/001_astraeon_online.sql
+...
+supabase/migrations/015_server_authoritative_progression.sql
 ```
 
-A migration cria `profiles`, `player_saves`, `chat_messages`, triggers, índices, RLS, rate limit do chat e políticas dos canais privados Realtime.
+As migrations criam perfis, personagens, saves, chat, Admin Studio, RLS, rate limits, identidade Realtime vinculada ao usuário autenticado e a fundação de progressão autoritativa.
 
 4. Em **Authentication → URL Configuration**:
    - configure **Site URL** com o domínio de produção do Vercel;
    - adicione somente os Redirect URLs de preview/desenvolvimento que realmente utilizar.
 5. Em produção, mantenha confirmação de e-mail habilitada.
-6. Em **Realtime → Settings**, habilite Realtime e desabilite acesso público aos canais para trabalhar somente com canais privados. A migration permite usuários autenticados nos tópicos `world:astraeon:*`.
+6. Em **Realtime → Settings**, habilite Realtime e desabilite acesso público aos canais. Presence usa tópicos privados `world:astraeon:*`; posição e ações sociais chegam pelas tabelas RLS `player_runtime_states` e `player_runtime_actions`.
 
 ### Chave correta
 

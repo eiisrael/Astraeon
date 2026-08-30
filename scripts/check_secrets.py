@@ -32,7 +32,7 @@ PATTERNS = [
 def tracked_files() -> list[str]:
     try:
         result = subprocess.run(
-            ["git", "ls-files", "-z"],
+            ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
             cwd=ROOT,
             check=True,
             stdout=subprocess.PIPE,
@@ -40,7 +40,7 @@ def tracked_files() -> list[str]:
         )
         return [p for p in result.stdout.decode("utf-8").split("\0") if p]
     except Exception as exc:
-        print(f"SECRET SCAN FAILED: não foi possível listar arquivos rastreados: {exc}")
+        print(f"SECRET SCAN FAILED: não foi possível listar arquivos do repositório: {exc}")
         sys.exit(2)
 
 
@@ -54,6 +54,45 @@ def looks_text(path: Path) -> bool:
         return b"\0" not in data
     except OSError:
         return False
+
+
+def scan_git_history(errors: list[str]) -> int:
+    """Scan every reachable commit patch without checking historical files out."""
+    try:
+        result = subprocess.run(
+            [
+                "git", "log", "--all", "--full-history", "--no-renames",
+                "--no-color", "--no-ext-diff", "--format=commit:%H", "-p", "--", ".",
+            ],
+            cwd=ROOT,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    except Exception as exc:
+        errors.append(f"não foi possível examinar o histórico Git: {exc}")
+        return 0
+
+    current_commit = "unknown"
+    current_file = "unknown"
+    checked_lines = 0
+    for raw_line in result.stdout.decode("utf-8", errors="ignore").splitlines():
+        if raw_line.startswith("commit:"):
+            current_commit = raw_line.removeprefix("commit:")[:12]
+            continue
+        if raw_line.startswith("+++ b/") or raw_line.startswith("--- a/"):
+            current_file = raw_line[6:]
+            continue
+        if not raw_line.startswith(("+", "-")) or raw_line.startswith(("+++", "---")):
+            continue
+        checked_lines += 1
+        line = raw_line[1:]
+        for label, pattern in PATTERNS:
+            if pattern.search(line):
+                errors.append(
+                    f"histórico {current_commit} {current_file}: possível {label}"
+                )
+    return checked_lines
 
 
 def main() -> int:
@@ -80,6 +119,8 @@ def main() -> int:
                 line = text.count("\n", 0, match.start()) + 1
                 errors.append(f"{rel}:{line}: possível {label}")
 
+    history_lines = scan_git_history(errors)
+
     if errors:
         print("ASTRAEON SECRET SCAN FAILED")
         for error in sorted(set(errors)):
@@ -87,7 +128,10 @@ def main() -> int:
         print("\nRemova/rotacione o segredo antes de fazer commit. Não basta adicioná-lo ao .gitignore depois que já foi versionado.")
         return 1
 
-    print(f"ASTRAEON SECRET SCAN OK — {len(tracked)} arquivos rastreados verificados")
+    print(
+        f"ASTRAEON SECRET SCAN OK — {len(tracked)} arquivos atuais e "
+        f"{history_lines} linhas alteradas do histórico verificadas"
+    )
     return 0
 
 

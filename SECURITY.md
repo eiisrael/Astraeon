@@ -103,6 +103,44 @@ The browser must use a publishable key, while access to player data is enforced 
 
 A service-role or secret key must never be returned by `/api/config` or referenced by frontend JavaScript.
 
+## Controles de autenticação no Supabase
+
+As regras de senha precisam ser configuradas no servidor, em **Authentication → Settings**. O `minlength` do formulário é apenas uma ajuda visual e não é uma barreira de segurança.
+
+Para produção:
+
+- exija no mínimo 10 caracteres no servidor;
+- mantenha confirmação de e-mail habilitada;
+- habilite proteção contra senhas vazadas quando disponível no plano;
+- revise os limites de cadastro e login;
+- adicione CAPTCHA quando houver abuso automatizado;
+- use somente Redirect URLs controladas pelo projeto.
+
+## MFA administrativo
+
+Contas com `profiles.access = 3` conseguem abrir e consultar o Admin Studio com uma sessão válida, mas as migrations de hardening exigem **AAL2/MFA** para mutações administrativas. Alterar DOM, JavaScript, `localStorage` ou `AstraeonAdminAuth.access` não muda a autorização do Postgres.
+
+Antes de editar contas, personagens, saves, mapas, mobs, itens ou configurações em produção:
+
+1. habilite MFA no Supabase Auth;
+2. cadastre um segundo fator para cada conta administrativa;
+3. confirme que a sessão possui claim `aal = aal2`;
+4. mantenha pelo menos duas contas administrativas de recuperação protegidas.
+
+## Modelo de autoridade
+
+- `profiles` é interno e cada jogador lê somente o próprio registro;
+- identidades públicas são resolvidas por RPCs mínimas e limitadas;
+- ownership de `character_saves` é imutável;
+- bans são revalidados em policies e RPCs;
+- estado social Realtime é publicado por RPC e vinculado a `auth.uid()`;
+- listagens administrativas não carregam todos os saves;
+- progressão competitiva usa as tabelas autoritativas preparadas em migration própria.
+
+O JSON legado do save continua necessário para o jogo local, mas **não deve ser usado como autoridade de economia, ranking, PvP, trade ou marketplace**.
+
+Consulte [`docs/SECURITY_HARDENING_7.md`](docs/SECURITY_HARDENING_7.md) para os contratos, migrations e testes.
+
 ## Reporting a security problem
 
 Do not publish active credentials in a public Issue. Revoke/rotate the credential first, then report the technical issue without including the secret value.

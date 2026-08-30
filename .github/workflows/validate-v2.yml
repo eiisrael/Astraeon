@@ -1,4 +1,4 @@
-name: Validate Astraeon Online 6.2 + Admin Studio 6.2
+name: Validate Astraeon Online 7.0 Security
 
 on:
   pull_request:
@@ -11,7 +11,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Verify vendored Supabase bundle
+        run: |
+          npm run build:vendor
+          git diff --exit-code -- src/vendor/supabase-v2.js
       - name: Scan tracked files for secrets
         run: python3 scripts/check_secrets.py
       - name: Validate JavaScript syntax
@@ -27,6 +40,7 @@ jobs:
           node --check src/admin-runtime-v3c.js
           node --check src/world-online-v4.js
           node --check src/npcs-v4.js
+          node --check src/realtime-security-v1.js
           node --check src/multiplayer-v4.js
           node --check src/online-controller-v4.js
           node --check src/combat-focus-v4.js
@@ -53,6 +67,8 @@ jobs:
           node --check src/admin-worldmaps-v61.js
           node --check src/admin-realtime-v62.js
           node --check src/admin-server-config-v62.js
+      - name: Validate security contracts and hostile Realtime payloads
+        run: npm run test:security
       - name: Validate HTML, access contracts, admin and deployment config
         run: python3 scripts/validate_v2.py
       - name: Validate connected maps and MobList contracts
@@ -117,3 +133,12 @@ jobs:
                   raise SystemExit(f'game loader missing {src}')
           print('Astraeon 6.2 contracts OK')
           PY
+      - name: Start disposable Supabase and apply every migration
+        run: npm exec -- supabase start
+      - name: Test database authorization and isolation with pgTAP
+        run: npm run test:db
+      - name: Lint the migrated database
+        run: npm exec -- supabase db lint --local --level warning --fail-on error
+      - name: Stop disposable Supabase
+        if: always()
+        run: npm exec -- supabase stop --no-backup

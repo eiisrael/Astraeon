@@ -259,20 +259,23 @@ No Supabase Dashboard abra:
 SQL Editor
 ```
 
-No repositório, abra:
+No repositório, use a pasta:
 
 ```text
-supabase/migrations/001_astraeon_online.sql
+supabase/migrations/
 ```
 
-Copie o conteúdo completo e execute no SQL Editor.
+Execute os arquivos em ordem numérica, de `001_astraeon_online.sql` até `015_server_authoritative_progression.sql`. Em projetos já instalados, aplique somente os números ainda pendentes. Não altere migrations antigas que já foram executadas.
 
 A migration cria e configura:
 
 ```text
-public.profiles
-public.player_saves
+public.profiles / public.public_profiles
+public.player_saves / public.character_saves
 public.chat_messages
+public.player_runtime_states / public.player_runtime_actions
+public.character_progress / public.character_inventory
+public.security_events
 ```
 
 Além de:
@@ -315,13 +318,15 @@ Table Editor
 
 ### profiles
 
-Informações públicas básicas do jogador:
+Informações internas do jogador, visíveis ao próprio usuário e a RPCs administrativas autorizadas:
 
 - username;
 - display name;
 - classe;
 - nível;
 - last seen.
+
+Outros jogadores recebem somente a projeção pública mínima. O campo `access`, o personagem ativo e metadados internos não são globalmente enumeráveis.
 
 ### player_saves
 

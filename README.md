@@ -205,8 +205,13 @@ npm run validate
 Entre as proteções existentes:
 
 - Row Level Security para dados de jogadores;
+- ownership imutável de saves por personagem;
+- perfis internos isolados e identidade pública resolvida por RPC mínima;
+- MFA/AAL2 nas mutações administrativas;
+- Realtime social vinculado ao `auth.uid()` no banco;
 - configuração pública separada de segredos administrativos;
 - CSP, HSTS, `nosniff` e proteção contra framing;
+- Supabase JS versionado e servido localmente, sem CDN em runtime;
 - texto do chat tratado sem interpretação de HTML;
 - validação automatizada de arquivos e módulos;
 - testes de características, câmera, dano direcional e renderização de assets.

@@ -63,7 +63,8 @@ async function syncAccess(mp){
   const state=mp?.state;
   if(!state?.client||!state.session?.user)return;
   const {data,error}=await state.client.from('profiles').select('access').eq('id',state.session.user.id).maybeSingle();
-  if(error||!data)return;
+  if(error){console.warn('[Astraeon Account Access]',error.message);return;}
+  if(!data){console.warn('[Astraeon Account Access] perfil ausente');return;}
   const access=Number(data.access??1);currentAccess=access;
   if(state.profile)state.profile.access=access;
   setAccessBadge(access);

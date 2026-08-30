@@ -93,14 +93,14 @@ function enhanceSettings(){
 }
 
 function profileMeta(username){
-  const key=String(username||'').trim().toLowerCase();if(!key||!mpState?.client||!mpState?.session)return Promise.resolve({access:1,display_name:username,username});if(profileCache.has(key))return profileCache.get(key);
-  const pending=(async()=>{try{const {data,error}=await mpState.client.from('profiles').select('username,display_name,access').ilike('username',username).limit(1).maybeSingle();if(error||!data)return{access:1,display_name:username,username};return{access:Number(data.access)||1,display_name:String(data.display_name||data.username||username).slice(0,24),username:data.username||username};}catch(_){return{access:1,display_name:username,username};}})();profileCache.set(key,pending);return pending;
+  const key=String(username||'').trim().toLowerCase();if(!key||!mpState?.client||!mpState?.session)return Promise.resolve({is_admin:false,display_name:username,username});if(profileCache.has(key))return profileCache.get(key);
+  const pending=(async()=>{try{const {data,error}=await mpState.client.rpc('resolve_public_astraeon_profile_names',{target_usernames:[username]});const row=Array.isArray(data)?data[0]:null;if(error||!row)return{is_admin:false,display_name:username,username};return{is_admin:row.is_admin===true,display_name:String(row.display_name||row.username||username).slice(0,24),username:row.username||username};}catch(_){return{is_admin:false,display_name:username,username};}})();profileCache.set(key,pending);return pending;
 }
 async function decoratePlayerRow(row){
   if(!row||row.dataset.profileChecked==='true'||row.classList.contains('system'))return;row.dataset.profileChecked='true';const head=row.querySelector(':scope > div'),name=head?.querySelector('b');if(!head||!name)return;
   const loginName=name.textContent?.trim()||'';const meta=await profileMeta(loginName);if(!row.isConnected)return;
   const ownLogin=String(mpState?.profile?.username||'').toLowerCase(),isOwn=!!ownLogin&&ownLogin===loginName.toLowerCase();const localCharacter=isOwn?String(global.astraeon?.player?.name||'').trim():'';const displayName=(localCharacter||meta.display_name||loginName||'Viajante').slice(0,24);name.textContent=displayName;
-  if(meta.access===3&&!row.querySelector('.online-chat-adm-tag')){const tag=document.createElement('span');tag.className='online-chat-adm-tag';tag.textContent='[ADM]';head.insertBefore(tag,name);}
+  if(meta.is_admin===true&&!row.querySelector('.online-chat-adm-tag')){const tag=document.createElement('span');tag.className='online-chat-adm-tag';tag.textContent='[ADM]';head.insertBefore(tag,name);}
 }
 
 async function emitManagedJoinMessages(){

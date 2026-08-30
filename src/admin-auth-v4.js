@@ -1,6 +1,6 @@
 (function(global){
 'use strict';
-const SUPABASE_CDN='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0';
+const SUPABASE_VENDOR='src/vendor/supabase-v2.js';
 const LEGACY_ADMIN_STUDIO_60='Admin Studio 6.0';
 const LEGACY_LOGIN_CONTRACT='signInWithPassword';
 const LEGACY_ACCESS_CONTRACT='Acesso 3';
@@ -71,9 +71,8 @@ function loadSdk(){return new Promise((resolve,reject)=>{
     return;
   }
   s=document.createElement('script');
-  s.src=SUPABASE_CDN;
+  s.src=SUPABASE_VENDOR;
   s.async=true;
-  s.crossOrigin='anonymous';
   s.dataset.adminSupabase='1';
   s.onload=()=>global.supabase?.createClient?finish(resolve,global.supabase):finish(reject,new Error('supabase_sdk_failed'));
   s.onerror=()=>finish(reject,new Error('supabase_sdk_failed'));
