@@ -62,8 +62,16 @@ select
   'TEST'
 from generate_series(1,120) as scale(value);
 
+create temporary table security_test_save_timestamps as
+select character_id, updated_at
+from public.character_saves
+where character_id in (
+  '22000000-0000-4000-8000-000000000002'::uuid,
+  '44000000-0000-4000-8000-000000000004'::uuid
+);
+
 set local role anon;
-select throws_ok($$select public.claim_username('Anonymous_1')$$,'42501','anonymous role cannot execute authenticated identity RPCs');
+select throws_ok($$select public.claim_username('Anonymous_1')$$,'42501','authentication_required','anonymous role cannot execute authenticated identity RPCs');
 
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal1"}',true);
@@ -71,19 +79,20 @@ select is((select count(*) from public.character_saves where user_id='10000000-0
 select is((select count(*) from public.character_saves where user_id='20000000-0000-4000-8000-000000000002'),0::bigint,'A cannot read B save');
 select lives_ok($$insert into public.character_saves(character_id,user_id,save_data,world_seed) values('12000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','{"seed":"TEST","player":{"name":"UserA2","classId":"Mage","level":1,"x":100,"y":100,"hp":100,"maxHp":100,"mana":20,"maxMana":20,"xp":0},"gold":10,"inventory":[],"quest":{"biomes":[]}}','TEST')$$,'A inserts a valid own save');
 select lives_ok($$update public.character_saves set updated_at=now() where character_id='11000000-0000-4000-8000-000000000001'$$,'A updates own mutable save column');
+update public.character_saves set updated_at=clock_timestamp()
+where character_id='22000000-0000-4000-8000-000000000002';
+reset role;
 select is(
-  (with mutated as (
-    update public.character_saves set updated_at=now()
-     where character_id='22000000-0000-4000-8000-000000000002'
-     returning 1
-  ) select count(*) from mutated),
-  0::bigint,
+  (select updated_at from public.character_saves where character_id='22000000-0000-4000-8000-000000000002'),
+  (select updated_at from security_test_save_timestamps where character_id='22000000-0000-4000-8000-000000000002'),
   'A update against B changes no rows'
 );
-select throws_ok($$delete from public.character_saves where character_id='22000000-0000-4000-8000-000000000002'$$,'42501','A cannot delete B save');
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal1"}',true);
+select throws_ok($$delete from public.character_saves where character_id='22000000-0000-4000-8000-000000000002'$$,'42501',null,'A cannot delete B save');
 select is((select count(*) from public.profiles where id='10000000-0000-4000-8000-000000000001'),1::bigint,'A reads own internal profile');
 select is((select count(*) from public.profiles where id='20000000-0000-4000-8000-000000000002'),0::bigint,'A cannot enumerate B internal profile');
-select throws_ok($$update public.profiles set access=3 where id='10000000-0000-4000-8000-000000000001'$$,'42501','A cannot self-promote');
+select throws_ok($$update public.profiles set access=3 where id='10000000-0000-4000-8000-000000000001'$$,'42501',null,'A cannot self-promote');
 select throws_ok($$select public.admin_list_profiles()$$,'42501','admin_access_required','A cannot list admin profiles');
 select throws_ok($$select public.admin_set_access('20000000-0000-4000-8000-000000000002',3::smallint)$$,'42501','admin_access_required','A cannot change access');
 select throws_ok($$select public.admin_get_player_detail('20000000-0000-4000-8000-000000000002')$$,'42501','admin_access_required','A cannot get player detail');
@@ -98,15 +107,16 @@ select throws_ok($$update public.character_saves set user_id='20000000-0000-4000
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"40000000-0000-4000-8000-000000000004","role":"authenticated","aal":"aal1"}',true);
 select throws_ok($$insert into public.chat_messages(user_id,body) values('40000000-0000-4000-8000-000000000004','blocked')$$,'42501','online_access_required','banned chat denied');
+update public.character_saves set updated_at=clock_timestamp()
+where user_id='40000000-0000-4000-8000-000000000004';
+reset role;
 select is(
-  (with mutated as (
-    update public.character_saves set updated_at=now()
-     where user_id='40000000-0000-4000-8000-000000000004'
-     returning 1
-  ) select count(*) from mutated),
-  0::bigint,
+  (select updated_at from public.character_saves where character_id='44000000-0000-4000-8000-000000000004'),
+  (select updated_at from security_test_save_timestamps where character_id='44000000-0000-4000-8000-000000000004'),
   'banned save mutation changes no rows'
 );
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"40000000-0000-4000-8000-000000000004","role":"authenticated","aal":"aal1"}',true);
 select throws_ok($$select public.create_astraeon_character('Blocked','Warrior')$$,'42501','online_access_required','banned create denied');
 select throws_ok($$select public.set_active_astraeon_character('44000000-0000-4000-8000-000000000004')$$,'42501','online_access_required','banned active character denied');
 select throws_ok($$select public.delete_astraeon_character('44000000-0000-4000-8000-000000000004')$$,'42501','online_access_required','banned delete denied');
@@ -126,7 +136,7 @@ select lives_ok($$select public.admin_set_access('20000000-0000-4000-8000-000000
 select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal1"}',true);
 select lives_ok($$select public.publish_astraeon_player_state(100,100,1::smallint,1,floor(extract(epoch from now())*1000)::bigint)$$,'runtime state accepts authenticated owner');
 select is((select user_id from public.player_runtime_states limit 1),'10000000-0000-4000-8000-000000000001'::uuid,'runtime identity is derived from auth.uid');
-select throws_ok($$update public.character_progress set gold=999999 where user_id='10000000-0000-4000-8000-000000000001'$$,'42501','client cannot directly edit authoritative gold');
+select throws_ok($$update public.character_progress set gold=999999 where user_id='10000000-0000-4000-8000-000000000001'$$,'42501',null,'client cannot directly edit authoritative gold');
 
 select * from finish();
 rollback;
