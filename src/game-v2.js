@@ -30,6 +30,10 @@
       this.mobs = [];
       this.pickups = [];
       this.images = new Map();
+      this.imageLoads = new Map();
+      this.imageRetryAt = new Map();
+      this.classSpritePaths = new Map(Object.entries(W.CLASS_DATA).map(([id, data]) => [id, `Assets/Classes/${data.sprite}`]));
+      this.mobSpritePaths = new Map(Object.entries(W.MOB_DATA).map(([id, data]) => [id, `Assets/Mob/${data.sprite}`]));
       this.cooldowns = [0, 0, 0, 0, 0];
       this.lastBiome = null;
       this.weatherClock = 0;
@@ -204,13 +208,29 @@
     }
 
     preloadSprites() {
-      const paths = [];
-      Object.values(W.CLASS_DATA).forEach(x => paths.push(`Assets/Classes/${x.sprite}`));
-      Object.values(W.MOB_DATA).forEach(x => paths.push(`Assets/Mob/${x.sprite}`));
-      paths.forEach(src => {
-        const img = new Image(); img.src = src;
-        img.onload = () => this.images.set(src, img);
-      });
+      [...this.classSpritePaths.values(), ...this.mobSpritePaths.values()].forEach(src => this.loadSprite(src));
+    }
+
+    loadSprite(src) {
+      if (!src || this.images.has(src) || this.imageLoads.has(src)) return this.images.get(src) || null;
+      if ((this.imageRetryAt.get(src) || 0) > performance.now()) return null;
+      const img = new Image();
+      this.imageLoads.set(src, img);
+      img.onload = () => {
+        this.imageLoads.delete(src);
+        this.imageRetryAt.delete(src);
+        if (img.naturalWidth > 0 && img.naturalHeight > 0) this.images.set(src, img);
+      };
+      img.onerror = () => {
+        this.imageLoads.delete(src);
+        this.imageRetryAt.set(src, performance.now() + 1500);
+      };
+      img.src = src;
+      return null;
+    }
+
+    spriteImage(src) {
+      return this.images.get(src) || this.loadSprite(src);
     }
 
     openClassSelect() {
@@ -719,7 +739,7 @@
     drawMobs(ctx) {
       const list = this.mobs.filter(m => !m.dead && Math.abs(m.x - this.player.x) < this.viewW * .8 + 400 && Math.abs(m.y - this.player.y) < this.viewH * .8 + 400).sort((a,b) => a.y-b.y);
       for (const m of list) {
-        const d = W.MOB_DATA[m.type], src = `Assets/Mob/${d.sprite}`, img = this.images.get(src);
+        const d = W.MOB_DATA[m.type] || W.MOB_DATA.Slime, src = this.mobSpritePaths.get(m.type) || `Assets/Mob/${d.sprite}`, img = this.spriteImage(src);
         ctx.save(); ctx.translate(m.x, m.y); if (m.hit > 0) { ctx.globalAlpha = .68; ctx.scale(1.08, .92); }
         ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(0, 11, 13, 5, 0, 0, Math.PI*2); ctx.fill();
         if (img) ctx.drawImage(img, -22, -35, 44, 44); else { ctx.fillStyle = d.color; ctx.beginPath(); ctx.arc(0,-7,15,0,Math.PI*2); ctx.fill(); }
@@ -732,12 +752,12 @@
     }
 
     drawPlayer(ctx) {
-      const p = this.player, c = W.CLASS_DATA[p.classId], src = `Assets/Classes/${c.sprite}`, img = this.images.get(src);
+      const p = this.player, c = W.CLASS_DATA[p.classId], src = this.classSpritePaths.get(p.classId) || `Assets/Classes/${c.sprite}`, img = this.spriteImage(src);
       ctx.save(); ctx.translate(p.x, p.y);
       ctx.fillStyle = 'rgba(0,0,0,.33)'; ctx.beginPath(); ctx.ellipse(0, 12, 15, 5, 0, 0, Math.PI * 2); ctx.fill();
-      if (p.invuln > 0) { ctx.strokeStyle = c.color; ctx.globalAlpha = .55 + Math.sin(performance.now()*.03)*.18; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0,-8,24,0,Math.PI*2); ctx.stroke(); ctx.globalAlpha = 1; }
       if (img) { ctx.save(); if (p.facing < 0) ctx.scale(-1,1); ctx.drawImage(img, -24, -39, 48, 48); ctx.restore(); }
       else { ctx.fillStyle = c.color; ctx.beginPath(); ctx.arc(0,-8,16,0,Math.PI*2); ctx.fill(); }
+      if (p.invuln > 0) { ctx.save(); ctx.strokeStyle = c.color; ctx.globalAlpha = .72 + Math.sin(performance.now()*.03)*.18; ctx.lineWidth = 2.25; ctx.shadowBlur = 7; ctx.shadowColor = c.color; ctx.beginPath(); ctx.arc(0,-15,23.5,0,Math.PI*2); ctx.stroke(); ctx.restore(); }
       ctx.restore();
       ctx.textAlign = 'center'; ctx.font = '600 11px Inter, sans-serif'; ctx.fillStyle = '#f3f7ff'; ctx.fillText(p.name, p.x, p.y - 46);
     }
