@@ -12,7 +12,7 @@ where message_kind = 'on_join'
 
 update public.world_places
 set name = 'Astraeon'
-where place_id in ('continent_astra', 'continent_astraeon')
+where place_key in ('continent_astra', 'continent_astraeon')
   and name is distinct from 'Astraeon';
 
 commit;
