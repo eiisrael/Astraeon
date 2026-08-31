@@ -795,6 +795,8 @@
           const labelX=x+(Number(e.nx)||0)*14,labelY=y+(Number(e.ny)||0)*14-t*5;ctx.globalAlpha=Math.max(0,alpha);ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 12px Inter,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(45,4,9,.85)';ctx.strokeText(e.text,labelX,labelY);ctx.fillStyle='#ffd8d8';ctx.fillText(e.text,labelX,labelY);
         } else if (e.type === 'class-basic-attack') {
           window.AstraeonCombatEffectsV1?.draw?.(ctx, e, t);
+        } else if (e.type === 'class-skill') {
+          window.AstraeonSkillEffectsV2?.draw?.(ctx, e, t);
         } else if (e.type === 'ring' || e.type === 'nova' || e.type === 'burst' || e.type === 'shield' || e.type === 'trail') {
           ctx.lineWidth = e.type === 'nova' ? 5 : 3; const r = (e.radius || 48) * (e.type === 'shield' ? 1 : (.18 + t * .82));
           ctx.beginPath(); ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.stroke();

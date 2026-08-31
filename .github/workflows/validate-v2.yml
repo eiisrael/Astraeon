@@ -55,6 +55,7 @@ jobs:
           node --check src/menu-cinematic-v62.js
           node --check src/account-status-v4.js
           node --check src/skills-catalog-v1.js
+          node --check src/skill-effects-v2.js
           node --check src/skills-v1.js
           node scripts/test_skills_v1.mjs
           node scripts/test_entity_collision_v1.mjs

@@ -1,7 +1,7 @@
 -- Skill domains, economy and ownership contracts. Runs only on disposable test DB.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(15);
+select plan(18);
 
 select is((select count(*) from public.skill_catalog),100::bigint,'catalog has 100 skills');
 select is((select count(distinct domain_code) from public.skill_catalog where class_id='Warrior'),2::bigint,'each class exposes two domains');
@@ -11,11 +11,26 @@ insert into auth.users(id,instance_id,aud,role,email,encrypted_password,email_co
 values
 ('51000000-0000-4000-8000-000000000001','00000000-0000-0000-0000-000000000000','authenticated','authenticated','skills-a@example.invalid','',now(),'{}','{}',now(),now()),
 ('52000000-0000-4000-8000-000000000002','00000000-0000-0000-8000-000000000000','authenticated','authenticated','skills-b@example.invalid','',now(),'{}','{}',now(),now()),
-('53000000-0000-4000-8000-000000000003','00000000-0000-0000-0000-000000000000','authenticated','authenticated','skills-admin@example.invalid','',now(),'{}','{}',now(),now());
+('53000000-0000-4000-8000-000000000003','00000000-0000-0000-0000-000000000000','authenticated','authenticated','skills-admin@example.invalid','',now(),'{}','{}',now(),now()),
+('61000000-0000-4000-8000-000000000001','00000000-0000-0000-0000-000000000000','authenticated','authenticated','skills-warrior-all@example.invalid','',now(),'{}','{}',now(),now()),
+('62000000-0000-4000-8000-000000000002','00000000-0000-0000-0000-000000000000','authenticated','authenticated','skills-mage-all@example.invalid','',now(),'{}','{}',now(),now()),
+('63000000-0000-4000-8000-000000000003','00000000-0000-0000-0000-000000000000','authenticated','authenticated','skills-archer-all@example.invalid','',now(),'{}','{}',now(),now()),
+('64000000-0000-4000-8000-000000000004','00000000-0000-0000-0000-000000000000','authenticated','authenticated','skills-assassin-all@example.invalid','',now(),'{}','{}',now(),now()),
+('65000000-0000-4000-8000-000000000005','00000000-0000-0000-0000-000000000000','authenticated','authenticated','skills-paladine-all@example.invalid','',now(),'{}','{}',now(),now());
 update public.profiles set access=3 where id='53000000-0000-4000-8000-000000000003';
 insert into public.characters(id,user_id,slot,name,class_id,level) values
 ('51100000-0000-4000-8000-000000000001','51000000-0000-4000-8000-000000000001',1,'SkillA','Warrior',1),
-('52200000-0000-4000-8000-000000000002','52000000-0000-4000-8000-000000000002',1,'SkillB','Assassin',60);
+('52200000-0000-4000-8000-000000000002','52000000-0000-4000-8000-000000000002',1,'SkillB','Assassin',60),
+('61100000-0000-4000-8000-000000000001','61000000-0000-4000-8000-000000000001',1,'AllWarrior','Warrior',60),
+('62200000-0000-4000-8000-000000000002','62000000-0000-4000-8000-000000000002',1,'AllMage','Mage',60),
+('63300000-0000-4000-8000-000000000003','63000000-0000-4000-8000-000000000003',1,'AllArcher','Archer',60),
+('64400000-0000-4000-8000-000000000004','64000000-0000-4000-8000-000000000004',1,'AllAssassin','Assassin',60),
+('65500000-0000-4000-8000-000000000005','65000000-0000-4000-8000-000000000005',1,'AllPaladine','Paladine',60);
+update public.character_progress set gold=10000000 where character_id in (
+ '61100000-0000-4000-8000-000000000001','62200000-0000-4000-8000-000000000002',
+ '63300000-0000-4000-8000-000000000003','64400000-0000-4000-8000-000000000004',
+ '65500000-0000-4000-8000-000000000005'
+);
 
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"51000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal1"}',true);
@@ -45,5 +60,38 @@ select is((select gold from public.character_progress where character_id='522000
 
 select set_config('request.jwt.claims','{"sub":"53000000-0000-4000-8000-000000000003","role":"authenticated","aal":"aal2"}',true);
 select lives_ok($$select public.admin_unlock_all_astraeon_skills('51100000-0000-4000-8000-000000000001')$$,'MFA admin can unlock all class skills');
+
+reset role;
+set local role authenticated;
+select lives_ok($purchase_all$
+do $body$
+declare actor record; selected_skill record;
+begin
+  for actor in select * from (values
+    ('61000000-0000-4000-8000-000000000001'::uuid,'61100000-0000-4000-8000-000000000001'::uuid,'Warrior'::text),
+    ('62000000-0000-4000-8000-000000000002'::uuid,'62200000-0000-4000-8000-000000000002'::uuid,'Mage'::text),
+    ('63000000-0000-4000-8000-000000000003'::uuid,'63300000-0000-4000-8000-000000000003'::uuid,'Archer'::text),
+    ('64000000-0000-4000-8000-000000000004'::uuid,'64400000-0000-4000-8000-000000000004'::uuid,'Assassin'::text),
+    ('65000000-0000-4000-8000-000000000005'::uuid,'65500000-0000-4000-8000-000000000005'::uuid,'Paladine'::text)
+  ) as rows(user_id,character_id,class_id)
+  loop
+    perform set_config('request.jwt.claims',jsonb_build_object('sub',actor.user_id,'role','authenticated','aal','aal1')::text,true);
+    for selected_skill in select skill_id from public.skill_catalog where class_id=actor.class_id order by domain_code,tier
+    loop
+      perform public.purchase_astraeon_skill(actor.character_id,selected_skill.skill_id);
+    end loop;
+  end loop;
+end
+$body$;
+$purchase_all$,'all five classes can purchase all twenty skills through the authoritative RPC');
+reset role;
+select is((select count(*) from public.character_skills where character_id in (
+ '61100000-0000-4000-8000-000000000001','62200000-0000-4000-8000-000000000002',
+ '63300000-0000-4000-8000-000000000003','64400000-0000-4000-8000-000000000004',
+ '65500000-0000-4000-8000-000000000005')),100::bigint,'all class purchase paths learn exactly one hundred skills');
+select is((select sum(gold) from public.character_progress where character_id in (
+ '61100000-0000-4000-8000-000000000001','62200000-0000-4000-8000-000000000002',
+ '63300000-0000-4000-8000-000000000003','64400000-0000-4000-8000-000000000004',
+ '65500000-0000-4000-8000-000000000005')),0::numeric,'both ultimate purchases deduct ten million gold per class');
 select * from finish();
 rollback;

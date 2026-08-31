@@ -35,6 +35,7 @@ O código atual possui prioridade sobre memória antiga.
 
 ## Decisões
 - Cada classe possui dois domínios, dez skills por domínio e recebe três pontos de skill por nível, inclusive no nível 1.
+- As 100 skills possuem receitas mecânicas, descrições e assinaturas visuais exclusivas; as duas skills de tier 10 de cada classe disparam cinematics próprias do domínio.
 - Custos por domínio: 1, 2, 3, 4, 5, 6, 8, 10, 13 e 18 pontos; requisitos: níveis 1, 3, 6, 10, 15, 21, 28, 36, 45 e 60.
 - A décima skill exige as nove anteriores do mesmo domínio e 5.000.000 de ouro autoritativo.
 - H abre somente o grimório pessoal; nele, skills aprendidas são arrastadas ao HUD 1–5. Ao interagir com Maeron, o grimório abre à esquerda e a loja do Mestre à direita; compra e desbloqueio existem somente nessa loja.
