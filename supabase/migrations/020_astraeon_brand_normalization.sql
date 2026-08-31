@@ -7,7 +7,7 @@ where item_id = 'astral_core'
 
 update public.system_messages
 set body = 'Você entrou no mundo online de Astraeon.'
-where kind = 'on_join'
+where message_kind = 'on_join'
   and body is distinct from 'Você entrou no mundo online de Astraeon.';
 
 update public.world_places
