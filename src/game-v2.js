@@ -509,6 +509,14 @@
       this.toast('Você foi resgatado pelo Santuário Astral.');
     }
 
+    basicAttackEffect(aim) {
+      const p = this.player, color = W.CLASS_DATA[p.classId]?.color || '#ffffff';
+      return window.AstraeonCombatEffectsV1?.create?.(p, aim, color) || {
+        type: p.range > 100 ? 'projectile' : 'slash', x: p.x, y: p.y,
+        tx: aim.x, ty: aim.y, life: .22, max: .22, color
+      };
+    }
+
     basicAttack() {
       if (!this.running || this.paused || this.player.attackCd > 0) return;
       window.AstraeonProductionV6?.activity?.();
@@ -516,14 +524,14 @@
       let target = this.closestMobTo(this.mouse.worldX, this.mouse.worldY, 70);
       if (!target) target = this.closestMobTo(p.x, p.y, p.range);
       if (!target || W.dist(p.x, p.y, target.x, target.y) > p.range) {
-        this.effects.push({ type: 'slash', x: this.mouse.worldX, y: this.mouse.worldY, life: .16, max: .16, color: '#b8d9ff' });
+        this.effects.push(this.basicAttackEffect({ x: this.mouse.worldX, y: this.mouse.worldY }));
         p.attackCd = .22; return;
       }
       p.attackCd = .48;
       const crit = Math.random() < p.crit;
       const dmg = Math.round(p.power * (.82 + Math.random() * .36) * (crit ? 1.75 : 1));
       this.hitMob(target, dmg, crit);
-      this.effects.push({ type: p.range > 100 ? 'projectile' : 'slash', x: p.x, y: p.y, tx: target.x, ty: target.y, life: .22, max: .22, color: W.CLASS_DATA[p.classId].color });
+      this.effects.push(this.basicAttackEffect(target));
       this.beep(crit ? 540 : 340, .035, .02);
     }
 
@@ -785,6 +793,8 @@
           ctx.globalAlpha = Math.max(0, alpha);
           ctx.save();ctx.translate(x,y);ctx.rotate(e.angle || 0);ctx.strokeStyle=e.color;ctx.lineWidth=4.5;ctx.lineCap='round';ctx.shadowBlur=12;ctx.shadowColor=e.color;ctx.beginPath();ctx.arc(0,0,17,-1.05,1.05);ctx.stroke();ctx.lineWidth=1.5;ctx.globalAlpha*=.55;ctx.beginPath();ctx.arc(0,0,23,-.82,.82);ctx.stroke();ctx.restore();
           const labelX=x+(Number(e.nx)||0)*14,labelY=y+(Number(e.ny)||0)*14-t*5;ctx.globalAlpha=Math.max(0,alpha);ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 12px Inter,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(45,4,9,.85)';ctx.strokeText(e.text,labelX,labelY);ctx.fillStyle='#ffd8d8';ctx.fillText(e.text,labelX,labelY);
+        } else if (e.type === 'class-basic-attack') {
+          window.AstraeonCombatEffectsV1?.draw?.(ctx, e, t);
         } else if (e.type === 'ring' || e.type === 'nova' || e.type === 'burst' || e.type === 'shield' || e.type === 'trail') {
           ctx.lineWidth = e.type === 'nova' ? 5 : 3; const r = (e.radius || 48) * (e.type === 'shield' ? 1 : (.18 + t * .82));
           ctx.beginPath(); ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.stroke();
