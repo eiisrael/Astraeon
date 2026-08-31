@@ -146,7 +146,7 @@
     if(originalAddMob)game.addMob=function(type,x,y,...rest){if(cityAtPixel(x,y))return null;return originalAddMob(type,x,y,...rest);};
 
     const originalStart=game.startNew.bind(game);
-    game.startNew=function(){originalStart();decorate(this.world);pruneCityMobs(this);this.toast?.('Astralum e as cidades de Astra foram abertas.');};
+    game.startNew=function(){originalStart();decorate(this.world);pruneCityMobs(this);this.toast?.('Astralum e as cidades de Astraeon foram abertas.');};
     const originalContinue=game.continueGame.bind(game);
     game.continueGame=function(){originalContinue();if(this.world){decorate(this.world);pruneCityMobs(this);}};
 

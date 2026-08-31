@@ -177,7 +177,7 @@ insert into public.item_configs(item_id,name,item_type,slot,rarity,allowed_class
 ('umbria_ring','Selo de Umbria','equipment','ring','epic',array['Warrior','Mage','Archer','Assassin','Paladine'],'Recompensa precisão e risco.','◌','{"power":3,"crit":0.035}'::jsonb),
 ('climate_talisman','Talismã Climático','equipment','amulet','rare',array['Warrior','Mage','Archer','Assassin','Paladine'],'Equilibra energia em condições hostis.','◇','{"maxHp":18,"maxMana":10,"defense":2,"healPct":5,"manaPct":5}'::jsonb),
 ('convergence_amulet','Amuleto da Convergência','equipment','amulet','epic',array['Warrior','Mage','Archer','Assassin','Paladine'],'Condensa ecos de vários biomas.','◇','{"power":3,"defense":2,"maxMana":16,"healPct":8,"manaPct":8}'::jsonb),
-('astral_core','Núcleo de Astra','equipment','relic','legendary',array['Warrior','Mage','Archer','Assassin','Paladine'],'Relíquia da Convergência.','✧','{"power":8,"defense":4,"maxHp":30,"maxMana":20,"strength":4,"magic":4,"dexterity":4,"healPct":12,"manaPct":12}'::jsonb),
+('astral_core','Núcleo de Astraeon','equipment','relic','legendary',array['Warrior','Mage','Archer','Assassin','Paladine'],'Relíquia da Convergência.','✧','{"power":8,"defense":4,"maxHp":30,"maxMana":20,"strength":4,"magic":4,"dexterity":4,"healPct":12,"manaPct":12}'::jsonb),
 ('red_potion','Poção Rubra','consumable',null,'common',array[]::text[],'Restaura vida.','♥','{"heal":45,"healPct":0}'::jsonb),
 ('blue_potion','Poção de Éter','consumable',null,'uncommon',array[]::text[],'Restaura mana.','✦','{"mana":55,"manaPct":0}'::jsonb),
 ('astral_fragment','Fragmento Astral','material',null,'uncommon',array[]::text[],'Matéria condensada para artesanato.','◆','{}'::jsonb),

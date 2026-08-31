@@ -303,7 +303,7 @@ class AstraeonEditor{
   regenerateSeed(){const next=(this.ui.seed.value||'ASTRAEON-2').trim();if(next===this.design.seed)return;this.undoStack.push(this.snapshot());this.design.seed=next;this.redoStack=[];this.commitEdit('Semente alterada');this.notify('Mundo procedural regenerado.');}
   newMap(){
     if((this.exportDirty||this.dirty)&&!confirm('Criar um novo mundo? As alterações atuais já estão no autosave local, mas podem não ter sido exportadas.'))return;
-    this.undoStack.push(this.snapshot());this.design=W.makeDefaultDesign(`ASTRA-${Math.random().toString(36).slice(2,7).toUpperCase()}`);this.design.overrides={};this.design.spawns=[];this.ui.seed.value=this.design.seed;this.redoStack=[];this.rebuild();this.markDirty();this.fitWorld();this.addHistory('Novo mapa');this.refreshAll();
+    this.undoStack.push(this.snapshot());this.design=W.makeDefaultDesign(`ASTRAEON-${Math.random().toString(36).slice(2,7).toUpperCase()}`);this.design.overrides={};this.design.spawns=[];this.ui.seed.value=this.design.seed;this.redoStack=[];this.rebuild();this.markDirty();this.fitWorld();this.addHistory('Novo mapa');this.refreshAll();
   }
 
   clearSpawns(){if(!this.design.spawns.length){this.notify('Não existem spawns manuais.');return;}if(!confirm(`Remover ${this.design.spawns.length} spawn(s) manuais?`))return;this.undoStack.push(this.snapshot());this.design.spawns=[];this.selected=null;this.redoStack=[];this.commitEdit('Spawns removidos');}

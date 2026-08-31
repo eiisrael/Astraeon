@@ -236,7 +236,7 @@
 
     openClassSelect() {
       this.showOnly(this.ui.classScreen);
-      this.ui.seed.value = `ASTRA-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+      this.ui.seed.value = `ASTRAEON-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
     }
 
     startNew() {
@@ -511,6 +511,7 @@
 
     basicAttack() {
       if (!this.running || this.paused || this.player.attackCd > 0) return;
+      window.AstraeonProductionV6?.activity?.();
       const p = this.player;
       let target = this.closestMobTo(this.mouse.worldX, this.mouse.worldY, 70);
       if (!target) target = this.closestMobTo(p.x, p.y, p.range);
@@ -530,6 +531,7 @@
       if (!this.running || this.paused || this.cooldowns[index] > 0) return;
       const p = this.player, costs = [10, 20, 18, 24, 42], cds = [2.2, 5, 7, 7.5, 13];
       if (p.mana < costs[index]) { this.toast('Mana insuficiente.'); return; }
+      window.AstraeonProductionV6?.activity?.();
       p.mana -= costs[index]; this.cooldowns[index] = cds[index];
       const c = W.CLASS_DATA[p.classId];
       if (index === 0) {
@@ -586,8 +588,8 @@
       if (Math.random() < .18) this.pickups.push({ type: 'loot', x: m.x + 9, y: m.y - 5, value: this.rollLoot(m), life: 22 });
       this.effects.push({ type: 'burst', x: m.x, y: m.y, life: .5, max: .5, color: W.BIOMES[m.biome].accent, radius: 46 });
       if (!this.quest.reward && this.quest.kills >= this.quest.goal && this.quest.biomes.size >= 3) {
-        this.quest.reward = true; this.gold += 120; this.inventory.push({ name: 'Núcleo de Astra', rarity: 'legendary', type: 'Artefato', power: 12 });
-        this.toast('Missão concluída · +120 ouro · Núcleo de Astra');
+        this.quest.reward = true; this.gold += 120; this.inventory.push({ name: 'Núcleo de Astraeon', rarity: 'legendary', type: 'Artefato', power: 12 });
+        this.toast('Missão concluída · +120 ouro · Núcleo de Astraeon');
       }
     }
 

@@ -41,7 +41,7 @@
     umbria_ring: { id:'umbria_ring', name:'Selo de Umbria', type:'equipment', slot:'ring', rarity:'epic', icon:'◌', description:'Um anel escuro que recompensa precisão e risco.', stats:{power:3,crit:.035} },
     climate_talisman: { id:'climate_talisman', name:'Talismã Climático', type:'equipment', slot:'amulet', rarity:'rare', icon:'◇', description:'Equilibra a energia do corpo em condições hostis.', stats:{maxHp:18,maxMana:10,defense:2} },
     convergence_amulet: { id:'convergence_amulet', name:'Amuleto da Convergência', type:'equipment', slot:'amulet', rarity:'epic', icon:'◇', description:'Condensa ecos de vários biomas em um único foco.', stats:{power:3,defense:2,maxMana:16} },
-    astral_core: { id:'astral_core', name:'Núcleo de Astra', type:'equipment', slot:'relic', rarity:'legendary', icon:'✧', description:'Relíquia da Convergência. Vibra com a energia do continente.', stats:{power:8,defense:4,maxHp:30,maxMana:20} },
+    astral_core: { id:'astral_core', name:'Núcleo de Astraeon', type:'equipment', slot:'relic', rarity:'legendary', icon:'✧', description:'Relíquia da Convergência. Vibra com a energia do continente.', stats:{power:8,defense:4,maxHp:30,maxMana:20} },
     red_potion: { id:'red_potion', name:'Poção Rubra', type:'consumable', rarity:'common', icon:'♥', description:'Restaura 45 de vida.', heal:45, stackable:true },
     blue_potion: { id:'blue_potion', name:'Poção de Éter', type:'consumable', rarity:'uncommon', icon:'✦', description:'Restaura 55 de mana.', mana:55, stackable:true },
     astral_fragment: { id:'astral_fragment', name:'Fragmento Astral', type:'material', rarity:'uncommon', icon:'◆', description:'Matéria condensada usada por artesãos da Convergência.', stackable:true },

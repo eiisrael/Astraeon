@@ -206,7 +206,7 @@ O login usa `signInWithPassword()`. A sessão fica persistida pelo Supabase Clie
 Durante a partida:
 
 ```text
-Enter = abrir/focar o Chat de Astra
+Enter = abrir/focar o Chat
 ```
 
 Também existe um botão de chat no HUD.
@@ -219,7 +219,7 @@ Existe botão **Chat** junto aos controles touch. O painel expande e pode ser re
 
 ### Transparência
 
-No ícone de engrenagem do Chat de Astra existe o controle de transparência. O valor é salvo no navegador em:
+No ícone de engrenagem do Chat existe o controle de transparência. O valor é salvo no navegador em:
 
 ```text
 astraeon:v4:chat-opacity

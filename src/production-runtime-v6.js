@@ -3,7 +3,7 @@
 const W=global.AstraeonWorld;
 const $=s=>document.querySelector(s);
 const imageCache=new Map();
-const state={installed:false,design:null,itemTimer:null,lastActivity:performance.now(),idle:false,zPhase:0};
+const state={installed:false,design:null,itemTimer:null,lastActivity:performance.now(),idle:false,zPhase:0,playerX:null,playerY:null};
 const ENTITY_RADIUS={player:12,mob:12,npc:11};
 function mp(){return global.AstraeonMultiplayerV4?.state||null;}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
@@ -46,11 +46,12 @@ async function refreshItems(){const s=mp(),A=global.AstraeonItems;if(!s?.client|
 function installItemEnhancements(game){if(game.itemV6Installed)return;game.itemV6Installed=true;const originalStats=game.itemStatsText?.bind(game);if(originalStats)game.itemStatsText=function(item){const parts=originalStats(item),labels={strength:'Força',magic:'Magia',dexterity:'Destreza',heal:'Cura',mana:'Mana',healPct:'Aumento de cura',manaPct:'Aumento de mana'};for(const [k,v] of Object.entries(item?.stats||{})){if(!v||!labels[k])continue;const suffix=k.endsWith('Pct')?'%':'';parts.push(`${labels[k]} +${v}${suffix}`);}return Array.from(new Set(parts));};const originalUse=game.useInventoryItem?.bind(game);if(originalUse)game.useInventoryItem=function(index){const item=this.inventory?.[index],stats=item?.stats||{};if(item?.type==='consumable'){if(Number(stats.healPct)>0&&this.player.hp<this.player.maxHp)item.heal=Math.max(Number(item.heal)||0,Math.round(this.player.maxHp*Number(stats.healPct)/100));if(Number(stats.manaPct)>0&&this.player.mana<this.player.maxMana)item.mana=Math.max(Number(item.mana)||0,Math.round(this.player.maxMana*Number(stats.manaPct)/100));}return originalUse(index);};void refreshItems();state.itemTimer=setInterval(refreshItems,30000);}
 
 function activity(){state.lastActivity=performance.now();if(state.idle)state.idle=false;}
-function drawIdleZ(ctx,p){const elapsed=(performance.now()-state.lastActivity)/1000;if(elapsed<60)return;state.idle=true;const t=performance.now()/1000;ctx.save();ctx.textAlign='center';ctx.font='700 12px Georgia,serif';for(let i=0;i<4;i++){const phase=(t*.55+i*.23)%1,alpha=Math.sin(Math.PI*phase)*.72,x=p.x+27+Math.sin(t*1.4+i)*5,y=p.y-48-phase*38-i*2,scale=.75+phase*.45;ctx.globalAlpha=alpha;ctx.fillStyle='#f4f7fb';ctx.shadowBlur=7;ctx.shadowColor='rgba(255,255,255,.35)';ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.rotate(Math.sin(t+i)*.12);ctx.fillText(i%2?'z':'Z',0,0);ctx.restore();}ctx.restore();}
-function installIdle(game){if(game.idleV6Installed)return;game.idleV6Installed=true;['keydown','pointerdown','pointermove','touchstart','wheel'].forEach(type=>global.addEventListener(type,activity,{passive:true,capture:true}));const original=game.drawPlayer.bind(game);game.drawPlayer=function(ctx){const result=original(ctx);if(this.player)drawIdleZ(ctx,this.player);return result;};}
+function playerMoved(p){const x=Number(p?.x),y=Number(p?.y),tracked=Number.isFinite(state.playerX)&&Number.isFinite(state.playerY),moved=tracked&&Math.hypot(x-state.playerX,y-state.playerY)>.05;state.playerX=x;state.playerY=y;if(moved)activity();return moved;}
+function drawIdleZ(ctx,p){if(playerMoved(p))return;const elapsed=(performance.now()-state.lastActivity)/1000;if(elapsed<60)return;state.idle=true;const t=performance.now()/1000;ctx.save();ctx.textAlign='center';ctx.font='700 12px Georgia,serif';for(let i=0;i<4;i++){const phase=(t*.55+i*.23)%1,alpha=Math.sin(Math.PI*phase)*.72,x=p.x+27+Math.sin(t*1.4+i)*5,y=p.y-48-phase*38-i*2,scale=.75+phase*.45;ctx.globalAlpha=alpha;ctx.fillStyle='#f4f7fb';ctx.shadowBlur=7;ctx.shadowColor='rgba(255,255,255,.35)';ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.rotate(Math.sin(t+i)*.12);ctx.fillText(i%2?'z':'Z',0,0);ctx.restore();}ctx.restore();}
+function installIdle(game){if(game.idleV6Installed)return;game.idleV6Installed=true;global.addEventListener('keydown',activity,{passive:true,capture:true});const original=game.drawPlayer.bind(game);game.drawPlayer=function(ctx){const result=original(ctx);if(this.player)drawIdleZ(ctx,this.player);return result;};}
 
 function install(){const game=global.astraeon;if(state.installed||!game||!W)return;state.installed=true;installWorldRules(game);installItemEnhancements(game);installIdle(game);}
 function wait(){if(global.astraeon&&W)install();else setTimeout(wait,80);}
 if(document.readyState==='loading')global.addEventListener('DOMContentLoaded',wait);else wait();
-global.AstraeonProductionV6={state,refreshDesign,refreshItems,insideZone,mobForbidden};
+global.AstraeonProductionV6={state,refreshDesign,refreshItems,insideZone,mobForbidden,activity,playerMoved};
 })(window);

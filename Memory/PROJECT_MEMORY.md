@@ -39,6 +39,9 @@ O código atual possui prioridade sobre memória antiga.
 - A décima skill exige as nove anteriores do mesmo domínio e 5.000.000 de ouro autoritativo.
 - H abre somente o grimório pessoal; nele, skills aprendidas são arrastadas ao HUD 1–5. Ao interagir com Maeron, o grimório abre à esquerda e a loja do Mestre à direita; compra e desbloqueio existem somente nessa loja.
 - O chat tem prioridade absoluta sobre atalhos: enquanto estiver aberto, focado ou contiver texto, nenhuma tecla de painel pode abrir overlays do jogo.
+- O chat é identificado na interface apenas como `Chat`.
+- O efeito de ausência termina somente com movimento real do personagem, ataque, uso de habilidade ou tecla; mover o ponteiro do mouse não conta como atividade.
+- Todo nome visível do mundo usa `Astraeon`; a forma isolada `Astra` é nomenclatura legada e não deve retornar.
 - Os painéis de skill do jogador e do Mestre compartilham dimensões compactas de referência (380×620 px); os tiles desktop medem 30×30 px e dependem do tooltip para detalhes.
 - `!allskill` é exclusivo de administrador com MFA/AAL2 e libera somente as skills da classe ativa.
 - Até nova decisão do usuário, Maeron em Astralum é o único NPC ativo.

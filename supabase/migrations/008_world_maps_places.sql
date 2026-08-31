@@ -62,7 +62,7 @@ for each row execute function public.set_updated_at();
 
 with m as (select id from public.world_maps where map_key='map1' limit 1),
 seed(place_key,place_type,name,subtitle,biome_id,x,y,radius,accent) as (values
-  ('continent_astra','continent','Astra','Continente vivo da Convergência',null,null,null,null,'#d7b86b'),
+  ('continent_astraeon','continent','Astraeon','Continente vivo da Convergência',null,null,null,null,'#d7b86b'),
   ('area_forest','area','Bosque de Lúmen','Temperado úmido','forest',null,null,null,'#89d69a'),
   ('area_steppe','area','Ermos de Solvar','Árido e quente','steppe',null,null,null,'#ffc76c'),
   ('area_frost','area','Véu de Nivora','Glacial','frost',null,null,null,'#baf4ff'),

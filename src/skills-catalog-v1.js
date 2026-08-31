@@ -26,7 +26,7 @@ const RAW={
  ],
  Mage:[
   ['arcano','Domínio do Arcano','Precisão mística, controle espacial e mana.','#7caeff',[
-   ['Dardo de Éter','projectile'],['Selo de Gravidade','trap'],['Passo do Vazio','dash'],['Égide Rúnica','shield'],['Lança Astral','projectile'],['Prisão de Mana','area'],['Dobra Espacial','dash'],['Sobrecarga Arcana','buff'],['Colapso Etéreo','execute'],['Singularidade de Astra','ultimate']]],
+   ['Dardo de Éter','projectile'],['Selo de Gravidade','trap'],['Passo do Vazio','dash'],['Égide Rúnica','shield'],['Lança Astral','projectile'],['Prisão de Mana','area'],['Dobra Espacial','dash'],['Sobrecarga Arcana','buff'],['Colapso Etéreo','execute'],['Singularidade de Astraeon','ultimate']]],
   ['elemental','Domínio Elemental','Fogo, gelo e tempestades de grande alcance.','#71d6e8',[
    ['Centelha Ígnea','projectile'],['Círculo de Geada','area'],['Salto Trovejante','dash'],['Manto de Gelo','shield'],['Lança de Chamas','projectile'],['Tempestade Prismática','nova'],['Coração da Tormenta','buff'],['Zero Absoluto','trap'],['Meteorito Ancestral','execute'],['Cataclismo Elemental','ultimate']]]
  ],
@@ -34,7 +34,7 @@ const RAW={
   ['cacada','Domínio da Caçada','Precisão, perseguição e golpes contra alvos isolados.','#87d887',[
    ['Flecha Marcadora','projectile'],['Passo do Rastreador','dash'],['Armadilha Serrilhada','trap'],['Camuflagem de Folha','shield'],['Tiro Perfurante','projectile'],['Olho do Predador','buff'],['Rajada Caçadora','strike'],['Cerco Silencioso','trap'],['Abate Implacável','execute'],['Caçada da Lua Rubra','ultimate']]],
   ['tempestade','Domínio da Tempestade','Mobilidade e chuva de projéteis em área.','#69c7d2',[
-   ['Flecha de Vento','projectile'],['Recuo Aéreo','dash'],['Círculo de Plumas','area'],['Brisa Restauradora','heal'],['Rajada Ciclônica','projectile'],['Passos do Vendaval','buff'],['Nuvem de Setas','nova'],['Olho do Furacão','shield'],['Trovão Perfurante','execute'],['Monção de Astra','ultimate']]]
+   ['Flecha de Vento','projectile'],['Recuo Aéreo','dash'],['Círculo de Plumas','area'],['Brisa Restauradora','heal'],['Rajada Ciclônica','projectile'],['Passos do Vendaval','buff'],['Nuvem de Setas','nova'],['Olho do Furacão','shield'],['Trovão Perfurante','execute'],['Monção de Astraeon','ultimate']]]
  ],
  Assassin:[
   ['sangue','Domínio de Sangue','Drenagem, feridas críticas e execução.','#f05d72',[

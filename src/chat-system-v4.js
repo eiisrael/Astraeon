@@ -5,7 +5,7 @@ const BUBBLE_MS=1500;
 const EMPTY_IDLE_MS=5000;
 const SYSTEM_REFRESH_MS=60000;
 const SYSTEM_TICK_MS=1000;
-const CONNECT_NOTICE='Você entrou no mundo online de Astra.';
+const CONNECT_NOTICE='Você entrou no mundo online de Astraeon.';
 const STAMINA_MAX_FALLBACK=100;
 const STAMINA_DRAIN_FALLBACK=24;
 const STAMINA_REGEN_FALLBACK=19;
@@ -42,7 +42,7 @@ function clearChatView(){const box=$('#onlineChatMessages');if(!box)return;box.i
 function exportChat(){
   const rows=Array.from(document.querySelectorAll('#onlineChatMessages .online-chat-line'));
   const lines=rows.map(row=>{const time=row.querySelector('time')?.textContent?.trim()||'--:--';const name=row.querySelector('b')?.textContent?.trim()||'Sistema';const adm=row.querySelector('.online-chat-adm-tag')?'[ADM] ':'';const body=textOfRow(row);return `[${time}] ${adm}${name}: ${body}`;});
-  const blob=new Blob([lines.join('\n')||'Chat de Astra sem mensagens visíveis.'],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');const stamp=new Date().toISOString().replace(/[:.]/g,'-');a.href=url;a.download=`astraeon-chat-${stamp}.txt`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  const blob=new Blob([lines.join('\n')||'Chat sem mensagens visíveis.'],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');const stamp=new Date().toISOString().replace(/[:.]/g,'-');a.href=url;a.download=`astraeon-chat-${stamp}.txt`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
 function setCollapsed(chat,collapsed,{focus=false}={}){

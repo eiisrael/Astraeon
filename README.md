@@ -33,7 +33,7 @@
 
 A camada online usa **Supabase** para autenticação, saves e presença multiplayer, enquanto a aplicação e suas funções web podem ser publicadas na **Vercel**.
 
-> *Astra foi fragmentada. Florestas antigas, desertos solares, terras glaciais, pântanos sombrios e montanhas vulcânicas agora coexistem no mesmo continente. No centro da ruptura, a Convergência aguarda novos viajantes.*
+> *O mundo de Astraeon foi fragmentado. Florestas antigas, desertos solares, terras glaciais, pântanos sombrios e montanhas vulcânicas agora coexistem no mesmo continente. No centro da ruptura, a Convergência aguarda novos viajantes.*
 
 ### O que já existe no jogo
 
@@ -88,7 +88,7 @@ No mobile, controles touch oferecem movimentação, corrida, ataque, habilidades
 
 ---
 
-## Terras de Astra
+## Terras de Astraeon
 
 - 🌲 **Bosque de Lúmen** — árvores monumentais e clareiras luminescentes;
 - ☀️ **Ermos de Solvar** — planícies, ravinas e pedras queimadas;
@@ -239,7 +239,7 @@ Astraeon/
 │   ├── inventory-v*.js            # inventário e equipamentos
 │   ├── characteristics-v1.js      # distribuição de atributos
 │   ├── multiplayer-v4.js          # presença e persistência online
-│   ├── chat-system-v4.js          # Chat de Astra
+│   ├── chat-system-v4.js          # Chat
 │   ├── panel-studio-*.js           # runtime dos painéis
 │   └── admin-*.js                  # módulos administrativos
 ├── supabase/migrations/            # schema, RLS e recursos online
