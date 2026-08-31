@@ -29,4 +29,7 @@ assert.match(runtime,/function openPlayer\(\)/,'tecla H abre o grimório pessoal
 assert.match(runtime,/function openMerchant\(\)/,'NPC abre a loja do Mestre');
 assert.match(runtime,/onSkillPointerMove/,'equipamento suporta arraste por ponteiro');
 assert.match(runtime,/\.skill-loadout-slot/,'arraste termina nos slots do HUD');
+assert.match(runtime,/skills-master-workspace/,'interação com o Mestre usa workspace duplo');
+assert.ok(runtime.indexOf('skills-companion-card')<runtime.indexOf('skills-merchant-card'),'grimório aparece antes e à esquerda da loja');
+assert.match(runtime,/merchant-skill-grid/,'loja possui grade própria de skills');
 console.log('ASTRAEON SKILLS V1 catalog and balance validation OK');

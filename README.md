@@ -42,7 +42,7 @@ A camada online usa **Supabase** para autenticação, saves e presença multipla
 | 🌍 **Mundo procedural** | Continente de 96 × 96 tiles, cinco biomas, clima e ciclo visual |
 | ⚔️ **Combate responsivo** | Ataques, habilidades, crítico, mana, fôlego, efeitos direcionais e zoom suave |
 | 🧬 **Progressão** | Níveis, pontos de características e evolução de atributos |
-| ✦ **Domínios de habilidades** | Loja exclusiva do Mestre, grimório pessoal e loadout de cinco slots por arrastar e soltar |
+| ✦ **Domínios de habilidades** | Grimório pessoal no `H`; ao visitar o Mestre, grimório e loja abrem lado a lado com loadout por arraste |
 | 🎒 **Inventário** | Equipamentos, raridades, slots padronizados, mochila e drag-and-drop |
 | 🏙️ **Mundo vivo** | Cidades, áreas seguras, comerciantes e NPCs contextuais |
 | 👥 **Online social** | Conta, save em nuvem, presença, movimento remoto e chat mundial |
