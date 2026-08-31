@@ -84,6 +84,7 @@
 
     bindInput() {
       window.addEventListener('keydown', (e) => {
+        if (window.AstraeonInputGuardV1?.blocksPanelHotkeys(e)) return;
         const key = e.key.toLowerCase();
         this.keys.add(key);
         if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(key)) e.preventDefault();

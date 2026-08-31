@@ -217,6 +217,7 @@
     $('#characteristicsReset')?.addEventListener('click', () => { state.draft = clone(game()?.characteristics || M.EMPTY); render(); });
     $('#characteristicsApply')?.addEventListener('click', applyDraft);
     global.addEventListener('keydown', event => {
+      if (global.AstraeonInputGuardV1?.blocksPanelHotkeys(event)) return;
       const active = document.activeElement;
       if (active?.closest?.('input,textarea,select,[contenteditable="true"],#onlineChat,#onlineAccountPanel,#npcDialogue')) return;
       if (event.key === 'Escape' && !$('#characteristicsPanel')?.classList.contains('hidden')) {

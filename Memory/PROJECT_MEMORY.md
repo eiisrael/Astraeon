@@ -38,6 +38,7 @@ O código atual possui prioridade sobre memória antiga.
 - Custos por domínio: 1, 2, 3, 4, 5, 6, 8, 10, 13 e 18 pontos; requisitos: níveis 1, 3, 6, 10, 15, 21, 28, 36, 45 e 60.
 - A décima skill exige as nove anteriores do mesmo domínio e 5.000.000 de ouro autoritativo.
 - H abre somente o grimório pessoal; nele, skills aprendidas são arrastadas ao HUD 1–5. Ao interagir com Maeron, o grimório abre à esquerda e a loja do Mestre à direita; compra e desbloqueio existem somente nessa loja.
+- O chat tem prioridade absoluta sobre atalhos: enquanto estiver aberto, focado ou contiver texto, nenhuma tecla de painel pode abrir overlays do jogo.
 - Os painéis de skill do jogador e do Mestre compartilham dimensões compactas de referência (380×620 px); os tiles desktop medem 30×30 px e dependem do tooltip para detalhes.
 - `!allskill` é exclusivo de administrador com MFA/AAL2 e libera somente as skills da classe ativa.
 - Até nova decisão do usuário, Maeron em Astralum é o único NPC ativo.

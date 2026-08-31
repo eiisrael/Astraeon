@@ -202,6 +202,7 @@ function shortcutMatches(event,shortcut){
   return event.ctrlKey===parts.includes('ctrl')&&event.altKey===parts.includes('alt')&&event.shiftKey===parts.includes('shift')&&event.metaKey===parts.includes('meta')&&(event.key.toLowerCase()===key||event.code.toLowerCase()===key);
 }
 function onKey(event){
+  if(global.AstraeonInputGuardV1?.blocksPanelHotkeys(event))return;
   if(event.key==='Escape'){const active=Array.from(document.querySelectorAll('.panel-studio-custom-overlay:not(.hidden)')).pop();if(active){event.preventDefault();closePanel(active.dataset.panelId);}return;}
   for(const panel of doc.customPanels){if(panel.enabled&&shortcutMatches(event,panel.shortcut)){event.preventDefault();togglePanel(panel.id);break;}}
 }
