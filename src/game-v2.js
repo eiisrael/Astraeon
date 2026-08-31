@@ -898,5 +898,8 @@
     beep(freq,duration=.04,gain=.02){if(!this.audio)return;try{const o=this.audio.createOscillator(),g=this.audio.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(gain,this.audio.currentTime);g.gain.exponentialRampToValueAtTime(.0001,this.audio.currentTime+duration);o.connect(g).connect(this.audio.destination);o.start();o.stop(this.audio.currentTime+duration);}catch(_){}}
   }
 
-  window.addEventListener('DOMContentLoaded', () => { window.astraeon = new AstraeonGame(); });
+  window.addEventListener('DOMContentLoaded', () => {
+    window.astraeon = new AstraeonGame();
+    window.AstraeonEntityCollisionV1?.install?.(window.astraeon);
+  });
 })();

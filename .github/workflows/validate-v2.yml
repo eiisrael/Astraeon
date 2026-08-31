@@ -30,6 +30,8 @@ jobs:
       - name: Validate JavaScript syntax
         run: |
           node --check src/world-v2.js
+          node --check src/entity-collision-v1.js
+          node --check src/panel-fit-v1.js
           node --check src/game-v2.js
           node --check src/inventory-v2.js
           node --check src/inventory-v3.js
@@ -55,6 +57,8 @@ jobs:
           node --check src/skills-catalog-v1.js
           node --check src/skills-v1.js
           node scripts/test_skills_v1.mjs
+          node scripts/test_entity_collision_v1.mjs
+          node scripts/test_panel_fit_v1.mjs
           node --check api/config.js
           node --check api/admin-access.js
           node --check src/editor-diagnostics-v5.js

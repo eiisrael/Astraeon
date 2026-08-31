@@ -42,6 +42,8 @@ O código atual possui prioridade sobre memória antiga.
 - O chat é identificado na interface apenas como `Chat`.
 - O efeito de ausência termina somente com movimento real do personagem, ataque, uso de habilidade ou tecla; mover o ponteiro do mouse não conta como atividade.
 - O ataque básico possui efeito visual próprio por classe: X em dois traços para Guerreiro, círculo roxo para Mago, flecha encorpada para Arqueiro, perfuração com microvento para Assassino e círculo mágico para Paladino.
+- Colisões entre jogador, mobs, NPCs e jogadores online são rígidas: a entidade em movimento para na borda do outro corpo e nunca desloca a entidade atingida, inclusive correndo.
+- Painéis do HUD removem a rolagem externa e aplicam escala automática limitada pela resolução ativa e pela preferência de escala da interface; listas internas funcionais continuam navegáveis sem exibir barras.
 - Todo nome visível do mundo usa `Astraeon`; a forma isolada `Astra` é nomenclatura legada e não deve retornar.
 - Os painéis de skill do jogador e do Mestre compartilham dimensões compactas de referência (380×620 px); os tiles desktop medem 30×30 px e dependem do tooltip para detalhes.
 - `!allskill` é exclusivo de administrador com MFA/AAL2 e libera somente as skills da classe ativa.

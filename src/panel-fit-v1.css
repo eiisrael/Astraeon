@@ -1,0 +1,59 @@
+:root { --panel-fit-scale: 1; }
+
+.panel-fit-host {
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)) !important;
+  place-items: center !important;
+  align-items: center !important;
+  justify-items: center !important;
+}
+
+.panel-fit-surface {
+  flex: none !important;
+  transform: scale(var(--panel-fit-scale, 1)) !important;
+  transform-origin: center center !important;
+  transition: transform 180ms cubic-bezier(.2, .78, .25, 1) !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.panel-fit-surface::-webkit-scrollbar,
+.panel-fit-surface *::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+.panel-fit-surface * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.panel-fit-surface.overlay-card,
+.panel-fit-surface.skills-card,
+.panel-fit-surface.skills-master-workspace,
+.panel-fit-surface.npc-dialogue-card {
+  overflow: hidden !important;
+}
+
+@media (max-width: 850px) {
+  .skills-merchant-panel.panel-fit-host .skills-master-workspace {
+    width: calc(var(--compact-panel-width) * 2 + 12px) !important;
+    height: var(--compact-panel-height) !important;
+    max-height: none !important;
+    grid-template-columns: repeat(2, var(--compact-panel-width)) !important;
+    grid-template-rows: var(--compact-panel-height) !important;
+    align-items: stretch !important;
+  }
+
+  .skills-merchant-panel.panel-fit-host .skills-master-workspace > .skills-card {
+    width: var(--compact-panel-width) !important;
+    height: var(--compact-panel-height) !important;
+    max-height: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-fit-surface { transition: none !important; }
+}
