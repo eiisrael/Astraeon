@@ -23,6 +23,13 @@ begin
   perform public.astraeon_require_online_access();
   if request_id is null then raise exception 'invalid_death_penalty_operation'; end if;
 
+  -- Ownership is checked before looking at the operation ledger so a caller can
+  -- never use idempotency IDs to probe another player's progression metadata.
+  if not exists (
+    select 1 from public.characters
+     where id = target_character and user_id = uid
+  ) then raise exception 'character_not_found'; end if;
+
   if public.astraeon_operation_is_applied(request_id, target_character, 'death_xp_penalty') then
     select metadata into stored
       from public.progression_operations
@@ -37,13 +44,11 @@ begin
   select cp.xp, cp.level
     into current_xp, current_level
     from public.character_progress cp
-    join public.characters c on c.id = cp.character_id
    where cp.character_id = target_character
      and cp.user_id = uid
-     and c.user_id = uid
-   for update of cp;
+   for update;
 
-  if not found then raise exception 'character_not_found'; end if;
+  if not found then raise exception 'progress_not_found'; end if;
 
   current_xp := greatest(0, coalesce(current_xp, 0));
   lost_xp := case
