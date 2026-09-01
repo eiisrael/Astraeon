@@ -21,6 +21,10 @@ assert.match(game, /Assets\/Classes\/\$\{W\.CLASS_DATA\[p\.classId\]\.sprite\}/,
 assert.match(game, /ui\.xpText\.textContent/, 'O percentual de XP deve ser atualizado pelo runtime.');
 assert.match(hudCss, /@keyframes hud-xp-scan/, 'A barra de XP deve manter o efeito neon dinâmico.');
 assert.match(hudCss, /\.player-hud-portrait img[\s\S]*object-fit:contain/, 'O retrato não pode ser cortado ou distorcido.');
+assert.match(hudCss, /\.player-card \.player-title\{[^}]*align-self:start/, 'O nome do personagem deve permanecer elevado no cabeçalho.');
+assert.match(hudCss, /\.player-card \.bar-line:not\(\.xp-line\)\{[^}]*position:absolute/, 'HP, mana e fôlego devem ocupar a coluna abaixo do nome sem invadir o retrato.');
+assert.match(hudCss, /content:"MANA"/, 'O recurso azul deve ser identificado visualmente como MANA.');
+assert.match(hudCss, /content:"FÔLEGO"/, 'O recurso de stamina deve ser identificado visualmente como FÔLEGO.');
 assert.match(controller, /installPlayerPanelToggle/, 'O HUD precisa manter o controle de recolher e expandir.');
 assert.match(controller, /aria-expanded/, 'O estado do HUD recolhido deve ser acessível.');
 
