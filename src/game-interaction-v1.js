@@ -2,7 +2,9 @@
 'use strict';
 const $=selector=>document.querySelector(selector);
 const clamp01=value=>Math.max(0,Math.min(1,Number(value)||0));
-let cursor=null,moveTimer=0,attackTimer=0,raf=0,lastX=0,lastY=0,nextX=0,nextY=0,worldHudRetry=0;
+const PLAYER_BUFF_KEYS=['buffPower','buffSpeed','buffDefense','manaRegenPct','lifeStealAura','critBonus','dotRate','critManaPct','resistHealPct','unstoppable'];
+let cursor=null,moveTimer=0,attackTimer=0,raf=0,lastX=0,lastY=0,nextX=0,nextY=0,worldHudRetry=0,buffHudRetry=0,buffHudFrame=0,buffHudLastPaint=0,buffPlayerRef=null,buffCharacterId=null;
+const activePlayerBuffs=new Map();
 
 function isEditable(target){return !!target?.closest?.('input,textarea,select,[contenteditable="true"]');}
 function isWorldTarget(target){return target===$('#world')&&document.body.classList.contains('game-running')&&!document.body.classList.contains('panel-studio-embed');}
@@ -70,9 +72,8 @@ function drawWorldBar(ctx,x,y,width,height,ratio,colors,glow){
 function drawPlayerIdentity(ctx,p,name){
   const level=Math.max(1,Math.round(Number(p.level)||1));
   const parts=[
-    {text:name,color:'#f7fbff'},
-    {text:`  (Lv: ${level})`,color:'#ffd35a'},
-    {text:'  Personagem',color:'#f7fbff'}
+    {text:`(Lv.: ${level}) `,color:'#ffd35a'},
+    {text:name,color:'#f7fbff'}
   ];
   ctx.save();
   ctx.font='800 8px Inter, sans-serif';
@@ -137,6 +138,120 @@ function installStaminaLabelGuard(){
   new MutationObserver(enforce).observe(label,{childList:true,characterData:true,subtree:true});
 }
 
+function buffDuration(skill){
+  const mechanics=skill?.mechanics||{};
+  const duration=Math.max(0,Number(mechanics.duration)||0);
+  if(!duration)return 0;
+  if(skill?.mode==='buff')return duration;
+  return PLAYER_BUFF_KEYS.some(key=>key==='unstoppable'?mechanics[key]===true:Number(mechanics[key])!==0)?duration:0;
+}
+
+function classBuffCapacity(classId){
+  const catalog=global.AstraeonSkillsCatalogV1;
+  const count=(catalog?.list?.(classId)||[]).filter(skill=>buffDuration(skill)>0).length;
+  return Math.max(1,Math.min(5,count||1));
+}
+
+function buffGlyph(skill){
+  const ignored=new Set(['da','de','do','das','dos','e']);
+  const words=String(skill?.name||'Buff').split(/\s+/).filter(word=>word&&!ignored.has(word.toLowerCase()));
+  return (words.slice(0,2).map(word=>word[0]).join('')||'B').toUpperCase();
+}
+
+function ensurePlayerBuffHost(){
+  let host=$('#playerBuffs');
+  if(host)return host;
+  const card=$('.player-card');
+  const meta=card?.querySelector('.player-meta');
+  if(!card||!meta)return null;
+  host=document.createElement('div');
+  host.id='playerBuffs';
+  host.className='player-buffs';
+  host.setAttribute('aria-label','Buffs ativos do personagem');
+  meta.before(host);
+  return host;
+}
+
+function syncBuffOwner(){
+  const game=global.astraeon;
+  const player=game?.player||null;
+  const characterId=global.AstraeonCharactersV6?.activeCharacterId||null;
+  if(player===buffPlayerRef&&characterId===buffCharacterId)return;
+  buffPlayerRef=player;
+  buffCharacterId=characterId;
+  activePlayerBuffs.clear();
+  ensurePlayerBuffHost()?.replaceChildren();
+}
+
+function registerPlayerBuff(skill){
+  const duration=buffDuration(skill);
+  if(!duration)return;
+  const now=performance.now();
+  activePlayerBuffs.set(skill.id,{skill,duration,until:now+duration*1000,activatedAt:now});
+  renderPlayerBuffHud(now,true);
+}
+
+function renderPlayerBuffHud(now=performance.now(),force=false){
+  syncBuffOwner();
+  if(!force&&now-buffHudLastPaint<120)return;
+  buffHudLastPaint=now;
+  const host=ensurePlayerBuffHost();
+  const player=global.astraeon?.player;
+  if(!host||!player)return;
+  for(const[id,buff]of activePlayerBuffs)if(buff.until<=now)activePlayerBuffs.delete(id);
+  const capacity=classBuffCapacity(player.classId);
+  host.style.setProperty('--buff-capacity',String(capacity));
+  host.dataset.capacity=String(capacity);
+  const entries=[...activePlayerBuffs.values()].sort((a,b)=>a.activatedAt-b.activatedAt).slice(-capacity);
+  host.replaceChildren();
+  for(const entry of entries){
+    const remaining=Math.max(0,(entry.until-now)/1000);
+    const tile=document.createElement('span');
+    tile.className='player-buff-icon';
+    tile.style.setProperty('--buff-color',entry.skill.domainColor||'#7caeff');
+    tile.style.setProperty('--buff-progress',`${Math.max(0,Math.min(100,remaining/entry.duration*100))}%`);
+    tile.title=`${entry.skill.name} · ${remaining.toFixed(1)}s`;
+    tile.setAttribute('aria-label',`${entry.skill.name}, ${Math.ceil(remaining)} segundos restantes`);
+    const glyph=document.createElement('b');glyph.textContent=buffGlyph(entry.skill);
+    const time=document.createElement('i');time.textContent=String(Math.ceil(remaining));
+    tile.append(glyph,time);
+    host.appendChild(tile);
+  }
+}
+
+function buffHudLoop(now){
+  renderPlayerBuffHud(now);
+  buffHudFrame=requestAnimationFrame(buffHudLoop);
+}
+
+function installPlayerBuffHud(){
+  const game=global.astraeon;
+  const skills=global.AstraeonSkillsV1;
+  const catalog=global.AstraeonSkillsCatalogV1;
+  if(!game||typeof game.castSkill!=='function'||!skills?.state||!catalog){
+    clearTimeout(buffHudRetry);
+    buffHudRetry=setTimeout(installPlayerBuffHud,80);
+    return;
+  }
+  if(game.playerBuffHudV1Installed)return;
+  game.playerBuffHudV1Installed=true;
+  ensurePlayerBuffHost();
+  syncBuffOwner();
+  const originalCastSkill=game.castSkill.bind(game);
+  game.castSkill=function(index){
+    syncBuffOwner();
+    const slot=Number(index);
+    const skillId=global.AstraeonSkillsV1?.state?.loadout?.[slot];
+    const skill=global.AstraeonSkillsCatalogV1?.get?.(skillId);
+    const before=Math.max(0,Number(this.cooldowns?.[slot])||0);
+    const result=originalCastSkill(slot);
+    const after=Math.max(0,Number(this.cooldowns?.[slot])||0);
+    if(skill&&buffDuration(skill)>0&&before<=0&&after>0)registerPlayerBuff(skill);
+    return result;
+  };
+  if(!buffHudFrame)buffHudFrame=requestAnimationFrame(buffHudLoop);
+}
+
 function installPlayerWorldHud(){
   const game=global.astraeon;
   if(!game||typeof game.drawPlayer!=='function'){
@@ -171,7 +286,8 @@ function install(){
   document.addEventListener('selectstart',preventSelection,true);
   global.addEventListener('blur',()=>cursor?.classList.remove('visible','moving','attacking','interacting'));
   installPlayerWorldHud();
+  installPlayerBuffHud();
 }
-global.AstraeonPlayerWorldHudV1={install:installPlayerWorldHud};
+global.AstraeonPlayerWorldHudV1={install:installPlayerWorldHud,installBuffHud:installPlayerBuffHud};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })(window);

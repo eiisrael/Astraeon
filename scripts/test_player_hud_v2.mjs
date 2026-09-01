@@ -6,6 +6,7 @@ const index = read('index.html');
 const hudCss = read('src/player-hud-v2.css');
 const game = read('src/game-v2.js');
 const interaction = read('src/game-interaction-v1.js');
+const catalog = read('src/skills-catalog-v1.js');
 const controller = read('src/online-controller-v4.js');
 const runtime = read('src/panel-studio-runtime-v7.js');
 const editorCss = read('src/admin-panel-editor-v8.css');
@@ -35,13 +36,30 @@ assert.match(interaction, /player\.name=''/, 'O nome antigo do canvas deve ser s
 assert.match(interaction, /Number\(p\.hp\)\/hpMax/, 'A barra vermelha deve acompanhar o HP real do personagem.');
 assert.match(interaction, /Number\(p\.mana\)\/manaMax/, 'A barra azul deve acompanhar a mana real do personagem.');
 assert.match(interaction, /Number\(game\.stamina\)/, 'A barra dourada deve acompanhar o fôlego real do personagem.');
-assert.match(interaction, /'#ff2857'/, 'HP deve usar vermelho gamer no HUD flutuante.');
-assert.match(interaction, /'#138dff'/, 'Mana deve usar azul elétrico no HUD flutuante.');
-assert.match(interaction, /'#ffae16'/, 'Fôlego deve usar dourado gamer no HUD flutuante.');
-assert.match(interaction, /`  \(Lv: \$\{level\}\)`/, 'O HUD flutuante deve exibir o nível real ao lado do nick.');
-assert.match(interaction, /color:'#ffd35a'/, 'O nível deve ser dourado.');
-assert.match(interaction, /text:'  Personagem',color:'#f7fbff'/, 'A identificação Personagem deve aparecer em branco.');
-assert.match(interaction, /const top=p\.y-64/, 'As três barras devem ficar imediatamente acima do personagem.');
+assert.match(interaction, /'#ff2857'/, 'HP deve manter o vermelho gamer atual no HUD flutuante.');
+assert.match(interaction, /'#138dff'/, 'Mana deve manter o azul elétrico atual no HUD flutuante.');
+assert.match(interaction, /'#ffae16'/, 'Fôlego deve manter o dourado gamer atual no HUD flutuante.');
+assert.match(interaction, /text:`\(Lv\.: \$\{level\}\) `,color:'#ffd35a'/, 'O nível deve aparecer primeiro no formato (Lv.: X) e em dourado.');
+assert.match(interaction, /\{text:name,color:'#f7fbff'\}/, 'O nick deve aparecer imediatamente depois do nível e em branco.');
+assert.doesNotMatch(interaction, /text:'\s*Personagem'/, 'A palavra Personagem não deve mais aparecer na identidade flutuante.');
+assert.match(interaction, /const top=p\.y-64/, 'As três barras devem permanecer na posição atual acima do personagem.');
+
+assert.match(interaction, /PLAYER_BUFF_KEYS/, 'O HUD deve reconhecer efeitos temporários positivos além do modo buff literal.');
+assert.match(interaction, /function buffDuration\(skill\)/, 'O runtime deve identificar a duração real dos buffs.');
+assert.match(interaction, /function classBuffCapacity\(classId\)/, 'A capacidade do HUD deve ser calculada pela referência de buffs da classe.');
+assert.match(interaction, /catalog\?\.list\?\.\(classId\)/, 'A capacidade deve consultar o catálogo real de skills da classe.');
+assert.match(interaction, /Math\.min\(5,count\|\|1\)/, 'A faixa deve suportar até cinco buffs simultâneos sem sair da área reservada.');
+assert.match(interaction, /installPlayerBuffHud/, 'O HUD principal deve instalar o monitor de buffs ativos.');
+assert.match(interaction, /originalCastSkill/, 'O monitor de buffs deve preservar o cast original de skills.');
+assert.match(interaction, /before<=0&&after>0/, 'Um buff só deve entrar no HUD após um cast realmente aceito.');
+assert.match(interaction, /activePlayerBuffs\.set\(skill\.id/, 'Buffs ativos devem ser registrados individualmente por skill.');
+assert.match(interaction, /buff\.until<=now/, 'Buffs expirados devem desaparecer automaticamente do HUD.');
+assert.match(interaction, /remaining\/entry\.duration\*100/, 'Cada buff deve exibir progresso visual do tempo restante.');
+assert.match(catalog, /S\('Camuflagem de Folha'[\s\S]*buffSpeed:\.24,duration:3/, 'Buffs concedidos por skills híbridas devem existir na referência do catálogo.');
+assert.match(catalog, /S\('Pacto Escarlate'[\s\S]*buffPower:\.24,duration:5/, 'Buffs de skills de sacrifício também devem ser reconhecíveis pela referência.');
+assert.match(hudCss, /\.player-card \.player-buffs\{[\s\S]*max-width:148px/, 'A faixa de buffs deve ocupar a área inferior esquerda sem invadir os metadados.');
+assert.match(hudCss, /\.player-card \.player-buff-icon\{[\s\S]*--buff-color/, 'Cada buff deve ser apresentado como ícone gamer colorido pelo domínio.');
+assert.match(hudCss, /width:var\(--buff-progress\)/, 'O ícone deve mostrar visualmente o tempo restante do buff.');
 
 assert.match(controller, /installPlayerPanelToggle/, 'O HUD precisa manter o controle de recolher e expandir.');
 assert.match(controller, /aria-expanded/, 'O estado do HUD recolhido deve ser acessível.');
@@ -57,4 +75,4 @@ assert.match(editorJs, /safeWidth\/width/, 'O preview do Studio deve ajustar a l
 assert.match(editorJs, /safeHeight\/height/, 'O preview do Studio deve ajustar a altura ao espaço disponível.');
 assert.match(fitCss, /\.inventory-column[\s\S]*overflow:\s*hidden\s*!important/, 'Conteúdo interno dos painéis não deve criar scroll secundário.');
 
-console.log('ASTRAEON PLAYER HUD READABILITY + WORLD HUD GAMER + COLLAPSE validation OK');
+console.log('ASTRAEON PLAYER BUFF HUD + WORLD IDENTITY ORDER + COLLAPSE validation OK');
