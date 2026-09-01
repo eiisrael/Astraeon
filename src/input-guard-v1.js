@@ -31,15 +31,33 @@
     return isEditable(event?.target) || isEditable(document.activeElement) || isChatEngaged();
   }
 
-  function loadCombatUxGuard() {
-    if (global.AstraeonCombatUxGuardV1) return;
+  function loadRuntime({ globalName, source, dataKey }) {
+    if (global[globalName]) return;
     if (typeof document.createElement !== 'function' || !document.head?.appendChild) return;
-    if (document.querySelector?.('script[data-astraeon-combat-ux-guard-v1]')) return;
+    if (document.querySelector?.(`script[data-${dataKey}]`)) return;
     const script = document.createElement('script');
-    script.src = 'src/combat-ux-guard-v1.js?v=1.0.0';
+    script.src = source;
     script.async = false;
-    script.dataset.astraeonCombatUxGuardV1 = '1';
+    script.setAttribute(`data-${dataKey}`, '1');
     document.head.appendChild(script);
+  }
+
+  function loadSafetyRuntimes() {
+    loadRuntime({
+      globalName: 'AstraeonCombatUxGuardV1',
+      source: 'src/combat-ux-guard-v1.js?v=1.0.0',
+      dataKey: 'astraeon-combat-ux-guard-v1'
+    });
+    loadRuntime({
+      globalName: 'AstraeonDeathPenaltyV1',
+      source: 'src/death-penalty-v1.js?v=1.0.0',
+      dataKey: 'astraeon-death-penalty-v1'
+    });
+    loadRuntime({
+      globalName: 'AstraeonMenuBootGuardV1',
+      source: 'src/menu-boot-guard-v1.js?v=1.0.0',
+      dataKey: 'astraeon-menu-boot-guard-v1'
+    });
   }
 
   global.AstraeonInputGuardV1 = Object.freeze({
@@ -50,6 +68,6 @@
   });
 
   if (document.readyState === 'loading' && typeof global.addEventListener === 'function') {
-    global.addEventListener('DOMContentLoaded', loadCombatUxGuard, { once: true });
-  } else loadCombatUxGuard();
+    global.addEventListener('DOMContentLoaded', loadSafetyRuntimes, { once: true });
+  } else loadSafetyRuntimes();
 })(window);

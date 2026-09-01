@@ -23,6 +23,52 @@
     return CITIES.find(c => Math.hypot(tx - c.x, ty - c.y) <= c.radius + .45) || null;
   }
   function cityAtPixel(x, y) { return cityAtTile(x / TILE, y / TILE); }
+  function nearbyCity(game) {
+    if (!game?.player) return null;
+    let best = null;
+    let bestDistance = Infinity;
+    for (const city of CITIES) {
+      const distance = Math.hypot(game.player.x-city.x*TILE,game.player.y-city.y*TILE);
+      const visibleRadius = (Math.max(2,Number(city.radius)||5)+5)*TILE;
+      if (distance <= visibleRadius && distance < bestDistance) {
+        best = city;
+        bestDistance = distance;
+      }
+    }
+    return best;
+  }
+
+  function ensureCityHud() {
+    let hud = document.querySelector('#cityLocationHud');
+    if (hud) return hud;
+    const minimap = document.querySelector('.minimap-shell');
+    if (!minimap) return null;
+    hud = document.createElement('section');
+    hud.id = 'cityLocationHud';
+    hud.className = 'city-location-hud hidden';
+    hud.setAttribute('aria-live','polite');
+    hud.innerHTML = '<strong id="cityLocationName"></strong><span id="cityLocationSubtitle"></span>';
+    minimap.insertAdjacentElement('beforebegin',hud);
+    return hud;
+  }
+
+  function updateCityHud(game) {
+    const hud = ensureCityHud();
+    if (!hud) return;
+    const city = nearbyCity(game);
+    if (!city) {
+      hud.classList.add('hidden');
+      hud.removeAttribute('data-city');
+      return;
+    }
+    const name = hud.querySelector('#cityLocationName');
+    const subtitle = hud.querySelector('#cityLocationSubtitle');
+    if (name) name.textContent = city.name;
+    if (subtitle) subtitle.textContent = city.subtitle || 'Cidade de Astraeon';
+    hud.dataset.city = city.id;
+    hud.style.setProperty('--city-accent',city.accent||'#e6b85f');
+    hud.classList.remove('hidden');
+  }
 
   function openTile(t, city) {
     if (!t) return;
@@ -122,14 +168,9 @@
   function drawCities(game,ctx) {
     const world=game.world;if(!world?.cityStructures)return;
     for(const s of world.cityStructures) drawStructure(ctx,s);
-    const near = CITIES.filter(c => Math.hypot(game.player.x-c.x*TILE,game.player.y-c.y*TILE) < (c.radius+5)*TILE);
-    ctx.save();ctx.textAlign='center';
-    for(const c of near){
-      const x=c.x*TILE+TILE/2,y=(c.y-c.radius-1)*TILE;
-      ctx.font='700 12px Georgia,serif';ctx.fillStyle='#f0ddbb';ctx.shadowBlur=6;ctx.shadowColor='#000';ctx.fillText(c.name,x,y);
-      ctx.font='600 9px Inter,sans-serif';ctx.fillStyle=c.accent;ctx.fillText(c.subtitle,x,y+13);
-    }
-    ctx.restore();
+    // City identity now belongs to the fixed HUD above the minimap. Keeping it
+    // out of the world canvas prevents labels from covering buildings/players.
+    updateCityHud(game);
   }
 
   function pruneCityMobs(game) {
@@ -141,27 +182,28 @@
     const game=global.astraeon;
     if(!game || game.onlineWorldV4Installed)return;
     game.onlineWorldV4Installed=true;
+    ensureCityHud();
 
     const originalAddMob=game.addMob?.bind(game);
     if(originalAddMob)game.addMob=function(type,x,y,...rest){if(cityAtPixel(x,y))return null;return originalAddMob(type,x,y,...rest);};
 
     const originalStart=game.startNew.bind(game);
-    game.startNew=function(){originalStart();decorate(this.world);pruneCityMobs(this);this.toast?.('Astralum e as cidades de Astraeon foram abertas.');};
+    game.startNew=function(){originalStart();decorate(this.world);pruneCityMobs(this);updateCityHud(this);this.toast?.('Astralum e as cidades de Astraeon foram abertas.');};
     const originalContinue=game.continueGame.bind(game);
-    game.continueGame=function(){originalContinue();if(this.world){decorate(this.world);pruneCityMobs(this);}};
+    game.continueGame=function(){originalContinue();if(this.world){decorate(this.world);pruneCityMobs(this);updateCityHud(this);}};
 
     const originalTerrain=game.drawTerrain.bind(game);
     game.drawTerrain=function(ctx){originalTerrain(ctx);drawCities(this,ctx);};
 
     const originalMini=game.drawMinimap.bind(game);
-    game.drawMinimap=function(){originalMini();if(!this.world)return;const ctx=this.mctx,size=196;ctx.save();for(const c of CITIES){const x=(c.x/this.world.width)*size,y=(c.y/this.world.height)*size;ctx.fillStyle=c.accent;ctx.strokeStyle='rgba(0,0,0,.75)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,3.3,0,Math.PI*2);ctx.fill();ctx.stroke();}ctx.restore();};
+    game.drawMinimap=function(){originalMini();updateCityHud(this);if(!this.world)return;const ctx=this.mctx,size=196;ctx.save();for(const c of CITIES){const x=(c.x/this.world.width)*size,y=(c.y/this.world.height)*size;ctx.fillStyle=c.accent;ctx.strokeStyle='rgba(0,0,0,.75)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,3.3,0,Math.PI*2);ctx.fill();ctx.stroke();}ctx.restore();};
 
     const originalBig=game.renderBigMap.bind(game);
     game.renderBigMap=function(){originalBig();if(!this.world)return;const canvas=document.querySelector('#bigMapCanvas'),ctx=canvas?.getContext('2d');if(!ctx)return;const size=canvas.width||620;ctx.save();ctx.textAlign='center';for(const c of CITIES){const x=(c.x/this.world.width)*size,y=(c.y/this.world.height)*size;ctx.fillStyle=c.accent;ctx.strokeStyle='#15100c';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.font='700 10px Inter,sans-serif';ctx.fillStyle='#f2eadc';ctx.shadowBlur=5;ctx.shadowColor='#000';ctx.fillText(c.name,x,y-10);}ctx.restore();};
 
-    if(game.world){decorate(game.world);pruneCityMobs(game);}
+    if(game.world){decorate(game.world);pruneCityMobs(game);updateCityHud(game);}
   }
 
-  global.AstraeonOnlineWorld={CITIES,decorate,cityAtTile,cityAtPixel,install};
+  global.AstraeonOnlineWorld={CITIES,decorate,cityAtTile,cityAtPixel,nearbyCity,updateCityHud,install};
   global.addEventListener('DOMContentLoaded',install);
 })(window);
