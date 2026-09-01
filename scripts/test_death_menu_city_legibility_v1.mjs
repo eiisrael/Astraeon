@@ -60,6 +60,8 @@ assert.match(worldSource,/updateCityHud\(game\)/,'cidade deve acompanhar a posi�
 assert.match(panelCss,/^@import url\("menu-cinematic-v62\.css\?v=6\.2\.0"\);/,'CSS moderno do menu deve bloquear o primeiro frame');
 assert.match(panelCss,/body:not\(\.astraeon-main-menu-ready\) #startScreen/,'HTML legado deve ficar invisível até o menu atual estar completo');
 assert.match(panelCss,/#inventoryPanel small[\s\S]*font-size:\s*12\.5px\s*!important/,'small dos painéis deve ter piso legível');
+assert.match(panelCss,/\.player-card \.bar-line[\s\S]*font-size:\s*10px\s*!important/,'recursos do HUD não podem voltar a 7 px');
+assert.match(panelCss,/\.mob-target-eyebrow[\s\S]*font-size:\s*11px\s*!important/,'microtextos do alvo devem permanecer legíveis');
 assert.match(panelCss,/\.city-location-hud[\s\S]*bottom:\s*230px/,'nome da cidade deve ficar acima do minimapa');
 
 assert.match(migration,/grant execute on function public\.apply_astraeon_death_penalty\(uuid,uuid\) to authenticated/,'RPC de morte deve ser autenticada');
