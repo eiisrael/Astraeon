@@ -188,9 +188,10 @@
     render();
   }
 
-  function applyDraft() {
+  async function applyDraft() {
     const instance = game();
     if (!instance?.player || !state.draft) return;
+    const saveButton = $('#characteristicsApply');
     const next = normalizeForLevel(state.draft, instance.player.level);
     if (M.spentPoints(next) < M.spentPoints(instance.characteristics)) return;
     instance.characteristics = next;
@@ -199,7 +200,13 @@
     state.committed = clone(next);
     state.draft = clone(next);
     render();
-    instance.toast?.('Características aplicadas aos seus status.');
+    if (saveButton) { saveButton.disabled = true; saveButton.textContent = 'Salvando…'; }
+    const onlineSave = global.AstraeonCharactersV6?.activeCharacterId
+      ? await global.AstraeonCharactersV6.saveCharacterNow()
+      : true;
+    if (saveButton) saveButton.textContent = 'Salvar pontos';
+    $('#characteristicsPending').textContent = onlineSave ? 'Pontos salvos neste personagem' : 'Salvo localmente · sincronização online pendente';
+    instance.toast?.(onlineSave ? 'Pontos salvos neste personagem.' : 'Pontos salvos localmente. Não foi possível sincronizar agora.');
     instance.beep?.(760, .08, .035);
   }
 
@@ -283,7 +290,7 @@
     state.installed = true;
     installGameHooks(instance);
     bindUi();
-    global.AstraeonCharacteristicsV1 = { VERSION: '1.0', state, open: openPanel, close: closePanel, render, applyCharacterStats };
+    global.AstraeonCharacteristicsV1 = { VERSION: '1.1', state, open: openPanel, close: closePanel, render, applyCharacterStats };
   }
 
   if (document.readyState === 'loading') global.addEventListener('DOMContentLoaded', install, { once: true });

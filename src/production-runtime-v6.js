@@ -3,8 +3,9 @@
 const W=global.AstraeonWorld;
 const $=s=>document.querySelector(s);
 const imageCache=new Map();
-const state={installed:false,design:null,itemTimer:null,lastActivity:performance.now(),idle:false,zPhase:0,playerX:null,playerY:null};
+const state={installed:false,design:null,itemTimer:null,lastActivity:performance.now(),idle:false,zPhase:0,playerX:null,playerY:null,lastSafeZoneWarning:-Infinity};
 const ENTITY_RADIUS={player:12,mob:12,npc:11};
+const MOB_ZONE_BUFFER=()=>Math.max(72,(Number(W?.TILE)||48)*2);
 function mp(){return global.AstraeonMultiplayerV4?.state||null;}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function loadDesign(){try{return W?.loadWorldDesign?.()||null;}catch(_){return null;}}
@@ -29,7 +30,13 @@ function drawSceneObjects(game,ctx){const design=state.design||refreshDesign();i
 
 function pointInPolygon(x,y,pts){let inside=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const xi=pts[i].x,yi=pts[i].y,xj=pts[j].x,yj=pts[j].y;const hit=((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi||1e-9)+xi);if(hit)inside=!inside;}return inside;}
 function insideZone(x,y,z){if(!z)return false;const shape=z.shape||'rect';if(shape==='circle'){const dx=x-(Number(z.cx)||0),dy=y-(Number(z.cy)||0),r=Math.max(1,Number(z.radius)||1);return dx*dx+dy*dy<=r*r;}if(shape==='polygon')return pointInPolygon(x,y,Array.isArray(z.points)?z.points:[]);const left=Math.min(Number(z.x1)||0,Number(z.x2)||0),right=Math.max(Number(z.x1)||0,Number(z.x2)||0),top=Math.min(Number(z.y1)||0,Number(z.y2)||0),bottom=Math.max(Number(z.y1)||0,Number(z.y2)||0);return x>=left&&x<=right&&y>=top&&y<=bottom;}
-function mobForbidden(x,y){const design=state.design||refreshDesign();return !!design?.zones?.some(z=>z.type==='mob_exclusion'&&z.enabled!==false&&insideZone(x,y,z));}
+function segmentDistance(px,py,ax,ay,bx,by){const dx=bx-ax,dy=by-ay,length=dx*dx+dy*dy;if(!length)return Math.hypot(px-ax,py-ay);const t=clamp(((px-ax)*dx+(py-ay)*dy)/length,0,1),x=ax+t*dx,y=ay+t*dy;return Math.hypot(px-x,py-y);}
+function insideZoneWithMargin(x,y,z,margin=0){if(insideZone(x,y,z))return true;const gap=Math.max(0,Number(margin)||0),shape=z?.shape||'rect';if(!gap)return false;if(shape==='circle'){const dx=x-(Number(z.cx)||0),dy=y-(Number(z.cy)||0),r=Math.max(1,Number(z.radius)||1)+gap;return dx*dx+dy*dy<=r*r;}if(shape==='polygon'){const pts=Array.isArray(z.points)?z.points:[];return pts.some((p,i)=>{const q=pts[(i+1)%pts.length];return q&&segmentDistance(x,y,Number(p.x)||0,Number(p.y)||0,Number(q.x)||0,Number(q.y)||0)<=gap;});}const left=Math.min(Number(z.x1)||0,Number(z.x2)||0)-gap,right=Math.max(Number(z.x1)||0,Number(z.x2)||0)+gap,top=Math.min(Number(z.y1)||0,Number(z.y2)||0)-gap,bottom=Math.max(Number(z.y1)||0,Number(z.y2)||0)+gap;return x>=left&&x<=right&&y>=top&&y<=bottom;}
+function exclusionZones(){const design=state.design||refreshDesign();return (design?.zones||[]).filter(z=>z.type==='mob_exclusion'&&z.enabled!==false);}
+function playerProtected(x,y){return exclusionZones().some(z=>insideZone(x,y,z));}
+function mobForbidden(x,y,margin=MOB_ZONE_BUFFER()){return exclusionZones().some(z=>insideZoneWithMargin(x,y,z,margin));}
+function canPlayerAttack(game){return !!game?.player&&!playerProtected(game.player.x,game.player.y);}
+function warnProtectedAttack(game){const now=performance.now();if(now-state.lastSafeZoneWarning<900)return;state.lastSafeZoneWarning=now;game?.toast?.('Ataques são bloqueados dentro da área protegida.');}
 function spawnZone(){return (state.design||refreshDesign())?.zones?.find(z=>z.type==='player_spawn'&&z.enabled!==false)||null;}
 function zoneCenter(z){if(!z)return null;if(z.shape==='circle')return{x:Number(z.cx)||0,y:Number(z.cy)||0};if(z.shape==='polygon'&&z.points?.length){return{x:z.points.reduce((a,p)=>a+Number(p.x||0),0)/z.points.length,y:z.points.reduce((a,p)=>a+Number(p.y||0),0)/z.points.length};}return{x:((Number(z.x1)||0)+(Number(z.x2)||0))/2,y:((Number(z.y1)||0)+(Number(z.y2)||0))/2};}
 function resolveObjectCollision(ent,radius,obj){if(!obj.collision||obj.visible===false)return;const x=Number(obj.x)||0,y=Number(obj.y)||0,w=Math.max(4,Number(obj.width)||36),h=Math.max(4,Number(obj.height)||36);if((obj.shape||'rect')==='circle'||obj.shape==='ellipse'){const rx=w/2+radius,ry=h/2+radius,dx=ent.x-x,dy=ent.y-y,q=(dx*dx)/(rx*rx)+(dy*dy)/(ry*ry);if(q>=1)return;const len=Math.hypot(dx/rx,dy/ry)||.001;ent.x=x+(dx/(len||1))*rx;ent.y=y+(dy/(len||1))*ry;return;}const left=x-w/2-radius,right=x+w/2+radius,top=y-h/2-radius,bottom=y+h/2+radius;if(ent.x<=left||ent.x>=right||ent.y<=top||ent.y>=bottom)return;const dl=Math.abs(ent.x-left),dr=Math.abs(right-ent.x),dt=Math.abs(ent.y-top),db=Math.abs(bottom-ent.y),m=Math.min(dl,dr,dt,db);if(m===dl)ent.x=left;else if(m===dr)ent.x=right;else if(m===dt)ent.y=top;else ent.y=bottom;}
@@ -37,9 +44,13 @@ function applySceneCollisions(game){const objects=(state.design||refreshDesign()
 
 function installWorldRules(game){if(game.productionWorldV6Installed)return;game.productionWorldV6Installed=true;refreshDesign();
   const originalTerrain=game.drawTerrain.bind(game);game.drawTerrain=function(ctx){const result=originalTerrain(ctx);drawSceneObjects(this,ctx);return result;};
+  const originalAddMob=game.addMob.bind(game);game.addMob=function(type,x,y,...rest){if(mobForbidden(x,y))return null;return originalAddMob(type,x,y,...rest);};
+  const originalBasicAttack=game.basicAttack.bind(game);game.basicAttack=function(...args){if(!canPlayerAttack(this)){warnProtectedAttack(this);return false;}return originalBasicAttack(...args);};
+  const originalCastSkill=game.castSkill.bind(game);game.castSkill=function(...args){if([0,1,4].includes(Number(args[0]))&&!canPlayerAttack(this)){warnProtectedAttack(this);return false;}return originalCastSkill(...args);};
+  const originalHitMob=game.hitMob.bind(game);game.hitMob=function(...args){if(!canPlayerAttack(this)){warnProtectedAttack(this);return false;}return originalHitMob(...args);};
   const originalStart=game.startNew.bind(game);game.startNew=function(){const result=originalStart();refreshDesign();const z=spawnZone(),c=zoneCenter(z);if(this.player&&c){const tx=Math.floor(c.x/W.TILE),ty=Math.floor(c.y/W.TILE),safe=this.findSafeSpawn?.(tx,ty);if(safe){this.player.x=safe.x*W.TILE+W.TILE/2;this.player.y=safe.y*W.TILE+W.TILE/2;}}this.mobs=(this.mobs||[]).filter(m=>!mobForbidden(m.x,m.y));return result;};
   const originalContinue=game.continueGame.bind(game);game.continueGame=function(){const result=originalContinue();refreshDesign();this.mobs=(this.mobs||[]).filter(m=>!mobForbidden(m.x,m.y));return result;};
-  const originalUpdate=game.update.bind(game);game.update=function(dt){const before=new Map((this.mobs||[]).filter(m=>!m.dead).map(m=>[m.id,{x:m.x,y:m.y}]));const result=originalUpdate(dt);for(const m of this.mobs||[]){if(m.dead)continue;if(mobForbidden(m.x,m.y)){const b=before.get(m.id);if(b){m.x=b.x;m.y=b.y;m.aggro=false;}}}applySceneCollisions(this);return result;};
+  const originalUpdate=game.update.bind(game);game.update=function(dt){const before=new Map((this.mobs||[]).filter(m=>!m.dead).map(m=>[m.id,{x:m.x,y:m.y}]));const result=originalUpdate(dt);for(const m of this.mobs||[]){if(m.dead)continue;if(mobForbidden(m.x,m.y)){const b=before.get(m.id);if(b){m.x=b.x;m.y=b.y;m.aggro=false;m.homeX=b.x;m.homeY=b.y;}}}applySceneCollisions(this);return result;};
 }
 
 async function refreshItems(){const s=mp(),A=global.AstraeonItems;if(!s?.client||!s.session||!A?.items)return;try{const {data,error}=await s.client.from('item_configs').select('item_id,name,item_type,slot,rarity,allowed_classes,description,icon,image_url,stats,enabled').eq('enabled',true);if(error)return;for(const row of data||[]){const current=A.items[row.item_id]||{};const stats=row.stats&&typeof row.stats==='object'?row.stats:{};A.items[row.item_id]={...current,id:row.item_id,name:row.name,type:row.item_type,slot:row.slot||undefined,rarity:row.rarity,allowedClasses:row.allowed_classes||[],description:row.description||'',icon:row.icon||'◇',imageUrl:row.image_url||'',stats:{...(current.stats||{}),...stats}};if(Number(stats.heal)>0)A.items[row.item_id].heal=Number(stats.heal);if(Number(stats.mana)>0)A.items[row.item_id].mana=Number(stats.mana);A.items[row.item_id].stackable=row.item_type!=='equipment';}global.astraeon?.renderInventory?.();}catch(error){console.warn('[Astraeon ItemList]',error);}}
@@ -53,5 +64,5 @@ function installIdle(game){if(game.idleV6Installed)return;game.idleV6Installed=t
 function install(){const game=global.astraeon;if(state.installed||!game||!W)return;state.installed=true;installWorldRules(game);installItemEnhancements(game);installIdle(game);}
 function wait(){if(global.astraeon&&W)install();else setTimeout(wait,80);}
 if(document.readyState==='loading')global.addEventListener('DOMContentLoaded',wait);else wait();
-global.AstraeonProductionV6={state,refreshDesign,refreshItems,insideZone,mobForbidden,activity,playerMoved};
+global.AstraeonProductionV6={state,refreshDesign,refreshItems,insideZone,insideZoneWithMargin,mobForbidden,playerProtected,canPlayerAttack,activity,playerMoved,MOB_ZONE_BUFFER};
 })(window);

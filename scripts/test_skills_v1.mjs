@@ -91,6 +91,12 @@ assert.match(runtime,/state\.remote\?state\.serverGold/,'loja não pode exibir o
 assert.match(runtime,/data-purchase-state/,'cada skill deve informar o motivo real do bloqueio');
 assert.match(runtime,/skills-overlay-open/,'painéis de skill sinalizam a camada visual ativa');
 assert.match(runtime,/document\.body\.appendChild\(toast\)/,'aviso é elevado acima da camada fixa do jogo');
+assert.match(runtime,/responseCharacter!==String\(expectedCharacter\)/,'resposta remota de outro personagem é descartada');
+assert.match(runtime,/remoteCharacter!==id&&state\.syncingCharacter!==id/,'sincronização falha é repetida somente para o personagem ativo');
+assert.match(runtime,/selectCharacter\(id,\{fresh:true\}\)/,'troca detectada limpa imediatamente as skills anteriores');
+assert.match(runtime,/characterId\(\)!==id/,'compra é cancelada se o personagem mudar durante a requisição');
+assert.match(runtime,/state\.remote&&state\.remoteCharacter===characterId\(\)/,'saldo de pontos autoritativo não é recalculado pelo save local');
+assert.match(runtime,/canPlayerAttack\(g\)/,'skills ofensivas respeitam a área protegida');
 assert.match(masterStyles,/--compact-skill-size:\s*30px/,'tiles desktop permanecem compactos');
 assert.match(skillStyles,/\.skills-overlay-open #toast[\s\S]*z-index:1700/, 'avisos ficam acima do fundo translúcido e da confirmação');
 assert.match(purchaseRepair,/greatest\(c\.level,coalesce\(p\.level,1\)\)/,'RPC corrige o nível obsoleto do personagem pelo perfil ativo salvo');

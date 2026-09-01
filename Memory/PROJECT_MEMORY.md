@@ -63,3 +63,8 @@ A arquitetura completa ainda precisa ser analisada.
 - O Mestre de Habilidades sincroniza o save do personagem antes da compra online e a migration 021 usa o maior nível persistido entre personagem e perfil ativo, reparando registros antigos após uma compra válida.
 - A loja diferencia nível, pontos, dependências e ouro autoritativo antes da confirmação; saldo autoritativo zero não é mais substituído visualmente pelo ouro local.
 - Avisos de skills são elevados para a raiz da página, permanecem acessíveis via `role=status` e aparecem acima dos painéis e fundos translúcidos.
+# Saves por personagem e áreas protegidas (2026-09-01)
+- Autosaves capturam o ID do personagem e um snapshot imutável no agendamento; temporizadores são independentes por personagem para impedir gravações cruzadas ao trocar ou criar slots.
+- O painel de características possui a ação explícita `Salvar pontos`, aguarda a persistência online e informa quando o save ficou apenas local.
+- A sincronização de skills é vinculada ao personagem solicitado, descarta respostas antigas e limpa imediatamente o grimório ao detectar uma troca.
+- Áreas `mob_exclusion` bloqueiam ataques do jogador em seu interior e mantêm mobs/spawns a dois tiles de distância, inclusive em recarregamentos e trocas de mapa.
