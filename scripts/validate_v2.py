@@ -80,7 +80,7 @@ contracts={
     'src/character-system-v6.js':['Criar Personagem','Escolher personagem','Informações da Conta','guestAccountSpotlight','character_saves','create_astraeon_character','delete_astraeon_character','signInWithPassword'],
     'src/editor-v2.js':['AUTO_EXPORT_KEY','showSaveFilePicker','downloadExport','validateDesign','validateAndRender','scheduleAutosave','linkExportFile','exportDesign'],
     'src/online-v4.css':['--online-chat-alpha','online-chat','npc-dialogue','@media(max-width:760px)'],
-    'src/online-fixes-v4.css':['online-chat-launcher','online-access-badge','data-account-blocked','astraeonSprintPulse','CORRIDA'],
+    'src/online-fixes-v4.css':['online-chat-launcher','online-access-badge','data-account-blocked','astraeonSprintPulse','body.is-sprinting .stamina-line>span','.online-chat>.online-chat-messages{grid-row:3;min-height:0}','.online-chat>form{grid-row:4}'],
     'src/admin-studio-v4.js':['ADMIN STUDIO 5.0','decorateDashboard','studioAdminLauncher','Salvar + exportar','World Production'],
     'src/admin-auth-v4.js':['/api/admin-access','signInWithPassword','Acesso 3','admin-editor-locked','admin-live-tools-v5.js','admin-character-slots-v6.js','admin-production-v6.js','Admin Studio 6.0','src/admin-mfa-v1.js','MFA · AAL2'],
     'src/admin-mfa-v1.js':['getAuthenticatorAssuranceLevel','listFactors','enroll','challenge','verify','unenroll','seis dígitos'],
@@ -129,6 +129,8 @@ for forbidden in ['onlineRuntimeHealth','Diagnóstico Online','onlineHealthRefre
     if forbidden in controller_text: ERRORS.append(f'src/online-controller-v4.js: diagnóstico visual proibido: {forbidden}')
 for forbidden in ['online-runtime-health','online-health-grid']:
     if forbidden in fixes_text: ERRORS.append(f'src/online-fixes-v4.css: estilo de diagnóstico visual proibido: {forbidden}')
+for forbidden in ["content:' · CORRIDA'","content:' · RUN'"]:
+    if forbidden in fixes_text: ERRORS.append(f'src/online-fixes-v4.css: rótulo de corrida proibido no STAM: {forbidden}')
 
 index_text=(ROOT/'index.html').read_text(encoding='utf-8') if (ROOT/'index.html').exists() else ''
 if 'Editor Astral<small>' in index_text or '>Editor Astral<' in index_text:

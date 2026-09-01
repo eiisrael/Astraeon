@@ -11,6 +11,7 @@ const npcSource = fs.readFileSync(new URL('../src/npcs-v4.js', import.meta.url),
 const adminStudioSource = fs.readFileSync(new URL('../src/admin-studio-v4.js', import.meta.url), 'utf8');
 const adminHubSource = fs.readFileSync(new URL('../src/admin-hub-v63.js', import.meta.url), 'utf8');
 const legacyAdminSource = fs.readFileSync(new URL('../src/admin-v3c.js', import.meta.url), 'utf8');
+const onlineFixesCss = fs.readFileSync(new URL('../src/online-fixes-v4.css', import.meta.url), 'utf8');
 
 const classes = new Set(['collapsed-mobile']);
 const chat = { dataset: {}, classList: { contains: value => classes.has(value) } };
@@ -37,6 +38,19 @@ assert.equal(guard.blocksPanelHotkeys({ target: input }), true, 'digitação foc
 const chatToggle = { closest: selector => selector === '#onlineChat' };
 document.activeElement = chatToggle;
 assert.equal(guard.blocksPanelHotkeys({ target: chatToggle }), false, 'botão do chat recolhido não prende os atalhos');
+
+assert.doesNotMatch(onlineFixesCss, /CORRIDA/i,
+  'SHIFT não deve acrescentar o texto CORRIDA ao rótulo STAM.');
+assert.doesNotMatch(onlineFixesCss, /stamina-line>span::after\s*\{[^}]*content:\s*['"]\s*·\s*RUN/i,
+  'O mobile também não deve acrescentar RUN ao rótulo STAM.');
+assert.match(onlineFixesCss, /\.online-chat>header\{grid-row:1\}/,
+  'O cabeçalho do chat deve permanecer na primeira linha do grid.');
+assert.match(onlineFixesCss, /\.online-chat>\.online-chat-settings\{grid-row:2\}/,
+  'As configurações devem possuir uma linha reservada mesmo quando ocultas.');
+assert.match(onlineFixesCss, /\.online-chat>\.online-chat-messages\{grid-row:3;min-height:0\}/,
+  'As mensagens devem ocupar a linha flexível central do chat.');
+assert.match(onlineFixesCss, /\.online-chat>form\{grid-row:4\}/,
+  'O formulário do chat deve ficar sempre preso ao rodapé após limpar as mensagens.');
 
 for (const [name, source] of [
   ['jogo', gameSource],
