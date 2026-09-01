@@ -125,6 +125,31 @@ body.astraeon-main-menu-ready #startScreen {
   line-height: 1.15 !important;
 }
 
+/* HUDs compactos também tinham regras tardias de 7–9px. Mantém dimensões físicas,
+   mas torna clima, nível, recursos e informações do alvo efetivamente legíveis. */
+.player-card .player-title small {
+  font-size: 10.5px !important;
+  line-height: 1.3 !important;
+}
+.player-card .level-pill,
+.player-card .bar-line,
+.player-card .bar-line > b,
+.player-card .player-meta,
+.player-card .player-meta b {
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+}
+.player-card .player-buff-icon > i {
+  font-size: 8px !important;
+}
+.mob-target-eyebrow,
+.mob-target-level,
+.mob-target-hp-row,
+.mob-target-hp-row b {
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+}
+
 /* Cidade atual: identidade fixa imediatamente acima do minimapa. */
 .city-location-hud {
   --city-accent: #e6b85f;
