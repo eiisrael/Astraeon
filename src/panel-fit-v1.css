@@ -53,14 +53,14 @@
   overscroll-behavior: none !important;
 }
 
-/* Boot guard: o HTML-base legado nunca deve aparecer antes de o menu 6.2 terminar de montar.
-   O menu final não é redesenhado aqui; apenas seu primeiro frame é protegido. */
-body:not(.astraeon-menu-v62) #startScreen {
+/* Boot guard: não revela o HTML-base até o menu cinematográfico E os controles
+   atuais de personagem terem terminado de montar. O layout final não é alterado. */
+body:not(.astraeon-main-menu-ready) #startScreen {
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
 }
-body.astraeon-menu-v62 #startScreen {
+body.astraeon-main-menu-ready #startScreen {
   visibility: visible !important;
   opacity: 1 !important;
 }
