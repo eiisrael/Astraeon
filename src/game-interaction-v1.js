@@ -26,43 +26,115 @@ function preventSelection(event){
   if(event.target?.closest?.('#gameRoot,#onlineChat,#biomeBanner,#toast,#lootWarning'))event.preventDefault();
 }
 
-function drawWorldBar(ctx,x,y,width,height,ratio,color){
-  ctx.fillStyle='rgba(3,5,6,.92)';
-  ctx.fillRect(x,y,width,height);
-  ctx.strokeStyle='rgba(0,0,0,.9)';
-  ctx.lineWidth=1;
-  ctx.strokeRect(x-.5,y-.5,width+1,height+1);
-  ctx.fillStyle=color;
-  ctx.fillRect(x,y,width*clamp01(ratio),height);
+function roundedRect(ctx,x,y,width,height,radius){
+  ctx.beginPath();
+  if(typeof ctx.roundRect==='function')ctx.roundRect(x,y,width,height,radius);
+  else{
+    const r=Math.min(radius,width/2,height/2);
+    ctx.moveTo(x+r,y);ctx.lineTo(x+width-r,y);ctx.quadraticCurveTo(x+width,y,x+width,y+r);
+    ctx.lineTo(x+width,y+height-r);ctx.quadraticCurveTo(x+width,y+height,x+width-r,y+height);
+    ctx.lineTo(x+r,y+height);ctx.quadraticCurveTo(x,y+height,x,y+height-r);
+    ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
+  }
+}
+
+function drawWorldBar(ctx,x,y,width,height,ratio,colors,glow){
+  const fillWidth=Math.max(0,width*clamp01(ratio));
+  ctx.save();
+  roundedRect(ctx,x-.75,y-.75,width+1.5,height+1.5,3);
+  ctx.fillStyle='rgba(2,5,9,.94)';
+  ctx.fill();
+  ctx.strokeStyle='rgba(160,205,255,.18)';
+  ctx.lineWidth=.75;
+  ctx.stroke();
+
+  if(fillWidth>.15){
+    const gradient=ctx.createLinearGradient(x,y,x+width,y);
+    gradient.addColorStop(0,colors[0]);
+    gradient.addColorStop(.58,colors[1]);
+    gradient.addColorStop(1,colors[2]);
+    ctx.shadowBlur=5;
+    ctx.shadowColor=glow;
+    roundedRect(ctx,x,y,fillWidth,height,2.5);
+    ctx.fillStyle=gradient;
+    ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.globalAlpha=.72;
+    roundedRect(ctx,x+1,y+.65,Math.max(0,fillWidth-2),Math.max(.8,height*.22),1);
+    ctx.fillStyle='rgba(255,255,255,.62)';
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawPlayerIdentity(ctx,p,name){
+  const level=Math.max(1,Math.round(Number(p.level)||1));
+  const parts=[
+    {text:name,color:'#f7fbff'},
+    {text:`  (Lv: ${level})`,color:'#ffd35a'},
+    {text:'  Personagem',color:'#f7fbff'}
+  ];
+  ctx.save();
+  ctx.font='800 8px Inter, sans-serif';
+  ctx.textAlign='left';
+  ctx.textBaseline='bottom';
+  ctx.lineJoin='round';
+  ctx.lineWidth=2.6;
+  const total=parts.reduce((sum,part)=>sum+ctx.measureText(part.text).width,0);
+  let x=p.x-total/2;
+  const y=p.y-69;
+  for(const part of parts){
+    ctx.strokeStyle='rgba(0,0,0,.9)';
+    ctx.strokeText(part.text,x,y);
+    ctx.fillStyle=part.color;
+    ctx.fillText(part.text,x,y);
+    x+=ctx.measureText(part.text).width;
+  }
+  ctx.restore();
 }
 
 function drawPlayerWorldHud(ctx,game,name){
   const p=game?.player;
   if(!ctx||!p)return;
 
-  const width=68,height=5,gap=2;
+  const width=72,height=5,gap=2;
   const left=p.x-width/2;
   const hpMax=Math.max(1,Number(p.maxHp)||1);
   const manaMax=Math.max(1,Number(p.maxMana)||1);
   const staminaMax=Math.max(1,Number(game.staminaMax)||100);
   const staminaValue=Number.isFinite(Number(game.stamina))?Number(game.stamina):staminaMax;
-  const top=p.y-62;
+  const top=p.y-64;
 
-  ctx.save();
-  ctx.textAlign='center';
-  ctx.textBaseline='bottom';
-  ctx.font='700 10px Inter, sans-serif';
-  ctx.lineJoin='round';
-  ctx.lineWidth=3;
-  ctx.strokeStyle='rgba(0,0,0,.86)';
-  ctx.strokeText(name,p.x,p.y-67);
-  ctx.fillStyle='#fff';
-  ctx.fillText(name,p.x,p.y-67);
+  drawPlayerIdentity(ctx,p,name);
+  drawWorldBar(ctx,left,top,width,height,Number(p.hp)/hpMax,['#810c2c','#ff2857','#ff7890'],'rgba(255,45,92,.72)');
+  drawWorldBar(ctx,left,top+height+gap,width,height,Number(p.mana)/manaMax,['#073caa','#138dff','#45e4ff'],'rgba(30,174,255,.72)');
+  drawWorldBar(ctx,left,top+(height+gap)*2,width,height,staminaValue/staminaMax,['#9a4b04','#ffae16','#fff06a'],'rgba(255,190,45,.7)');
+}
 
-  drawWorldBar(ctx,left,top,width,height,Number(p.hp)/hpMax,'#e51f1f');
-  drawWorldBar(ctx,left,top+height+gap,width,height,Number(p.mana)/manaMax,'#1594ef');
-  drawWorldBar(ctx,left,top+(height+gap)*2,width,height,staminaValue/staminaMax,'#e7ec17');
-  ctx.restore();
+function installHudIdentitySync(game){
+  if(!game||game.playerHudIdentityV2Installed||typeof game.updateUI!=='function')return;
+  game.playerHudIdentityV2Installed=true;
+  const originalUpdateUI=game.updateUI.bind(game);
+  game.updateUI=function(){
+    const result=originalUpdateUI();
+    const player=this.player;
+    const char=this.ui?.char||$('#charText');
+    if(player&&char){
+      const nick=String(player.name||'Jogador').trim().slice(0,18)||'Jogador';
+      if(char.textContent!==nick)char.textContent=nick;
+      char.title=nick;
+    }
+    return result;
+  };
+}
+
+function installStaminaLabelGuard(){
+  const label=$('.stamina-line > span');
+  if(!label||label.dataset.stamLabelGuard==='true')return;
+  label.dataset.stamLabelGuard='true';
+  const enforce=()=>{if(label.textContent!=='STAM')label.textContent='STAM';};
+  enforce();
+  new MutationObserver(enforce).observe(label,{childList:true,characterData:true,subtree:true});
 }
 
 function installPlayerWorldHud(){
@@ -72,6 +144,8 @@ function installPlayerWorldHud(){
     worldHudRetry=setTimeout(installPlayerWorldHud,60);
     return;
   }
+  installHudIdentitySync(game);
+  installStaminaLabelGuard();
   if(game.playerWorldHudV1Installed)return;
   game.playerWorldHudV1Installed=true;
 
