@@ -13,13 +13,19 @@
     dexterity: { icon: '➶', name: 'Destreza', subtitle: 'Agilidade e precisão', description: 'Aumenta velocidade e chance de crítico.', next: '+0,8 velocidade · +0,1% crítico' },
     constitution: { icon: '◆', name: 'Constituição', subtitle: 'Resistência vital', description: 'Fortalece a vida máxima e a defesa.', next: '+3 de vida · +0,25 defesa' }
   });
-  const state = { installed: false, draft: null, committed: null };
+  const state = { installed: false, draft: null, committed: null, serverSyncedCharacterId: null, syncing: false, authorityUnavailableUntil: 0 };
 
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
   function esc(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char])); }
   function sameAttributes(a, b) { return M.KEYS.every(key => Number(a?.[key]) === Number(b?.[key])); }
   function readSave() { try { return JSON.parse(localStorage.getItem(W.STORAGE_SAVE) || 'null'); } catch (_) { return null; } }
   function game() { return global.astraeon; }
+  function onlineContext() {
+    return {
+      id: global.AstraeonCharactersV6?.activeCharacterId || null,
+      client: global.AstraeonMultiplayerV4?.state?.client || null
+    };
+  }
 
   function equipmentBonuses(instance) {
     if (typeof instance?.getEquipmentBonuses === 'function') return instance.getEquipmentBonuses();
@@ -30,12 +36,40 @@
     return M.normalizeAttributes(attributes, M.earnedPoints(currentLevel));
   }
 
+  function attributesFromProgress(row, level) {
+    return normalizeForLevel({
+      damage: row?.attribute_damage ?? row?.damage ?? 0,
+      intelligence: row?.attribute_intelligence ?? row?.intelligence ?? 0,
+      dexterity: row?.attribute_dexterity ?? row?.dexterity ?? 0,
+      constitution: row?.attribute_constitution ?? row?.constitution ?? 0
+    }, row?.level || level || 1);
+  }
+
+  function authorityUnavailable(error) {
+    const code = String(error?.code || '');
+    const message = String(error?.message || error || '').toLowerCase();
+    return code === 'PGRST202' || code === '42883' ||
+      (message.includes('set_astraeon_characteristics') && (message.includes('schema cache') || message.includes('does not exist'))) ||
+      (message.includes('attribute_damage') && (message.includes('does not exist') || message.includes('column')));
+  }
+
+  function cancelPendingCharacterSave(characterId) {
+    const timers = global.AstraeonCharactersV6?.state?.saveTimers;
+    if (!characterId || !(timers instanceof Map)) return false;
+    const timer = timers.get(characterId);
+    if (!timer) return false;
+    clearTimeout(timer);
+    timers.delete(characterId);
+    return true;
+  }
+
   function captureCore(instance, saved) {
     const stored = saved?.characteristics?.coreStats;
     if (stored) return M.normalizeStats(stored);
     const base = saved?.baseStats || instance?.baseStats || instance?.player;
-    const previous = saved?.characteristics?.bonuses || M.bonuses(saved?.player?.characteristics);
-    return saved?.characteristics ? M.subtractStats(base, previous) : M.normalizeStats(base);
+    const legacyAttributes = saved?.characteristics?.attributes || saved?.player?.characteristics;
+    const previous = saved?.characteristics?.bonuses || M.bonuses(legacyAttributes);
+    return legacyAttributes ? M.subtractStats(base, previous) : M.normalizeStats(base);
   }
 
   function applyCharacterStats(instance, { preserveResources = true } = {}) {
@@ -81,6 +115,60 @@
       };
       localStorage.setItem(W.STORAGE_SAVE, JSON.stringify(data));
     } catch (error) { console.warn('[Astraeon Características] falha ao persistir', error); }
+  }
+
+  async function syncFromServer(characterId = onlineContext().id, { force = false } = {}) {
+    const instance = game();
+    const { id: activeId, client } = onlineContext();
+    const targetId = characterId || activeId;
+    if (!instance?.player || !client || !targetId || activeId !== targetId || state.syncing) return false;
+    if (!force && state.serverSyncedCharacterId === targetId) return true;
+    if (performance.now() < state.authorityUnavailableUntil) return false;
+    state.syncing = true;
+    try {
+      const { data, error } = await client.from('character_progress')
+        .select('attribute_damage,attribute_intelligence,attribute_dexterity,attribute_constitution,level')
+        .eq('character_id', targetId)
+        .maybeSingle();
+      if (error) {
+        if (authorityUnavailable(error)) state.authorityUnavailableUntil = performance.now() + 30000;
+        else console.warn('[Astraeon Características] leitura autoritativa', error.message || error);
+        return false;
+      }
+      if (!data || global.AstraeonCharactersV6?.activeCharacterId !== targetId) return false;
+      const authoritative = attributesFromProgress(data, instance.player.level);
+      instance.characteristics = authoritative;
+      applyCharacterStats(instance);
+      instance.save?.();
+      cancelPendingCharacterSave(targetId);
+      await global.AstraeonCharactersV6?.saveCharacterNow?.();
+      state.serverSyncedCharacterId = targetId;
+      state.committed = clone(authoritative);
+      if (!state.draft || sameAttributes(state.draft, state.committed)) state.draft = clone(authoritative);
+      if (!$('#characteristicsPanel')?.classList.contains('hidden')) render();
+      return true;
+    } finally { state.syncing = false; }
+  }
+
+  async function persistAuthoritative(next) {
+    const { id, client } = onlineContext();
+    if (!id || !client) return { ok: true, authoritative: false, attributes: next };
+    const { data, error } = await client.rpc('set_astraeon_characteristics', {
+      target_character: id,
+      damage_points: next.damage,
+      intelligence_points: next.intelligence,
+      dexterity_points: next.dexterity,
+      constitution_points: next.constitution
+    });
+    if (error) {
+      if (authorityUnavailable(error)) {
+        state.authorityUnavailableUntil = performance.now() + 30000;
+        return { ok: true, authoritative: false, attributes: next, migrationPending: true };
+      }
+      console.warn('[Astraeon Características] persistência autoritativa', error.message || error);
+      return { ok: false, error };
+    }
+    return { ok: true, authoritative: true, attributes: attributesFromProgress(data, game()?.player?.level) };
   }
 
   function previewStats(instance, attributes) {
@@ -169,6 +257,8 @@
     state.draft = clone(state.committed);
     panel.classList.remove('hidden');
     render();
+    const id = global.AstraeonCharactersV6?.activeCharacterId;
+    if (id && state.serverSyncedCharacterId !== id) void syncFromServer(id);
   }
 
   function closePanel() {
@@ -194,19 +284,41 @@
     const saveButton = $('#characteristicsApply');
     const next = normalizeForLevel(state.draft, instance.player.level);
     if (M.spentPoints(next) < M.spentPoints(instance.characteristics)) return;
-    instance.characteristics = next;
+    if (saveButton) { saveButton.disabled = true; saveButton.textContent = 'Salvando…'; }
+
+    const serverSave = await persistAuthoritative(next);
+    if (!serverSave.ok) {
+      if (saveButton) { saveButton.disabled = false; saveButton.textContent = 'Salvar pontos'; }
+      $('#characteristicsPending').textContent = 'O servidor rejeitou a distribuição. Nenhum ponto foi alterado.';
+      instance.toast?.('Não foi possível salvar os pontos. Recarregue o personagem e tente novamente.');
+      return;
+    }
+
+    const accepted = normalizeForLevel(serverSave.attributes, instance.player.level);
+    instance.characteristics = accepted;
     applyCharacterStats(instance);
     instance.save?.();
-    state.committed = clone(next);
-    state.draft = clone(next);
+    const activeCharacterId = global.AstraeonCharactersV6?.activeCharacterId || null;
+    cancelPendingCharacterSave(activeCharacterId);
+    state.committed = clone(accepted);
+    state.draft = clone(accepted);
+    state.serverSyncedCharacterId = serverSave.authoritative ? activeCharacterId : state.serverSyncedCharacterId;
     render();
-    if (saveButton) { saveButton.disabled = true; saveButton.textContent = 'Salvando…'; }
-    const onlineSave = global.AstraeonCharactersV6?.activeCharacterId
-      ? await global.AstraeonCharactersV6.saveCharacterNow()
-      : true;
+
+    const onlineSave = activeCharacterId ? await global.AstraeonCharactersV6.saveCharacterNow() : true;
     if (saveButton) saveButton.textContent = 'Salvar pontos';
-    $('#characteristicsPending').textContent = onlineSave ? 'Pontos salvos neste personagem' : 'Salvo localmente · sincronização online pendente';
-    instance.toast?.(onlineSave ? 'Pontos salvos neste personagem.' : 'Pontos salvos localmente. Não foi possível sincronizar agora.');
+    const fullySaved = onlineSave && (serverSave.authoritative || !activeCharacterId);
+    const migrationPending = !!serverSave.migrationPending;
+    $('#characteristicsPending').textContent = fullySaved
+      ? 'Pontos salvos neste personagem'
+      : migrationPending && onlineSave
+        ? 'Pontos salvos no personagem · proteção autoritativa aguardando migration 024'
+        : 'Salvo localmente · sincronização online pendente';
+    instance.toast?.(fullySaved
+      ? 'Pontos salvos neste personagem.'
+      : migrationPending && onlineSave
+        ? 'Pontos salvos. A proteção autoritativa será ativada após a migration 024.'
+        : 'Pontos salvos localmente. Não foi possível sincronizar agora.');
     instance.beep?.(760, .08, .035);
   }
 
@@ -248,6 +360,7 @@
     instance.startNew = function () {
       const result = originalStart();
       if (!this.player) return result;
+      state.serverSyncedCharacterId = null;
       installCharacterState(this, null, true);
       this.save();
       return result;
@@ -256,6 +369,7 @@
       const saved = readSave();
       const result = originalContinue();
       if (!this.player) return result;
+      state.serverSyncedCharacterId = null;
       installCharacterState(this, saved, false);
       return result;
     };
@@ -283,6 +397,15 @@
     };
   }
 
+  function installServerSyncWatch() {
+    setInterval(() => {
+      const instance = game();
+      const id = global.AstraeonCharactersV6?.activeCharacterId || null;
+      if (!id) { state.serverSyncedCharacterId = null; return; }
+      if (instance?.running && instance.player && state.serverSyncedCharacterId !== id && !state.syncing) void syncFromServer(id);
+    }, 700);
+  }
+
   function install() {
     if (state.installed) return;
     const instance = game();
@@ -290,7 +413,8 @@
     state.installed = true;
     installGameHooks(instance);
     bindUi();
-    global.AstraeonCharacteristicsV1 = { VERSION: '1.1', state, open: openPanel, close: closePanel, render, applyCharacterStats };
+    installServerSyncWatch();
+    global.AstraeonCharacteristicsV1 = { VERSION: '1.2', state, open: openPanel, close: closePanel, render, applyCharacterStats, syncFromServer };
   }
 
   if (document.readyState === 'loading') global.addEventListener('DOMContentLoaded', install, { once: true });

@@ -17,10 +17,24 @@ assert.deepEqual(M.addStats({ maxHp: 100, maxMana: 50, power: 10, defense: 2, sp
 const runtime = fs.readFileSync(new URL('../src/characteristics-v1.js', import.meta.url), 'utf8');
 const characters = fs.readFileSync(new URL('../src/character-system-v6.js', import.meta.url), 'utf8');
 const index = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-assert.match(index, /id="characteristicsApply"[^>]*>Salvar pontos</, 'painel expõe uma ação explícita de salvamento');
-assert.match(runtime, /await global\.AstraeonCharactersV6\.saveCharacterNow\(\)/, 'salvar pontos aguarda a persistência online');
-assert.match(characters, /saveTimers:new Map\(\)/, 'autosaves são isolados por personagem');
-assert.match(characters, /saveCharacterNow\(\{targetCharacterId,saveData\}\)/, 'autosave usa o personagem e o snapshot capturados no agendamento');
-assert.match(characters, /targetCharacterId===state\.activeCharacterId/, 'save atrasado não sobrescreve o perfil do personagem atualmente selecionado');
+const migration = fs.readFileSync(new URL('../supabase/migrations/024_characteristics_persistence.sql', import.meta.url), 'utf8');
 
-console.log('ASTRAEON CHARACTERISTICS V1 balance validation OK');
+assert.match(index, /id="characteristicsApply"[^>]*>Salvar pontos</, 'painel expõe uma ação explícita de salvamento');
+assert.match(runtime, /client\.rpc\('set_astraeon_characteristics'/, 'Salvar pontos usa a RPC autoritativa por personagem');
+assert.match(runtime, /client\.from\('character_progress'\)[\s\S]*attribute_damage,attribute_intelligence,attribute_dexterity,attribute_constitution,level/, 'carregamento reconcilia os quatro atributos do banco');
+assert.match(runtime, /cancelPendingCharacterSave\(activeCharacterId\);/, 'salvar características cancela o autosave antigo antes que ele sobrescreva o snapshot novo');
+assert.match(runtime, /activeCharacterId \? await global\.AstraeonCharactersV6\.saveCharacterNow\(\) : true/, 'espelho JSON atualizado é persistido imediatamente após cancelar o save atrasado');
+assert.match(runtime, /legacyAttributes \? M\.subtractStats\(base, previous\) : M\.normalizeStats\(base\)/, 'save legado com player.characteristics não pode aplicar bônus duas vezes ao reconstruir stats');
+assert.match(runtime, /authorityUnavailableUntil/, 'cliente mantém compatibilidade temporária enquanto migration 024 ainda não estiver em produção');
+assert.match(characters, /saveTimers:new Map\(\)/, 'autosaves continuam isolados por personagem');
+
+for (const column of ['attribute_damage','attribute_intelligence','attribute_dexterity','attribute_constitution']) {
+  assert.ok(migration.includes(column), `banco deve possuir coluna autoritativa ${column}`);
+}
+assert.match(migration, /least\(current_row\.level,50\)\*5 \+ greatest\(current_row\.level-50,0\)\*3/, 'servidor calcula o orçamento de características pelo nível autoritativo');
+assert.match(migration, /if spent > earned then raise exception 'characteristic_points_exceeded'/, 'servidor bloqueia pontos acima do orçamento');
+assert.match(migration, /characteristic_respec_not_allowed/, 'servidor impede reduzir pontos confirmados para reaproveitamento indevido');
+assert.match(migration, /cp\.user_id=uid[\s\S]*c\.user_id=uid/, 'RPC exige propriedade do character_progress e do personagem');
+assert.match(migration, /grant execute on function public\.set_astraeon_characteristics\(uuid,integer,integer,integer,integer\) to authenticated/, 'somente a RPC validada é exposta ao cliente autenticado');
+
+console.log('ASTRAEON CHARACTERISTICS V1 persistence + authority validation OK');
