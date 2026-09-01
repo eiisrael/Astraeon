@@ -68,3 +68,5 @@ A arquitetura completa ainda precisa ser analisada.
 - O painel de características possui a ação explícita `Salvar pontos`, aguarda a persistência online e informa quando o save ficou apenas local.
 - A sincronização de skills é vinculada ao personagem solicitado, descarta respostas antigas, limpa imediatamente o grimório ao detectar uma troca e diferencia requisitos, falha de conexão e servidor sem migrations.
 - Áreas `mob_exclusion` bloqueiam ataques do jogador em seu interior e mantêm mobs/spawns a dois tiles de distância, inclusive em recarregamentos e trocas de mapa.
+# Informações da Conta 4.5 (2026-09-01)
+- O painel de login, cadastro e perfil em nuvem possui identidade visual própria, responsiva e sem rolagem externa; a modernização é exclusivamente CSS e preserva todos os IDs, eventos e fluxos de autenticação existentes.
