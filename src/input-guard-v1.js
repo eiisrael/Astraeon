@@ -53,6 +53,11 @@
       source: 'src/death-penalty-v1.js?v=1.0.0',
       dataKey: 'astraeon-death-penalty-v1'
     });
+    loadRuntime({
+      globalName: 'AstraeonMenuBootGuardV1',
+      source: 'src/menu-boot-guard-v1.js?v=1.0.0',
+      dataKey: 'astraeon-menu-boot-guard-v1'
+    });
   }
 
   global.AstraeonInputGuardV1 = Object.freeze({
