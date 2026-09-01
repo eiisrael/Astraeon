@@ -7,6 +7,7 @@ const inputSource=fs.readFileSync(new URL('../src/input-guard-v1.js',import.meta
 const menuBootSource=fs.readFileSync(new URL('../src/menu-boot-guard-v1.js',import.meta.url),'utf8');
 const worldSource=fs.readFileSync(new URL('../src/world-online-v4.js',import.meta.url),'utf8');
 const panelCss=fs.readFileSync(new URL('../src/panel-fit-v1.css',import.meta.url),'utf8');
+const onlineUxCss=fs.readFileSync(new URL('../src/online-ux-final-v1.css',import.meta.url),'utf8');
 const migration=fs.readFileSync(new URL('../supabase/migrations/023_death_xp_penalty.sql',import.meta.url),'utf8');
 
 const sandbox={
@@ -58,6 +59,13 @@ assert.match(deathSource,/player\.xpNext = xpNextBefore/,'limiar de nível não 
 assert.doesNotMatch(deathSource,/this\.gainXp\s*\(/,'penalidade nunca pode chamar gainXp');
 assert.match(inputSource,/death-penalty-v1\.js/,'bootstrap deve carregar a proteção de morte');
 assert.match(inputSource,/menu-boot-guard-v1\.js/,'bootstrap deve carregar o guard do menu moderno');
+assert.match(inputSource,/astraeon-auth-booting/,'primeiro frame deve bloquear o gameRoot até resolver autenticação');
+assert.match(inputSource,/astraeon-login-required/,'visitante sem sessão deve permanecer somente no login');
+assert.match(inputSource,/panel\.classList\.remove\('hidden'\)/,'login deve abrir automaticamente quando não há sessão');
+assert.match(inputSource,/blockOnlineEscapePause/,'ESC deve ser interceptado no modo online');
+assert.match(inputSource,/game\.paused = false/,'ESC nunca pode deixar o jogo pausado');
+assert.match(inputSource,/onlineNoPauseV1Installed/,'runtime deve impedir qualquer reabertura da pausa enquanto o jogo roda');
+assert.match(inputSource,/ESC\\s\+pausar/,'dica antiga de ESC pausar deve ser removida do HUD');
 assert.doesNotThrow(()=>new vm.Script(menuBootSource),'guard de boot deve possuir JavaScript válido');
 assert.match(menuBootSource,/astraeon-menu-v62/,'boot aguarda o menu cinematográfico atual');
 assert.match(menuBootSource,/#cinematicWorldStage/,'boot aguarda a cena cinematográfica atual');
@@ -75,10 +83,17 @@ assert.match(worldSource,/updateCityHud\(game\)/,'cidade deve acompanhar a posi�
 
 assert.match(panelCss,/^@import url\("menu-cinematic-v62\.css\?v=6\.2\.0"\);/,'CSS moderno do menu deve bloquear o primeiro frame');
 assert.match(panelCss,/body:not\(\.astraeon-main-menu-ready\) #startScreen/,'HTML legado deve ficar invisível até o menu atual estar completo');
-assert.match(panelCss,/#inventoryPanel small[\s\S]*font-size:\s*12\.5px\s*!important/,'small dos painéis deve ter piso legível');
-assert.match(panelCss,/\.player-card \.bar-line[\s\S]*font-size:\s*10px\s*!important/,'recursos do HUD não podem voltar a 7 px');
+assert.match(panelCss,/#inventoryPanel small[\s\S]*font-size:\s*12\.5px\s*!important/,'small dos painéis deve continuar legível');
 assert.match(panelCss,/\.mob-target-eyebrow[\s\S]*font-size:\s*11px\s*!important/,'microtextos do alvo devem permanecer legíveis');
-assert.match(panelCss,/\.city-location-hud[\s\S]*bottom:\s*230px/,'nome da cidade deve ficar acima do minimapa');
+
+assert.match(onlineUxCss,/body:not\(\.game-running\) #hud[\s\S]*display:none!important/,'HUD não pode aparecer vazio durante F5/login');
+assert.match(onlineUxCss,/\.overlay-panel:not\(\.online-account-panel\)[\s\S]*background:transparent!important[\s\S]*backdrop-filter:none!important/,'painéis do jogo não devem criar véu translúcido no mundo');
+assert.match(onlineUxCss,/\.player-card \.player-title small[\s\S]*font-size:7px!important/,'microtexto do HUD do jogador volta ao tamanho compacto anterior');
+assert.match(onlineUxCss,/\.player-card \.bar-line,[\s\S]*font-size:7px!important/,'recursos do HUD do jogador devem ficar cerca de 4px menores que o override anterior');
+assert.match(onlineUxCss,/\.city-location-hud[\s\S]*background:none!important[\s\S]*text-align:center!important/,'cidade acima do minimapa deve ser texto puro, sem card');
+assert.match(onlineUxCss,/\.city-location-hud strong[\s\S]*color:#f0ddbb!important[\s\S]*font:700 12px\/1\.05 Georgia,serif!important/,'nome da cidade deve reproduzir fonte e cor do rótulo original');
+assert.match(onlineUxCss,/\.city-location-hud span[\s\S]*color:var\(--city-accent\)!important[\s\S]*font:600 9px\/1\.1 Inter,sans-serif!important/,'descrição da cidade deve reproduzir cor e fonte do rótulo original');
+assert.match(onlineUxCss,/bottom:194px!important/,'rótulo da cidade deve ficar imediatamente acima do minimapa desktop');
 
 assert.match(migration,/grant execute on function public\.apply_astraeon_death_penalty\(uuid,uuid\) to authenticated/,'RPC de morte deve ser autenticada');
 assert.match(migration,/where id = target_character and user_id = uid/,'RPC deve validar propriedade do personagem');
@@ -88,4 +103,4 @@ assert.match(migration,/final_xp := greatest\(0::bigint, current_xp - lost_xp\)/
 assert.match(migration,/if final_xp > current_xp then raise exception/,'servidor bloqueia qualquer caminho que aumente EXP');
 assert.doesNotMatch(migration,/set\s+level\s*=/i,'RPC de morte nunca pode alterar nível');
 
-console.log('ASTRAEON DEATH + MENU BOOT + CITY HUD + LEGIBILITY contracts OK');
+console.log('ASTRAEON DEATH + LOGIN BOOT + CITY HUD + ONLINE UX contracts OK');
