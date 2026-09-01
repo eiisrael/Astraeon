@@ -76,6 +76,8 @@ const runtime=fs.readFileSync(new URL('../src/skills-v1.js',import.meta.url),'ut
 const gameRuntime=fs.readFileSync(new URL('../src/game-v2.js',import.meta.url),'utf8');
 const index=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const masterStyles=fs.readFileSync(new URL('../src/skills-master-layout-v2.css',import.meta.url),'utf8');
+const skillStyles=fs.readFileSync(new URL('../src/skills-v1.css',import.meta.url),'utf8');
+const purchaseRepair=fs.readFileSync(new URL('../supabase/migrations/021_skill_purchase_level_sync.sql',import.meta.url),'utf8');
 assert.match(runtime,/AstraeonSkillEffectsV2\?\.cast/,'HUD executa o runtime individual de skills');
 assert.match(runtime,/purchaseEligibility/,'compra offline usa a mesma validação central');
 assert.match(gameRuntime,/e\.type === 'class-skill'/,'canvas delega efeitos exclusivos');
@@ -84,6 +86,14 @@ assert.match(index,/src\/skill-effects-v2\.css/,'cinemáticas carregam no jogo')
 assert.match(runtime,/id='skillsPanel'|id="skillsPanel"/,'grimório do jogador possui painel próprio');
 assert.match(runtime,/id='skillMerchantPanel'|id="skillMerchantPanel"/,'Mestre possui loja separada');
 assert.match(runtime,/onSkillPointerMove/,'equipamento suporta arraste por ponteiro');
+assert.match(runtime,/saveCharacterNow/,'compra online sincroniza o nível atual antes da RPC');
+assert.match(runtime,/state\.remote\?state\.serverGold/,'loja não pode exibir ouro local como se fosse saldo autoritativo');
+assert.match(runtime,/data-purchase-state/,'cada skill deve informar o motivo real do bloqueio');
+assert.match(runtime,/skills-overlay-open/,'painéis de skill sinalizam a camada visual ativa');
+assert.match(runtime,/document\.body\.appendChild\(toast\)/,'aviso é elevado acima da camada fixa do jogo');
 assert.match(masterStyles,/--compact-skill-size:\s*30px/,'tiles desktop permanecem compactos');
+assert.match(skillStyles,/\.skills-overlay-open #toast[\s\S]*z-index:1700/, 'avisos ficam acima do fundo translúcido e da confirmação');
+assert.match(purchaseRepair,/greatest\(c\.level,coalesce\(p\.level,1\)\)/,'RPC corrige o nível obsoleto do personagem pelo perfil ativo salvo');
+assert.match(purchaseRepair,/update public\.characters set level=greatest\(level,character_level\)/,'compra válida repara o nível persistido para as próximas operações');
 
 console.log('ASTRAEON SKILLS V2: 100 mechanics, effects, purchases and cinematics OK');

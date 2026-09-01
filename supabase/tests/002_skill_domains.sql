@@ -1,7 +1,7 @@
 -- Skill domains, economy and ownership contracts. Runs only on disposable test DB.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(20);
 
 select is((select count(*) from public.skill_catalog),100::bigint,'catalog has 100 skills');
 select is((select count(distinct domain_code) from public.skill_catalog where class_id='Warrior'),2::bigint,'each class exposes two domains');
@@ -38,6 +38,9 @@ select lives_ok($$select public.purchase_astraeon_skill('51100000-0000-4000-8000
 select is((public.get_astraeon_skill_state('51100000-0000-4000-8000-000000000001')->>'available')::integer,2,'level one starts with three points');
 select throws_ok($$select public.purchase_astraeon_skill('51100000-0000-4000-8000-000000000001','mage_arcano_01')$$,'P0001','skill_wrong_class','cannot buy another class skill');
 select throws_ok($$select public.purchase_astraeon_skill('51100000-0000-4000-8000-000000000001','warrior_vanguarda_02')$$,'P0001','skill_level_required','level requirement is enforced');
+update public.profiles set level=10 where id='51000000-0000-4000-8000-000000000001';
+select lives_ok($$select public.purchase_astraeon_skill('51100000-0000-4000-8000-000000000001','warrior_vanguarda_02')$$,'profile level repairs stale character level during purchase');
+select is((public.get_astraeon_skill_state('51100000-0000-4000-8000-000000000001')->>'level')::integer,10,'skill state exposes the effective active level');
 select lives_ok($$select public.equip_astraeon_skill('51100000-0000-4000-8000-000000000001','warrior_vanguarda_01',0::smallint)$$,'owner equips learned skill');
 select throws_ok($$insert into public.character_skills(character_id,skill_id) values('51100000-0000-4000-8000-000000000001','warrior_vanguarda_03')$$,'42501',null,'client cannot bypass purchase RPC');
 select throws_ok($$select public.admin_unlock_all_astraeon_skills('51100000-0000-4000-8000-000000000001')$$,'42501','admin_access_required','normal player cannot use allskill authority');

@@ -59,3 +59,7 @@ A arquitetura completa ainda precisa ser analisada.
 - Painéis ingame editados no Studio não recebem mais `overflow:auto`: o runtime usa conteúdo recortado e o `panel-fit-v1` recalcula a escala para caber no viewport.
 - O canvas do Editor de Painéis autoajusta o preview pela largura e altura disponíveis, sem criar uma janela rolável dentro do Studio.
 - O HUD do personagem usa o retrato real da classe, recursos abreviados como HP/MP/STAM, XP percentual com neon e mantém recolhimento lateral persistente.
+# Compra de skills e avisos sobrepostos (2026-08-31)
+- O Mestre de Habilidades sincroniza o save do personagem antes da compra online e a migration 021 usa o maior nível persistido entre personagem e perfil ativo, reparando registros antigos após uma compra válida.
+- A loja diferencia nível, pontos, dependências e ouro autoritativo antes da confirmação; saldo autoritativo zero não é mais substituído visualmente pelo ouro local.
+- Avisos de skills são elevados para a raiz da página, permanecem acessíveis via `role=status` e aparecem acima dos painéis e fundos translúcidos.
