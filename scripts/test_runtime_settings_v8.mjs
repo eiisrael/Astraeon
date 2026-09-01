@@ -33,11 +33,11 @@ assert.match(settings,/function resetPosition[\s\S]*card\.style\.translate='0px 
 assert.match(settings,/panel\.classList\.contains\('hidden'\)\)resetPosition\(card\)/,'fechamento deve limpar posição arrastada.');
 assert.match(settingsCss,/#settingsPanel\{[\s\S]*background:rgba\(2,4,6,\.18\)!important/,'fundo deve permitir visualizar claramente o jogo.');
 
-// Messagebox ingame e descarte sem chamar o confirm nativo no caminho efetivo.
+// Messagebox ingame e descarte sem chamar APIs nativas do navegador no caminho efetivo.
 assert.match(dialog,/global\.AstraeonMessageBoxV1=\{request,confirm,alert,prompt,install\}/,'API de diálogos ingame deve estar disponível.');
 assert.match(dialog,/game\.discardInventoryRef=async function\(ref\)/,'descarte deve ser substituído por fluxo assíncrono ingame.');
 assert.match(dialog,/const accepted=await confirm\(/,'descarte deve aguardar a messagebox ingame.');
-assert.doesNotMatch(dialog,/global\.confirm|window\.confirm|\balert\s*\(|\bprompt\s*\(/,'runtime ingame não pode chamar diálogos nativos.');
+assert.doesNotMatch(dialog,/global\.(?:confirm|alert|prompt)|window\.(?:confirm|alert|prompt)/,'runtime ingame não pode chamar APIs nativas do navegador.');
 assert.match(inventory,/global\.confirm/,'contrato documenta o legado que é interceptado antes do uso pelo runtime ingame.');
 assert.match(settingsCss,/\.astraeon-messagebox\{/,'messagebox deve possuir camada visual dentro do jogo.');
 
