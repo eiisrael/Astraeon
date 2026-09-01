@@ -1,0 +1,112 @@
+/* Astraeon Settings Menu V8 — runtime online sem pausa. */
+#settingsPanel{
+  z-index:96!important;
+  background:rgba(2,4,6,.18)!important;
+  backdrop-filter:blur(1.5px)!important;
+  -webkit-backdrop-filter:blur(1.5px)!important;
+}
+#settingsPanel.hidden{display:none!important}
+#settingsPanel .settings-v8-card{
+  width:min(760px,calc(100vw - 32px))!important;
+  max-height:min(720px,calc(100dvh - 32px))!important;
+  overflow:hidden!important;
+  padding:0!important;
+  border:1px solid rgba(229,187,105,.27)!important;
+  border-radius:15px!important;
+  background:linear-gradient(145deg,rgba(25,20,15,.97),rgba(6,9,11,.985) 64%,rgba(8,12,15,.985))!important;
+  box-shadow:0 26px 86px rgba(0,0,0,.68),inset 0 0 0 1px rgba(255,238,197,.035)!important;
+  translate:0 0;
+  transition:translate .12s ease,box-shadow .12s ease!important;
+}
+#settingsPanel .settings-v8-card.dragging{transition:none!important;box-shadow:0 30px 100px rgba(0,0,0,.78),0 0 0 1px rgba(230,188,103,.12)!important}
+#settingsPanel .settings-v8-card>.overlay-head{
+  margin:0!important;
+  padding:17px 19px 14px!important;
+  border-bottom:1px solid rgba(225,181,97,.13);
+  background:linear-gradient(90deg,rgba(159,107,42,.10),transparent 52%);
+}
+#settingsPanel .settings-drag-handle{cursor:grab;user-select:none;touch-action:none}
+#settingsPanel .settings-v8-card.dragging .settings-drag-handle{cursor:grabbing}
+#settingsPanel .overlay-head .panel-kicker{font-size:9px!important;color:#dbb96f!important;letter-spacing:.16em!important}
+#settingsPanel .overlay-head h2{font-size:25px!important;line-height:1.05!important}
+#settingsPanel .overlay-head p{font-size:11px!important;line-height:1.4!important;color:#9c9182!important}
+.settings-tabs{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:5px;
+  padding:9px 12px 0;
+  background:rgba(0,0,0,.11);
+}
+.settings-tab-button{
+  min-height:38px;
+  padding:7px 10px;
+  border:1px solid rgba(215,174,97,.12);
+  border-bottom-color:rgba(215,174,97,.22);
+  border-radius:7px 7px 2px 2px;
+  background:linear-gradient(180deg,rgba(83,61,34,.12),rgba(8,9,9,.38));
+  color:#8d857a;
+  font:900 10px/1 Inter,sans-serif;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+.settings-tab-button:hover{border-color:rgba(225,184,105,.34);color:#d3c1a1}
+.settings-tab-button.active{border-color:rgba(237,196,112,.45);background:linear-gradient(180deg,rgba(154,104,42,.28),rgba(49,33,18,.36));color:#f1d89b;box-shadow:inset 0 -2px rgba(239,193,102,.48),0 5px 18px rgba(0,0,0,.24)}
+.settings-tabs-content{height:min(470px,58dvh);overflow:hidden;padding:11px 13px;background:linear-gradient(180deg,rgba(255,255,255,.012),transparent)}
+.settings-tab-panel{display:none;height:100%;overflow:auto;padding:1px 3px 8px;align-content:start;gap:7px;scrollbar-width:thin;scrollbar-color:rgba(214,171,91,.26) transparent}
+.settings-tab-panel.active{display:grid}
+#settingsPanel .setting-row{
+  min-height:58px!important;
+  grid-template-columns:minmax(220px,1fr) minmax(150px,220px) 50px!important;
+  gap:12px!important;
+  padding:10px 12px!important;
+  border:1px solid rgba(203,162,87,.11)!important;
+  border-radius:8px!important;
+  background:linear-gradient(90deg,rgba(91,63,30,.08),rgba(255,255,255,.008))!important;
+}
+#settingsPanel .setting-row:has(input[type="checkbox"]){grid-template-columns:minmax(220px,1fr) auto!important}
+#settingsPanel .setting-row:has(select){grid-template-columns:minmax(220px,1fr) minmax(180px,235px)!important}
+#settingsPanel .setting-row span b{font-size:11px!important;color:#e7d8bc!important}
+#settingsPanel .setting-row span small{margin-top:3px!important;font-size:10px!important;line-height:1.35!important;color:#8f877b!important}
+#settingsPanel .setting-row output{font-size:10px!important;color:#dfbc6e!important}
+#settingsPanel input[type="range"]{width:100%;accent-color:#d8a84f}
+#settingsPanel input[type="checkbox"]{width:38px!important;height:20px!important;accent-color:#ca9541}
+#settingsPanel select{
+  width:100%;min-height:34px;padding:7px 30px 7px 9px;border:1px solid rgba(216,175,96,.22);border-radius:6px;background:#0a0a09;color:#dfd3bf;font:800 10px/1.2 Inter,sans-serif;outline:none
+}
+#settingsPanel select:focus{border-color:rgba(234,190,102,.55);box-shadow:0 0 0 2px rgba(220,167,74,.08)}
+#settingsPanel .settings-actions{margin:0!important;padding:10px 14px 13px!important;border-top:1px solid rgba(225,181,97,.12);background:rgba(0,0,0,.16)}
+.settings-controls-guide{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:2px}
+.settings-controls-guide>div{display:grid;grid-template-columns:78px 1fr;align-items:center;gap:9px;min-height:48px;padding:8px 10px;border:1px solid rgba(205,164,88,.1);border-radius:7px;background:rgba(255,255,255,.012)}
+.settings-controls-guide kbd{display:grid;place-items:center;min-height:28px;padding:4px 7px;border:1px solid rgba(220,178,94,.26);border-radius:5px;background:#0a0907;color:#e5c778;font:900 9px/1 ui-monospace,SFMono-Regular,Consolas,monospace;box-shadow:inset 0 -2px rgba(0,0,0,.5)}
+.settings-controls-guide span{font-size:10px;color:#aaa092}
+body.hide-player-info .player-card{display:none!important}
+body.hide-hud-tips .hud-tip{display:none!important}
+body.hide-vignette-v8 #worldVignette{display:none!important}
+body.video-shadows-off #worldVignette{filter:none}
+
+/* Messagebox ingame compartilhada por ações destrutivas/confirmativas. */
+.astraeon-messagebox{
+  position:fixed;z-index:180;inset:0;display:grid;place-items:center;padding:18px;background:rgba(1,2,3,.26);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)
+}
+.astraeon-messagebox.hidden{display:none!important}
+.astraeon-messagebox-card{width:min(430px,calc(100vw - 28px));padding:18px;border:1px solid rgba(224,180,96,.31);border-radius:12px;background:linear-gradient(145deg,rgba(27,21,15,.99),rgba(7,9,10,.995));box-shadow:0 28px 90px rgba(0,0,0,.72),inset 0 0 0 1px rgba(255,238,193,.035)}
+.astraeon-messagebox-card>span{display:block;color:#cfaa61;font:900 8px/1 Inter,sans-serif;letter-spacing:.16em;text-transform:uppercase}
+.astraeon-messagebox-card h3{margin:8px 0 7px;color:#f0e2c8;font:700 20px/1.15 Georgia,serif}
+.astraeon-messagebox-card p{margin:0;color:#aaa092;font:500 11px/1.55 Inter,sans-serif;white-space:pre-line}
+.astraeon-messagebox-card input{width:100%;min-height:38px;margin-top:12px;padding:8px 10px;border:1px solid rgba(217,173,91,.2);border-radius:6px;background:#080807;color:#eee4d3;outline:none}
+.astraeon-messagebox-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.astraeon-messagebox-actions button{min-width:90px;min-height:36px;padding:7px 12px;border:1px solid rgba(216,174,95,.22);border-radius:6px;background:linear-gradient(180deg,rgba(79,60,37,.22),rgba(14,12,10,.7));color:#d9c8aa;font-weight:900;cursor:pointer}
+.astraeon-messagebox-actions button.primary{border-color:rgba(222,177,88,.5);background:linear-gradient(180deg,rgba(154,103,43,.36),rgba(61,39,19,.65));color:#ffe4a5}
+.astraeon-messagebox-actions button.danger{border-color:rgba(220,86,71,.42);background:linear-gradient(180deg,rgba(144,52,42,.34),rgba(58,20,18,.68));color:#ffb0a4}
+
+@media(max-width:680px){
+  #settingsPanel .settings-v8-card{width:calc(100vw - 16px)!important;max-height:calc(100dvh - 16px)!important}
+  #settingsPanel .settings-v8-card>.overlay-head{padding:13px 14px 11px!important}
+  .settings-tabs{padding:7px 8px 0;gap:3px}.settings-tab-button{min-height:34px;padding:6px 4px;font-size:8px}
+  .settings-tabs-content{height:62dvh;padding:8px}
+  #settingsPanel .setting-row,#settingsPanel .setting-row:has(select){grid-template-columns:1fr!important;gap:8px!important}
+  #settingsPanel .setting-row:has(input[type="checkbox"]){grid-template-columns:1fr auto!important}
+  .settings-controls-guide{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){#settingsPanel .settings-v8-card{transition:none!important}}
