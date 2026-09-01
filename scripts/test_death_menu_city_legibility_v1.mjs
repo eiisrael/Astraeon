@@ -4,6 +4,7 @@ import vm from 'node:vm';
 
 const deathSource=fs.readFileSync(new URL('../src/death-penalty-v1.js',import.meta.url),'utf8');
 const inputSource=fs.readFileSync(new URL('../src/input-guard-v1.js',import.meta.url),'utf8');
+const menuBootSource=fs.readFileSync(new URL('../src/menu-boot-guard-v1.js',import.meta.url),'utf8');
 const worldSource=fs.readFileSync(new URL('../src/world-online-v4.js',import.meta.url),'utf8');
 const panelCss=fs.readFileSync(new URL('../src/panel-fit-v1.css',import.meta.url),'utf8');
 const migration=fs.readFileSync(new URL('../supabase/migrations/023_death_xp_penalty.sql',import.meta.url),'utf8');
@@ -40,6 +41,14 @@ assert.match(deathSource,/player\.level = levelBefore/,'nível deve ser restaura
 assert.match(deathSource,/player\.xpNext = xpNextBefore/,'limiar de nível não pode ser alterado pela morte');
 assert.doesNotMatch(deathSource,/this\.gainXp\s*\(/,'penalidade nunca pode chamar gainXp');
 assert.match(inputSource,/death-penalty-v1\.js/,'bootstrap deve carregar a proteção de morte');
+assert.match(inputSource,/menu-boot-guard-v1\.js/,'bootstrap deve carregar o guard do menu moderno');
+assert.doesNotThrow(()=>new vm.Script(menuBootSource),'guard de boot deve possuir JavaScript válido');
+assert.match(menuBootSource,/astraeon-menu-v62/,'boot aguarda o menu cinematográfico atual');
+assert.match(menuBootSource,/#cinematicWorldStage/,'boot aguarda a cena cinematográfica atual');
+assert.match(menuBootSource,/#chooseCharacterBtn/,'boot aguarda o seletor atual de personagens');
+assert.match(menuBootSource,/#accountInfoStartBtn/,'boot aguarda informações da conta atuais');
+assert.match(menuBootSource,/Criar Personagem/,'boot não aceita o rótulo legado Nova jornada');
+assert.match(menuBootSource,/classList\.add\('astraeon-main-menu-ready'\)/,'somente o menu completo pode liberar o primeiro frame');
 
 const drawCities=worldSource.match(/function drawCities\([\s\S]*?\n  function pruneCityMobs/);
 assert.ok(drawCities,'drawCities deve existir');
@@ -49,7 +58,7 @@ assert.match(worldSource,/minimap\.insertAdjacentElement\('beforebegin',hud\)/,'
 assert.match(worldSource,/updateCityHud\(game\)/,'cidade deve acompanhar a posição do jogador');
 
 assert.match(panelCss,/^@import url\("menu-cinematic-v62\.css\?v=6\.2\.0"\);/,'CSS moderno do menu deve bloquear o primeiro frame');
-assert.match(panelCss,/body:not\(\.astraeon-menu-v62\) #startScreen/,'HTML legado deve ficar invisível durante o boot');
+assert.match(panelCss,/body:not\(\.astraeon-main-menu-ready\) #startScreen/,'HTML legado deve ficar invisível até o menu atual estar completo');
 assert.match(panelCss,/#inventoryPanel small[\s\S]*font-size:\s*12\.5px\s*!important/,'small dos painéis deve ter piso legível');
 assert.match(panelCss,/\.city-location-hud[\s\S]*bottom:\s*230px/,'nome da cidade deve ficar acima do minimapa');
 
