@@ -59,7 +59,7 @@
         startScreen: $('#startScreen'), classScreen: $('#classScreen'), pauseScreen: $('#pauseScreen'),
         inventoryPanel: $('#inventoryPanel'), mapPanel: $('#mapPanel'), helpPanel: $('#helpPanel'),
         seed: $('#seedInput'), name: $('#charName'), toast: $('#toast'), biomeChip: $('#biomeChip'),
-        biomeBanner: $('#biomeBanner'), hp: $('#hpFill'), mp: $('#mpFill'), xp: $('#xpFill'),
+        biomeBanner: $('#biomeBanner'), hp: $('#hpFill'), mp: $('#mpFill'), xp: $('#xpFill'), xpText: $('#xpText'), portrait: $('#playerHudPortrait'),
         hpText: $('#hpText'), mpText: $('#mpText'), level: $('#levelText'), char: $('#charText'),
         gold: $('#goldText'), kills: $('#killText'), questText: $('#questText'), questFill: $('#questFill'),
         invGrid: $('#inventoryGrid'), invMeta: $('#inventoryMeta'), mapLegend: $('#mapLegend'),
@@ -876,8 +876,9 @@
 
     updateUI() {
       const p=this.player;if(!p)return;
-      this.ui.hp.style.width=`${Math.max(0,p.hp/p.maxHp*100)}%`;this.ui.mp.style.width=`${Math.max(0,p.mana/p.maxMana*100)}%`;this.ui.xp.style.width=`${p.xp/p.xpNext*100}%`;
+      const xpPercent=Math.max(0,Math.min(100,p.xp/p.xpNext*100));this.ui.hp.style.width=`${Math.max(0,p.hp/p.maxHp*100)}%`;this.ui.mp.style.width=`${Math.max(0,p.mana/p.maxMana*100)}%`;this.ui.xp.style.width=`${xpPercent}%`;if(this.ui.xpText)this.ui.xpText.textContent=`${Math.floor(xpPercent)}%`;
       this.ui.hpText.textContent=`${Math.ceil(p.hp)} / ${p.maxHp}`;this.ui.mpText.textContent=`${Math.floor(p.mana)} / ${p.maxMana}`;this.ui.level.textContent=`Nv. ${p.level}`;this.ui.char.textContent=`${p.name} · ${W.CLASS_DATA[p.classId].name}`;
+      if(this.ui.portrait&&this.ui.portrait.dataset.classId!==p.classId){this.ui.portrait.dataset.classId=p.classId;this.ui.portrait.src=`Assets/Classes/${W.CLASS_DATA[p.classId].sprite}`;this.ui.portrait.alt=`Retrato de ${W.CLASS_DATA[p.classId].name}`;}
       this.ui.gold.textContent=this.gold;this.ui.kills.textContent=this.quest.kills;
       const done=this.quest.kills>=this.quest.goal&&this.quest.biomes.size>=3;
       this.ui.questText.textContent=done?'Convergência estabilizada':`Elimine ${this.quest.goal} criaturas e explore 3 biomas · ${this.quest.kills}/${this.quest.goal} · ${this.quest.biomes.size}/3`;

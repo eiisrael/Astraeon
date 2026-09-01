@@ -16,6 +16,7 @@
   transition: transform 180ms cubic-bezier(.2, .78, .25, 1) !important;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
+  overscroll-behavior: none !important;
 }
 
 .panel-fit-surface::-webkit-scrollbar,
@@ -35,6 +36,19 @@
 .panel-fit-surface.skills-master-workspace,
 .panel-fit-surface.npc-dialogue-card {
   overflow: hidden !important;
+}
+
+/* Conteúdo interno também deve caber no painel, nunca criar uma segunda área rolável. */
+.panel-fit-surface .inventory-column,
+.panel-fit-surface .characteristics-body,
+.panel-fit-surface .characteristics-attributes,
+.panel-fit-surface .skills-domains,
+.panel-fit-surface .skills-card,
+.panel-fit-surface .skills-master-workspace,
+.panel-fit-surface .itemlist-results,
+.panel-fit-surface .panel-studio-custom-card {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
 }
 
 @media (max-width: 850px) {

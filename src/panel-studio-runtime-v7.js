@@ -3,7 +3,7 @@
 
 const M=global.AstraeonPanelStudioModel;
 if(!M)return;
-const APPLIED_PROPS=['display','position','isolation','width','height','max-width','max-height','padding','border-radius','border-width','border-style','border-color','background','background-size','background-position','background-repeat','opacity','z-index','clip-path','transform','box-shadow','backdrop-filter','filter','overflow'];
+const APPLIED_PROPS=['display','position','isolation','width','height','max-width','max-height','padding','border-radius','border-width','border-style','border-color','background','background-size','background-position','background-repeat','opacity','z-index','clip-path','transform','box-shadow','backdrop-filter','filter','overflow','overscroll-behavior'];
 const TEXT_PROPS=['font-family','font-size','font-weight','line-height','letter-spacing','text-align','color','border-color'];
 const NODE_PROPS=['display','position','left','top','width','height','min-width','max-width','min-height','max-height','gap','padding','margin','z-index','order','flex-direction','align-items','justify-content','grid-template-columns','grid-template-rows','background','color','border-color','border-width','border-style','border-radius','font-family','font-size','font-weight','text-align','line-height','letter-spacing','opacity','transform','box-shadow','filter'];
 const nodeOriginal=new WeakMap(),nodeOriginalContent=new WeakMap(),activeNodes=new Map();
@@ -40,7 +40,7 @@ function applyBox(element,panel){
   important(element,'max-width','calc(100vw - 16px)');important(element,'max-height','calc(100dvh - 16px)');
   important(element,'padding',`${b.padding}px`);important(element,'border-radius',`${b.radius}px`);important(element,'border-width',`${b.borderWidth}px`);important(element,'border-style','solid');important(element,'border-color',panel.surface.border);
   important(element,'position','relative');important(element,'isolation','isolate');important(element,'background',M.background(panel,false));important(element,'background-size','auto');important(element,'background-position','center');important(element,'background-repeat','no-repeat');
-  important(element,'opacity',b.opacity/100);important(element,'z-index',b.z);important(element,'clip-path',M.clipPath(panel.shape));important(element,'transform',M.transform(panel));important(element,'box-shadow',M.shadow(panel));important(element,'backdrop-filter',`blur(${e.backdropBlur}px)`);important(element,'filter',`brightness(${e.brightness}%) saturate(${e.saturate}%)`);important(element,'overflow','auto');
+  important(element,'opacity',b.opacity/100);important(element,'z-index',b.z);important(element,'clip-path',M.clipPath(panel.shape));important(element,'transform',M.transform(panel));important(element,'box-shadow',M.shadow(panel));important(element,'backdrop-filter',`blur(${e.backdropBlur}px)`);important(element,'filter',`brightness(${e.brightness}%) saturate(${e.saturate}%)`);important(element,'overflow',element.matches('#hud .player-card')?'visible':'hidden');important(element,'overscroll-behavior','none');
   element.dataset.panelStudioApplied='1';
   let media=element.querySelector(':scope > .panel-studio-runtime-media');
   if(panel.content.image){if(!media){media=document.createElement('span');media.className='panel-studio-runtime-media';media.setAttribute('aria-hidden','true');element.prepend(media);}media.style.backgroundImage=`url(${JSON.stringify(panel.content.image)})`;media.style.backgroundSize=img.fit==='auto'?'auto':img.fit;media.style.backgroundPosition=`${img.positionX}% ${img.positionY}%`;media.style.opacity=img.opacity/100;media.style.filter=`blur(${img.blur}px)`;media.style.transform=`scale(${img.scale/100})`;}
@@ -155,6 +155,7 @@ function apply(){
   for(const panel of doc.customPanels)applyCustom(M.getPanel(doc,panel.id),seen);
   for(const [key,element] of activeNodes)if(!seen.has(key)){restoreNode(element);activeNodes.delete(key);}
   if(embed&&previewId)prepareEmbed(previewId);
+  global.AstraeonPanelFitV1?.schedule?.();
 }
 function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(apply);}
 function refresh(next){const previous=doc,updated=next?M.normalize(next):M.load();for(const definition of M.CATALOG)if(previous.panels?.[definition.id]&&!updated.panels?.[definition.id])restoreContent(definition);doc=updated;schedule();return doc;}

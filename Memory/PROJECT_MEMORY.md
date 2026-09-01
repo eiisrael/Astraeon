@@ -55,3 +55,7 @@ Nenhum registrado.
 
 ## Desconhecido
 A arquitetura completa ainda precisa ser analisada.
+# Painéis sem scroll e HUD do personagem 2.0 (2026-08-31)
+- Painéis ingame editados no Studio não recebem mais `overflow:auto`: o runtime usa conteúdo recortado e o `panel-fit-v1` recalcula a escala para caber no viewport.
+- O canvas do Editor de Painéis autoajusta o preview pela largura e altura disponíveis, sem criar uma janela rolável dentro do Studio.
+- O HUD do personagem usa o retrato real da classe, recursos abreviados como HP/MP/STAM, XP percentual com neon e mantém recolhimento lateral persistente.

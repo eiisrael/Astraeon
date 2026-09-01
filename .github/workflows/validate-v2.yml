@@ -60,6 +60,7 @@ jobs:
           node scripts/test_skills_v1.mjs
           node scripts/test_entity_collision_v1.mjs
           node scripts/test_panel_fit_v1.mjs
+          node scripts/test_player_hud_v2.mjs
           node --check api/config.js
           node --check api/admin-access.js
           node --check src/editor-diagnostics-v5.js

@@ -1,7 +1,7 @@
 /* Runtime visual dos painéis publicados pelo Admin Studio. */
 .panel-studio-custom-overlay{position:fixed;inset:0;z-index:88;display:grid;place-items:center;padding:12px;background:rgba(1,3,6,.72);backdrop-filter:blur(8px)}
 .panel-studio-custom-overlay.hidden{display:none!important}
-.panel-studio-custom-card{position:relative;overflow:auto;color:#eee1c9;background:#080807;border:1px solid #c79b52;border-radius:12px;isolation:isolate}
+.panel-studio-custom-card{position:relative;overflow:hidden;color:#eee1c9;background:#080807;border:1px solid #c79b52;border-radius:12px;isolation:isolate;overscroll-behavior:none}
 .panel-studio-custom-card:before{content:"";position:absolute;inset:0;z-index:-1;background:inherit;background-size:cover;background-position:center;pointer-events:none}
 .panel-studio-runtime-media{position:absolute;inset:0;z-index:-1;border-radius:inherit;background-repeat:no-repeat;pointer-events:none;transform-origin:center}
 .panel-studio-custom-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
@@ -20,7 +20,7 @@
 .panel-studio-element-grid{display:grid;gap:8px}
 .panel-studio-grid-cell{display:grid;place-items:center;min-height:48px;border:1px dashed rgba(214,174,102,.24);border-radius:6px;background:rgba(255,255,255,.025);color:rgba(238,225,201,.48);font:700 10px ui-monospace,monospace}
 [data-panel-studio-applied="1"]{transform-origin:center center}
-.panel-studio-embed body,.panel-studio-embed{overflow:auto!important;background:#05090c!important}
+.panel-studio-embed body,.panel-studio-embed{overflow:hidden!important;overscroll-behavior:none!important;background:#05090c!important}
 body.panel-studio-embed #world,body.panel-studio-embed #worldVignette,body.panel-studio-embed #mobileControls,body.panel-studio-embed #biomeBanner,body.panel-studio-embed #toast,body.panel-studio-embed #lootWarning{display:none!important}
 body.panel-studio-embed #gameRoot{min-width:100vw;min-height:100vh;display:grid!important;place-items:center!important;padding:36px!important;background:radial-gradient(circle at 50% 40%,rgba(33,74,83,.22),transparent 48%),linear-gradient(145deg,#071014,#030506)}
 body.panel-studio-embed .panel-studio-embed-hide{display:none!important}
