@@ -6,7 +6,7 @@ select plan(10);
 insert into auth.users(id,instance_id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
 values
 ('72000000-0000-4000-8000-000000000001','00000000-0000-0000-0000-000000000000','authenticated','authenticated','death-owner@example.invalid','',now(),'{}','{}',now(),now()),
-('72000000-0000-4000-8000-000000000002','00000000-0000-0000-0000-000000000000','authenticated','authenticated','death-other@example.invalid','',now(),'{}','{}',now(),now());
+('72100000-0000-4000-8000-000000000002','00000000-0000-0000-0000-000000000000','authenticated','authenticated','death-other@example.invalid','',now(),'{}','{}',now(),now());
 
 create temporary table death_ids(label text primary key,id uuid not null);
 grant select, insert on death_ids to authenticated;
@@ -51,7 +51,7 @@ select lives_ok(format(
 ),'one remaining XP can be penalized');
 select is((select xp from public.character_progress where character_id=(select id from death_ids where label='owner')),0::bigint,'death penalty clamps XP at zero');
 
-select set_config('request.jwt.claims','{"sub":"72000000-0000-4000-8000-000000000002","role":"authenticated","aal":"aal1"}',true);
+select set_config('request.jwt.claims','{"sub":"72100000-0000-4000-8000-000000000002","role":"authenticated","aal":"aal1"}',true);
 select throws_ok(format(
   'select public.apply_astraeon_death_penalty(%L::uuid,%L::uuid)',
   (select id from death_ids where label='owner'),
