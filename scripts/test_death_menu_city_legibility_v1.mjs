@@ -36,6 +36,22 @@ for(const [xp,before,loss,after] of [
   assert.equal(result.loss,loss,`perda correta para ${xp}`);
   assert.equal(result.after,after,`EXP final correta para ${xp}`);
 }
+
+const mockGame={
+  player:{xp:1000,xpNext:4200,level:10,hp:0},
+  playerDeath(){this.player.level=11;this.player.xpNext=5544;this.player.xp=9999;this.player.hp=50;},
+  updateUI(){this.uiUpdated=true;},
+  save(){this.saved=true;},
+  toast(message){this.lastToast=message;}
+};
+assert.equal(Death.install(mockGame),true,'guard deve envolver o fluxo real de morte');
+mockGame.playerDeath();
+assert.equal(mockGame.player.xp,850,'morte real perde 15% da EXP');
+assert.equal(mockGame.player.level,10,'morte real não promove nem rebaixa nível');
+assert.equal(mockGame.player.xpNext,4200,'morte real não altera o limiar do próximo nível');
+assert.equal(mockGame.uiUpdated,true,'HUD é atualizado após a penalidade');
+assert.equal(mockGame.saved,true,'save recebe a EXP penalizada');
+
 assert.match(deathSource,/DEATH_XP_RATE\s*=\s*0\.15/,'morte deve remover exatamente 15%');
 assert.match(deathSource,/player\.level = levelBefore/,'nível deve ser restaurado ao valor anterior à morte');
 assert.match(deathSource,/player\.xpNext = xpNextBefore/,'limiar de nível não pode ser alterado pela morte');
