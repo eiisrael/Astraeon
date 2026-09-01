@@ -90,13 +90,18 @@
     game.ui?.pauseScreen?.classList.add('hidden');
   }
 
+  function scheduleLoginGate(delay = 180) {
+    clearTimeout(authRetryTimer);
+    authRetryTimer = global.setTimeout(syncOnlineLoginGate, delay);
+  }
+
   function syncOnlineLoginGate() {
     clearTimeout(authRetryTimer);
     const body = document.body;
     const mp = global.AstraeonMultiplayerV4?.state;
     const panel = $('#onlineAccountPanel');
     if (!body || !mp || !panel || mp.config === null) {
-      authRetryTimer = global.setTimeout(syncOnlineLoginGate, AUTH_RETRY_MS);
+      scheduleLoginGate(AUTH_RETRY_MS);
       return;
     }
 
@@ -104,11 +109,12 @@
       body.classList.remove('astraeon-auth-booting', 'astraeon-login-required');
       body.classList.add('astraeon-session-ready');
       panel.classList.add('hidden');
+      scheduleLoginGate();
       return;
     }
 
     if (mp.config?.enabled && mp.channelStatus === 'CONNECTING') {
-      authRetryTimer = global.setTimeout(syncOnlineLoginGate, AUTH_RETRY_MS);
+      scheduleLoginGate(AUTH_RETRY_MS);
       return;
     }
 
@@ -120,7 +126,7 @@
       body.classList.remove('astraeon-login-required');
     }
 
-    authRetryTimer = global.setTimeout(syncOnlineLoginGate, 180);
+    scheduleLoginGate();
   }
 
   function loadRuntime({ globalName, source, dataKey }) {
