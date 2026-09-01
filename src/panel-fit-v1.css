@@ -51,6 +51,116 @@
   overscroll-behavior: none !important;
 }
 
+/* Boot guard: o HTML-base legado nunca deve aparecer antes de o menu 6.2 terminar de montar.
+   O menu final não é redesenhado aqui; apenas seu primeiro frame é protegido. */
+body:not(.astraeon-menu-v62) #startScreen {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+body.astraeon-menu-v62 #startScreen {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Camada final de legibilidade. Este arquivo carrega por último e neutraliza microfontes
+   herdadas de painéis antigos sem aumentar os elementos estruturais do HUD. */
+#inventoryPanel small,
+#characteristicsPanel small,
+#skillsPanel small,
+#skillMerchantPanel small,
+#characterSelectPanel small,
+#characterDeletePanel small,
+#onlineAccountPanel small,
+#npcDialogue small,
+.inventory-item-tooltip small,
+.panel-studio-custom-card small {
+  font-size: 12.5px !important;
+  line-height: 1.4 !important;
+}
+
+#inventoryPanel .panel-kicker,
+#inventoryPanel .inventory-column-title small,
+#inventoryPanel .backpack-title small,
+#characteristicsPanel .characteristics-section-label,
+#characteristicsPanel .characteristics-profile-name > span,
+#skillsPanel .skills-brand small,
+#skillMerchantPanel .skills-brand small,
+#skillsPanel .skills-loadout-head small,
+#skillMerchantPanel .skills-loadout-head small,
+#characterSelectPanel header > div > span,
+#characterDeletePanel form > span,
+#onlineAccountPanel .panel-kicker,
+#npcDialogue .npc-dialogue-kicker {
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  letter-spacing: .08em !important;
+}
+
+#skillsPanel .skill-node span,
+#skillMerchantPanel .skill-node span,
+#skillsPanel .skill-node em,
+#skillMerchantPanel .skill-node em,
+#skillsPanel .skills-footer,
+#skillMerchantPanel .skills-footer,
+#characteristicsPanel .characteristics-rule,
+#characteristicsPanel .characteristics-point-meta,
+#inventoryPanel .equipment-legend span,
+#inventoryPanel .equipment-stats span,
+#inventoryPanel .equipment-stats i,
+#inventoryPanel .filter-chip,
+#onlineAccountPanel p,
+#npcDialogue p {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+/* Labels internos de slots precisam continuar compactos, mas não podem voltar aos 5–8px. */
+#inventoryPanel .equipment-slot small,
+#inventoryPanel .equipment-slot span,
+#inventoryPanel .inventory-slot em {
+  font-size: 10.5px !important;
+  line-height: 1.15 !important;
+}
+
+/* Cidade atual: identidade fixa imediatamente acima do minimapa. */
+.city-location-hud {
+  --city-accent: #e6b85f;
+  position: absolute;
+  right: 16px;
+  bottom: 230px;
+  z-index: 12;
+  width: 204px;
+  min-height: 54px;
+  padding: 9px 11px 8px 14px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--city-accent) 38%, rgba(255,255,255,.08));
+  border-radius: 10px;
+  background: linear-gradient(105deg, color-mix(in srgb, var(--city-accent) 14%, rgba(7,10,12,.95)), rgba(7,10,12,.94) 46%);
+  box-shadow: 0 12px 32px rgba(0,0,0,.46), inset 3px 0 0 var(--city-accent);
+  backdrop-filter: blur(10px);
+  pointer-events: none !important;
+}
+.city-location-hud strong {
+  display: block;
+  overflow: hidden;
+  color: #f5ead4;
+  font: 700 15px/1.15 Georgia, serif !important;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-shadow: 0 2px 7px rgba(0,0,0,.75);
+}
+.city-location-hud span {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--city-accent);
+  font: 700 11.5px/1.25 Inter, sans-serif !important;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.hide-minimap .city-location-hud { display: none !important; }
+
 @media (max-width: 850px) {
   .skills-merchant-panel.panel-fit-host .skills-master-workspace {
     width: calc(var(--compact-panel-width) * 2 + 12px) !important;
@@ -66,6 +176,18 @@
     height: var(--compact-panel-height) !important;
     max-height: none !important;
   }
+}
+
+@media (max-width: 760px) {
+  .city-location-hud {
+    right: 8px;
+    bottom: 218px;
+    width: 196px;
+    min-height: 50px;
+    padding: 8px 10px 7px 13px;
+  }
+  .city-location-hud strong { font-size: 14px !important; }
+  .city-location-hud span { font-size: 11px !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
