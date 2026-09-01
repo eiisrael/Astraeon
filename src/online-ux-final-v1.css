@@ -1,0 +1,110 @@
+/* Final online UX overrides: keep the game view clean during auth and panels. */
+
+/* Never expose an uninitialized HUD before a character is actually running. */
+body:not(.game-running) #hud{
+  display:none!important;
+}
+
+/* Login boot/session gate. onlineAccountPanel lives outside #gameRoot. */
+body.astraeon-auth-booting #gameRoot,
+body.astraeon-login-required #gameRoot{
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+body.astraeon-login-required #onlineAccountPanel{
+  display:grid!important;
+  background:#050504!important;
+  background-image:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+body.astraeon-login-required #onlineAccountClose{
+  display:none!important;
+}
+
+/* Game panels must not dim/blur the world behind them. The login keeps its own
+   dedicated opaque surface above. */
+.overlay-panel:not(.online-account-panel){
+  background:transparent!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+/* Undo the late oversized player-HUD microtype override and return to the
+   compact sizes defined by player-hud-v2.css. */
+.player-card .player-title small{
+  font-size:7px!important;
+  line-height:1.2!important;
+}
+.player-card .level-pill{
+  font-size:8px!important;
+  line-height:1!important;
+}
+.player-card .bar-line,
+.player-card .bar-line>b{
+  font-size:7px!important;
+  line-height:1!important;
+}
+.player-card .player-meta{
+  font-size:7px!important;
+  line-height:1!important;
+}
+.player-card .player-meta b{
+  font-size:8px!important;
+  line-height:1!important;
+}
+.player-card .player-buff-icon>i{
+  font-size:5px!important;
+}
+
+/* City identity: same typography/colors as the original in-world label,
+   relocated directly above the minimap. No card, blur or translucent plate. */
+.city-location-hud{
+  --city-accent:#e6b85f;
+  position:absolute!important;
+  right:12px!important;
+  bottom:194px!important;
+  z-index:12!important;
+  width:174px!important;
+  min-height:28px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  text-align:center!important;
+  pointer-events:none!important;
+  overflow:visible!important;
+}
+.city-location-hud strong{
+  display:block!important;
+  overflow:visible!important;
+  color:#f0ddbb!important;
+  font:700 12px/1.05 Georgia,serif!important;
+  white-space:nowrap!important;
+  text-overflow:clip!important;
+  text-shadow:0 0 6px #000,0 1px 2px #000!important;
+}
+.city-location-hud span{
+  display:block!important;
+  margin-top:2px!important;
+  overflow:visible!important;
+  color:var(--city-accent)!important;
+  font:600 9px/1.1 Inter,sans-serif!important;
+  white-space:nowrap!important;
+  text-overflow:clip!important;
+  text-shadow:0 1px 3px #000!important;
+}
+.hide-minimap .city-location-hud{display:none!important}
+
+@media(max-width:760px){
+  .city-location-hud{
+    right:8px!important;
+    bottom:190px!important;
+    width:166px!important;
+  }
+  .city-location-hud strong{font-size:12px!important}
+  .city-location-hud span{font-size:9px!important}
+}
