@@ -66,5 +66,5 @@ A arquitetura completa ainda precisa ser analisada.
 # Saves por personagem e áreas protegidas (2026-09-01)
 - Autosaves capturam o ID do personagem e um snapshot imutável no agendamento; temporizadores são independentes por personagem para impedir gravações cruzadas ao trocar ou criar slots.
 - O painel de características possui a ação explícita `Salvar pontos`, aguarda a persistência online e informa quando o save ficou apenas local.
-- A sincronização de skills é vinculada ao personagem solicitado, descarta respostas antigas e limpa imediatamente o grimório ao detectar uma troca.
+- A sincronização de skills é vinculada ao personagem solicitado, descarta respostas antigas, limpa imediatamente o grimório ao detectar uma troca e diferencia requisitos, falha de conexão e servidor sem migrations.
 - Áreas `mob_exclusion` bloqueiam ataques do jogador em seu interior e mantêm mobs/spawns a dois tiles de distância, inclusive em recarregamentos e trocas de mapa.
