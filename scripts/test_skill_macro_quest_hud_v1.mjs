@@ -22,7 +22,7 @@ for (const token of ["['#810c2c','#ff2857','#ff7890']", "['#073caa','#138dff','#
 
 // Jornada principal: visual medieval, dados reais e colapso independente do transform do Studio.
 assert.match(interaction, /function installQuestHud\(\)/, 'O HUD medieval de quests deve possuir instalador próprio.');
-assert.match(interaction, /data-astraeon-quest-hud-v1/, 'O tema da quest deve ser injetado uma única vez.');
+assert.match(interaction, /style\.dataset\.astraeonQuestHudV1='1'/, 'O tema da quest deve ser injetado uma única vez.');
 assert.match(interaction, /JORNADA PRINCIPAL/, 'O painel deve identificar a jornada principal.');
 assert.match(interaction, /I · ECOS DA CONVERGÊNCIA/, 'O painel deve apresentar o capítulo da missão.');
 assert.match(interaction, /id='questKillsDetail'/, 'O painel deve informar o progresso de criaturas.');
