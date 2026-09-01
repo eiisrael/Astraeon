@@ -19,6 +19,10 @@ assert.match(runtime, /function playerMoved\(p\)/,
   'O runtime deve detectar deslocamento real do personagem.');
 assert.match(runtime, /if\(playerMoved\(p\)\)return;/,
   'O desenho do estado ausente deve encerrar quando o personagem se mover.');
+assert.match(runtime, /x=p\.x\+50\+Math\.sin\(t\*1\.4\+i\)\*5/,
+  'O zZzZ de ausência deve ficar deslocado para a direita do HUD flutuante.');
+assert.doesNotMatch(runtime, /x=p\.x\+27\+Math\.sin/,
+  'O offset antigo do zZzZ não pode voltar a sobrepor as informações do jogador.');
 assert.ok((game.match(/AstraeonProductionV6\?\.activity\?\.\(\)/g) || []).length >= 2,
   'Ataque básico e habilidade base devem registrar atividade.');
 assert.match(skills, /AstraeonProductionV6\?\.activity\?\.\(\)/,
