@@ -5,6 +5,7 @@ const read = path => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'ut
 const index = read('index.html');
 const hudCss = read('src/player-hud-v2.css');
 const game = read('src/game-v2.js');
+const interaction = read('src/game-interaction-v1.js');
 const controller = read('src/online-controller-v4.js');
 const runtime = read('src/panel-studio-runtime-v7.js');
 const editorCss = read('src/admin-panel-editor-v8.css');
@@ -21,10 +22,19 @@ assert.match(game, /Assets\/Classes\/\$\{W\.CLASS_DATA\[p\.classId\]\.sprite\}/,
 assert.match(game, /ui\.xpText\.textContent/, 'O percentual de XP deve ser atualizado pelo runtime.');
 assert.match(hudCss, /@keyframes hud-xp-scan/, 'A barra de XP deve manter o efeito neon dinâmico.');
 assert.match(hudCss, /\.player-hud-portrait img[\s\S]*object-fit:contain/, 'O retrato não pode ser cortado ou distorcido.');
-assert.match(hudCss, /\.player-card \.player-title\{[^}]*align-self:start/, 'O nome do personagem deve permanecer elevado no cabeçalho.');
-assert.match(hudCss, /\.player-card \.bar-line:not\(\.xp-line\)\{[^}]*position:absolute/, 'HP, mana e fôlego devem ocupar a coluna abaixo do nome sem invadir o retrato.');
-assert.match(hudCss, /content:"MANA"/, 'O recurso azul deve ser identificado visualmente como MANA.');
-assert.match(hudCss, /content:"FÔLEGO"/, 'O recurso de stamina deve ser identificado visualmente como FÔLEGO.');
+
+assert.match(interaction, /installPlayerWorldHud/, 'O segundo HUD deve ser instalado junto ao personagem no mundo.');
+assert.match(interaction, /originalDrawPlayer/, 'O segundo HUD deve preservar o desenho original do personagem.');
+assert.match(interaction, /player\.name=''/, 'O nome antigo do canvas deve ser suprimido durante o desenho para não duplicar o nome.');
+assert.match(interaction, /Number\(p\.hp\)\/hpMax/, 'A barra vermelha deve acompanhar o HP real do personagem.');
+assert.match(interaction, /Number\(p\.mana\)\/manaMax/, 'A barra azul deve acompanhar a mana real do personagem.');
+assert.match(interaction, /Number\(game\.stamina\)/, 'A barra amarela deve acompanhar o fôlego real do personagem.');
+assert.match(interaction, /'#e51f1f'/, 'HP deve usar vermelho no HUD flutuante.');
+assert.match(interaction, /'#1594ef'/, 'Mana deve usar azul no HUD flutuante.');
+assert.match(interaction, /'#e7ec17'/, 'Fôlego deve usar amarelo no HUD flutuante.');
+assert.match(interaction, /p\.y-67/, 'O nome do HUD flutuante deve ficar acima das barras e do retrato.');
+assert.match(interaction, /const top=p\.y-62/, 'As três barras devem ficar imediatamente acima do personagem.');
+
 assert.match(controller, /installPlayerPanelToggle/, 'O HUD precisa manter o controle de recolher e expandir.');
 assert.match(controller, /aria-expanded/, 'O estado do HUD recolhido deve ser acessível.');
 
@@ -36,4 +46,4 @@ assert.match(editorJs, /safeWidth\/width/, 'O preview do Studio deve ajustar a l
 assert.match(editorJs, /safeHeight\/height/, 'O preview do Studio deve ajustar a altura ao espaço disponível.');
 assert.match(fitCss, /\.inventory-column[\s\S]*overflow:\s*hidden\s*!important/, 'Conteúdo interno dos painéis não deve criar scroll secundário.');
 
-console.log('ASTRAEON PLAYER HUD V2 + NO-SCROLL PANELS validation OK');
+console.log('ASTRAEON PLAYER HUD V2 + WORLD PLAYER HUD + NO-SCROLL PANELS validation OK');
