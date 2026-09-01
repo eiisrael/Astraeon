@@ -86,3 +86,39 @@ body.touch-forced .online-chat{bottom:calc(170px + env(safe-area-inset-bottom))}
 .online-chat-adm-tag{flex:0 0 auto;color:#ffd45f!important;font-size:9px!important;font-weight:900!important;letter-spacing:.035em;text-shadow:0 0 8px rgba(255,196,50,.18)}
 .online-chat-line>div{min-width:0}.online-chat-line>div b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:760px),(pointer:coarse){.online-chat>form{grid-template-columns:minmax(0,1fr) auto auto!important}.online-chat-counter{min-width:30px;font-size:8px}.online-chat-settings-actions button{min-height:30px}}
+
+/* Inventory compact 4.4: shorter panel, smaller grids and a dedicated gold readout. */
+@media(min-width:761px){
+  #inventoryPanel .inventory-overlay-card.inventory-v4.inventory-standard-v43{width:min(520px,96vw)!important;max-width:520px!important;max-height:82vh!important}
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .inventory-layout{max-height:calc(82vh - 104px)!important}
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .inventory-column{padding:9px 15px!important}
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .equipment-board{width:min(400px,100%)!important;padding:10px!important}
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .equipment-board:after{top:120px!important}
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .equipment-grid{grid-template-rows:repeat(3,64px) 44px!important;column-gap:6px!important;row-gap:7px!important}
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .equipment-slot{width:76px!important;height:62px!important;grid-template-rows:15px 1fr 12px!important;padding:4px!important}
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .equipment-slot strong,
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .equipment-slot strong .item-art-img{width:36px!important;height:36px!important}
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .slot-necklace,
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .slot-relic,
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .slot-ring,
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .slot-amulet{width:62px!important;height:42px!important;grid-template-rows:15px 1fr!important;padding:3px!important}
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .slot-necklace strong,
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .slot-relic strong,
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .slot-ring strong,
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .slot-amulet strong,
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .slot-necklace strong .item-art-img,
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .slot-relic strong .item-art-img,
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .slot-ring strong .item-art-img,
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .slot-amulet strong .item-art-img{width:24px!important;height:24px!important}
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .equipment-stats{height:72px!important;min-height:72px!important;margin-top:6px!important;gap:4px!important}
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .equipment-stats div{padding:4px 6px!important}
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .backpack-column{grid-template-columns:288px 58px!important;gap:7px 10px!important;padding:8px 15px 12px!important}
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .inventory-grid{width:288px!important;height:288px!important;grid-template-columns:repeat(5,52px)!important;grid-template-rows:repeat(5,52px)!important;gap:7px!important}
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .inventory-slot{width:52px!important;height:52px!important;min-width:52px!important;min-height:52px!important;max-width:52px!important;max-height:52px!important;padding:3px!important}
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .inventory-slot strong,
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .inventory-slot .item-art-img{width:40px!important;height:40px!important}
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .inventory-bottom{width:58px!important;height:288px!important}
+  #inventoryPanel .inventory-v4.inventory-standard-v43 .inventory-trash{width:52px!important;height:52px!important;min-width:52px!important;min-height:52px!important}
+}
+#inventoryPanel .inventory-v4 #inventoryMeta>b:last-child{margin-left:auto!important;min-width:96px;display:inline-flex!important;align-items:center;justify-content:center;gap:5px;border-color:rgba(238,195,91,.38)!important;background:linear-gradient(180deg,rgba(224,177,60,.15),rgba(93,62,9,.16))!important;color:#ffe19a!important;font-weight:900!important;box-shadow:inset 0 0 12px rgba(235,190,72,.06),0 0 12px rgba(235,190,72,.04)}
+#inventoryPanel .inventory-v4 #inventoryMeta>b:last-child::before{content:'◆';color:#f2c65d;font-size:.9em;text-shadow:0 0 8px rgba(242,198,93,.34)}
