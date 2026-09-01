@@ -31,10 +31,25 @@
     return isEditable(event?.target) || isEditable(document.activeElement) || isChatEngaged();
   }
 
+  function loadCombatUxGuard() {
+    if (global.AstraeonCombatUxGuardV1) return;
+    if (typeof document.createElement !== 'function' || !document.head?.appendChild) return;
+    if (document.querySelector?.('script[data-astraeon-combat-ux-guard-v1]')) return;
+    const script = document.createElement('script');
+    script.src = 'src/combat-ux-guard-v1.js?v=1.0.0';
+    script.async = false;
+    script.dataset.astraeonCombatUxGuardV1 = '1';
+    document.head.appendChild(script);
+  }
+
   global.AstraeonInputGuardV1 = Object.freeze({
     isEditable,
     isChatCollapsed,
     isChatEngaged,
     blocksPanelHotkeys
   });
+
+  if (document.readyState === 'loading' && typeof global.addEventListener === 'function') {
+    global.addEventListener('DOMContentLoaded', loadCombatUxGuard, { once: true });
+  } else loadCombatUxGuard();
 })(window);
