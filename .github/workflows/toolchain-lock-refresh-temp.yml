@@ -23,12 +23,6 @@ jobs:
         run: npm ci --no-audit
       - name: Rebuild vendored Supabase bundle
         run: npm run build:vendor
-      - name: Show versions
-        run: |
-          node -v
-          npm -v
-          npx --yes vercel@59.11.2 --version
-          npm exec -- supabase --version
       - name: Commit generated files
         run: |
           if ! git diff --quiet -- package-lock.json src/vendor/supabase-v2.js; then
@@ -38,12 +32,3 @@ jobs:
             git commit -m "chore: atualizar lockfile e vendor"
             git push origin HEAD:${GITHUB_REF_NAME}
           fi
-      - name: Upload generated files
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: astraeon-toolchain-generated
-          path: |
-            package-lock.json
-            src/vendor/supabase-v2.js
-          if-no-files-found: error
-          retention-days: 1
