@@ -17,14 +17,14 @@ jobs:
       - name: Refresh lockfile
         run: npm install --package-lock-only --ignore-scripts
       - name: Install refreshed dependencies
-        run: npm ci
+        run: npm ci --no-audit
       - name: Rebuild vendored Supabase bundle
         run: npm run build:vendor
       - name: Show versions
         run: |
           node -v
           npm -v
-          npm exec -- vercel --version
+          npx --yes vercel@59.11.2 --version
           npm exec -- supabase --version
       - name: Upload generated files
         uses: actions/upload-artifact@v7.0.1
