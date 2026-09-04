@@ -1,0 +1,366 @@
+# ============================================================
+# ASTRAEON - CONFIGURAR NVM + NODE 22 LTS AUTOMATICAMENTE
+# Execute o PowerShell COMO ADMINISTRADOR
+# ============================================================
+
+$ErrorActionPreference = "Stop"
+
+$NodeVersion = "22.23.2"
+$NvmVersion  = "1.2.2"
+
+$NvmUrl = "https://github.com/coreybutler/nvm-windows/releases/download/1.2.2/nvm-setup.exe"
+$NvmSha256 = "2D5AD523AA6182205DA77C0EB8210638AAA8792F4E6A4BC12E1AC854C5455A68"
+
+$Installer = Join-Path $env:TEMP "nvm-setup-$NvmVersion.exe"
+
+Write-Host ""
+Write-Host "==============================================" -ForegroundColor Cyan
+Write-Host " ASTRAEON - NODE 22 LTS + NVM" -ForegroundColor Cyan
+Write-Host "==============================================" -ForegroundColor Cyan
+Write-Host ""
+
+# ------------------------------------------------------------
+# 1. Verificar Administrador
+# ------------------------------------------------------------
+
+$Principal = New-Object Security.Principal.WindowsPrincipal(
+    [Security.Principal.WindowsIdentity]::GetCurrent()
+)
+
+if (-not $Principal.IsInRole(
+    [Security.Principal.WindowsBuiltInRole]::Administrator
+)) {
+    Write-Host "[ERRO] Abra o PowerShell como ADMINISTRADOR." -ForegroundColor Red
+    Read-Host "Pressione ENTER para sair"
+    exit 1
+}
+
+Write-Host "[OK] PowerShell executando como Administrador." -ForegroundColor Green
+
+# ------------------------------------------------------------
+# 2. Mostrar Node atual
+# ------------------------------------------------------------
+
+$NodeAtual = Get-Command node -ErrorAction SilentlyContinue
+
+if ($NodeAtual) {
+    Write-Host ""
+    Write-Host "[INFO] Node atual:" -ForegroundColor Yellow
+    try {
+        node -v
+    } catch {}
+}
+
+# ------------------------------------------------------------
+# 3. Encerrar processos Node
+# ------------------------------------------------------------
+
+Write-Host ""
+Write-Host "[INFO] Encerrando processos Node..." -ForegroundColor Yellow
+
+Get-Process node -ErrorAction SilentlyContinue |
+    Stop-Process -Force -ErrorAction SilentlyContinue
+
+# ------------------------------------------------------------
+# 4. Remover Node instalado diretamente
+# ------------------------------------------------------------
+
+Write-Host ""
+Write-Host "[INFO] Procurando instalacao direta do Node.js..." -ForegroundColor Yellow
+
+# Primeiro tenta pelo Winget
+if (Get-Command winget -ErrorAction SilentlyContinue) {
+
+    Write-Host "[INFO] Tentando remover Node.js pelo Winget..."
+
+    & winget uninstall `
+        --id OpenJS.NodeJS.LTS `
+        --exact `
+        --silent `
+        --disable-interactivity `
+        --accept-source-agreements 2>$null
+
+    & winget uninstall `
+        --id OpenJS.NodeJS `
+        --exact `
+        --silent `
+        --disable-interactivity `
+        --accept-source-agreements 2>$null
+}
+
+# Procura instalacao MSI no Registro do Windows
+$RegistryPaths = @(
+    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
+    "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*",
+    "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*"
+)
+
+$NodeInstallations = Get-ItemProperty $RegistryPaths `
+    -ErrorAction SilentlyContinue |
+    Where-Object {
+        $_.DisplayName -match "^Node\.js"
+    }
+
+foreach ($App in $NodeInstallations) {
+
+    Write-Host "[INFO] Encontrado: $($App.DisplayName)" -ForegroundColor Yellow
+
+    if ($App.UninstallString -match "\{[0-9A-Fa-f\-]{36}\}") {
+
+        $ProductCode = $Matches[0]
+
+        Write-Host "[INFO] Desinstalando $($App.DisplayName)..."
+
+        Start-Process `
+            -FilePath "msiexec.exe" `
+            -ArgumentList "/x $ProductCode /qn /norestart" `
+            -Wait
+    }
+}
+
+# ------------------------------------------------------------
+# 5. Remover pasta antiga que conflita com o NVM
+# ------------------------------------------------------------
+
+$OldNodePath = Join-Path $env:ProgramFiles "nodejs"
+
+if (Test-Path $OldNodePath) {
+
+    Write-Host ""
+    Write-Host "[INFO] Removendo pasta antiga:" -ForegroundColor Yellow
+    Write-Host "       $OldNodePath"
+
+    Remove-Item $OldNodePath -Recurse -Force -ErrorAction SilentlyContinue
+
+    Start-Sleep -Seconds 2
+}
+
+# ------------------------------------------------------------
+# 6. Baixar NVM oficial
+# ------------------------------------------------------------
+
+Write-Host ""
+Write-Host "[INFO] Baixando NVM for Windows $NvmVersion..." -ForegroundColor Cyan
+
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+Invoke-WebRequest `
+    -Uri $NvmUrl `
+    -OutFile $Installer `
+    -UseBasicParsing
+
+if (-not (Test-Path $Installer)) {
+    throw "Falha ao baixar o instalador do NVM."
+}
+
+Write-Host "[OK] Download concluido." -ForegroundColor Green
+
+# ------------------------------------------------------------
+# 7. Validar SHA256
+# ------------------------------------------------------------
+
+Write-Host ""
+Write-Host "[INFO] Verificando integridade do instalador..." -ForegroundColor Cyan
+
+$Hash = (Get-FileHash $Installer -Algorithm SHA256).Hash
+
+if ($Hash -ne $NvmSha256) {
+
+    Remove-Item $Installer -Force -ErrorAction SilentlyContinue
+
+    Write-Host "[ERRO] SHA256 diferente do esperado!" -ForegroundColor Red
+    Write-Host "Obtido:   $Hash"
+    Write-Host "Esperado: $NvmSha256"
+
+    throw "Instalador NVM recusado por seguranca."
+}
+
+Write-Host "[OK] SHA256 correto." -ForegroundColor Green
+
+# ------------------------------------------------------------
+# 8. Instalar NVM silenciosamente
+# ------------------------------------------------------------
+
+Write-Host ""
+Write-Host "[INFO] Instalando NVM..." -ForegroundColor Cyan
+
+$NvmInstallPath = Join-Path $env:LOCALAPPDATA "nvm"
+
+$Process = Start-Process `
+    -FilePath $Installer `
+    -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- /DIR=`"$NvmInstallPath`"" `
+    -Wait `
+    -PassThru
+
+if ($Process.ExitCode -ne 0) {
+    throw "O instalador do NVM retornou codigo $($Process.ExitCode)."
+}
+
+Write-Host "[OK] NVM instalado." -ForegroundColor Green
+
+# ------------------------------------------------------------
+# 9. Atualizar variaveis de ambiente nesta sessao
+# ------------------------------------------------------------
+
+$NvmHome = [Environment]::GetEnvironmentVariable(
+    "NVM_HOME",
+    "User"
+)
+
+if (-not $NvmHome) {
+    $NvmHome = [Environment]::GetEnvironmentVariable(
+        "NVM_HOME",
+        "Machine"
+    )
+}
+
+if (-not $NvmHome) {
+    $NvmHome = $NvmInstallPath
+}
+
+$NvmSymlink = [Environment]::GetEnvironmentVariable(
+    "NVM_SYMLINK",
+    "User"
+)
+
+if (-not $NvmSymlink) {
+    $NvmSymlink = [Environment]::GetEnvironmentVariable(
+        "NVM_SYMLINK",
+        "Machine"
+    )
+}
+
+if (-not $NvmSymlink) {
+    $NvmSymlink = Join-Path $env:ProgramFiles "nodejs"
+}
+
+$env:NVM_HOME = $NvmHome
+$env:NVM_SYMLINK = $NvmSymlink
+
+$MachinePath = [Environment]::GetEnvironmentVariable(
+    "Path",
+    "Machine"
+)
+
+$UserPath = [Environment]::GetEnvironmentVariable(
+    "Path",
+    "User"
+)
+
+$env:Path = "$NvmHome;$NvmSymlink;$MachinePath;$UserPath"
+
+$NvmExe = Join-Path $NvmHome "nvm.exe"
+
+if (-not (Test-Path $NvmExe)) {
+
+    # Fallback caso o instalador tenha escolhido outro local
+    $Possiveis = @(
+        "$env:LOCALAPPDATA\nvm\nvm.exe",
+        "$env:APPDATA\nvm\nvm.exe",
+        "$env:ProgramData\nvm\nvm.exe"
+    )
+
+    foreach ($Possivel in $Possiveis) {
+        if (Test-Path $Possivel) {
+            $NvmExe = $Possivel
+            $NvmHome = Split-Path $Possivel
+            $env:NVM_HOME = $NvmHome
+            break
+        }
+    }
+}
+
+if (-not (Test-Path $NvmExe)) {
+    throw "NVM foi instalado, mas nvm.exe nao foi localizado."
+}
+
+Write-Host ""
+Write-Host "[OK] NVM encontrado em:" -ForegroundColor Green
+Write-Host "     $NvmExe"
+
+# ------------------------------------------------------------
+# 10. Instalar Node 22.23.2
+# ------------------------------------------------------------
+
+Write-Host ""
+Write-Host "[INFO] Instalando Node.js $NodeVersion LTS..." -ForegroundColor Cyan
+
+& $NvmExe install $NodeVersion 64
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Falha ao instalar Node.js $NodeVersion."
+}
+
+# ------------------------------------------------------------
+# 11. Ativar Node 22
+# ------------------------------------------------------------
+
+Write-Host ""
+Write-Host "[INFO] Ativando Node.js $NodeVersion..." -ForegroundColor Cyan
+
+& $NvmExe use $NodeVersion
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Falha ao ativar Node.js $NodeVersion."
+}
+
+Start-Sleep -Seconds 2
+
+# Atualizar PATH novamente
+$env:Path = "$NvmHome;$NvmSymlink;$MachinePath;$UserPath"
+
+# ------------------------------------------------------------
+# 12. Validacao final
+# ------------------------------------------------------------
+
+Write-Host ""
+Write-Host "==============================================" -ForegroundColor Green
+Write-Host " VALIDACAO FINAL" -ForegroundColor Green
+Write-Host "==============================================" -ForegroundColor Green
+Write-Host ""
+
+Write-Host "NVM:"
+& $NvmExe version
+
+Write-Host ""
+Write-Host "Node:"
+
+$NodeExe = Join-Path $NvmSymlink "node.exe"
+
+if (Test-Path $NodeExe) {
+    & $NodeExe -v
+} else {
+    node -v
+}
+
+Write-Host ""
+Write-Host "NPM:"
+
+$NpmExe = Join-Path $NvmSymlink "npm.cmd"
+
+if (Test-Path $NpmExe) {
+    & $NpmExe -v
+} else {
+    npm -v
+}
+
+Write-Host ""
+Write-Host "Versoes instaladas:"
+& $NvmExe list
+
+# ------------------------------------------------------------
+# 13. Limpeza
+# ------------------------------------------------------------
+
+Remove-Item $Installer -Force -ErrorAction SilentlyContinue
+
+Write-Host ""
+Write-Host "==============================================" -ForegroundColor Green
+Write-Host " CONCLUIDO" -ForegroundColor Green
+Write-Host "==============================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "O Astraeon agora deve usar Node.js $NodeVersion." -ForegroundColor Green
+Write-Host ""
+Write-Host "Execute novamente:"
+Write-Host "restart.bat" -ForegroundColor Cyan
+Write-Host ""

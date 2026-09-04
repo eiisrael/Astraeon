@@ -22,10 +22,15 @@ const migration = fs.readFileSync(new URL('../supabase/migrations/024_characteri
 assert.match(index, /id="characteristicsApply"[^>]*>Salvar pontos</, 'painel expõe uma ação explícita de salvamento');
 assert.match(runtime, /client\.rpc\('set_astraeon_characteristics'/, 'Salvar pontos usa a RPC autoritativa por personagem');
 assert.match(runtime, /client\.from\('character_progress'\)[\s\S]*attribute_damage,attribute_intelligence,attribute_dexterity,attribute_constitution,level/, 'carregamento reconcilia os quatro atributos do banco');
+assert.match(runtime, /\.maybeSingle\(\)\s*\.retry\(false\)/, 'leitura de características desativa retries internos do cliente Supabase');
 assert.match(runtime, /cancelPendingCharacterSave\(activeCharacterId\);/, 'salvar características cancela o autosave antigo antes que ele sobrescreva o snapshot novo');
 assert.match(runtime, /activeCharacterId \? await global\.AstraeonCharactersV6\.saveCharacterNow\(\) : true/, 'espelho JSON atualizado é persistido imediatamente após cancelar o save atrasado');
 assert.match(runtime, /legacyAttributes \? M\.subtractStats\(base, previous\) : M\.normalizeStats\(base\)/, 'save legado com player.characteristics não pode aplicar bônus duas vezes ao reconstruir stats');
 assert.match(runtime, /authorityUnavailableUntil/, 'cliente mantém compatibilidade temporária enquanto migration 024 ainda não estiver em produção');
+assert.ok(runtime.includes('Pontos salvos no personagem · validação online pendente'), 'status ao jogador deve explicar a pendência sem expor infraestrutura');
+assert.ok(!runtime.includes('aguardando migration 024') && !runtime.includes('após a migration 024'), 'mensagens ao jogador não devem expor detalhes de migration');
+assert.doesNotMatch(runtime, /setInterval\(/, 'sincronização de características não mantém polling permanente no main thread');
+assert.equal((runtime.match(/syncActiveCharacter\(\);/g) || []).length, 2, 'criar e continuar personagem disparam uma única sincronização online');
 assert.match(characters, /saveTimers:new Map\(\)/, 'autosaves continuam isolados por personagem');
 
 for (const column of ['attribute_damage','attribute_intelligence','attribute_dexterity','attribute_constitution']) {

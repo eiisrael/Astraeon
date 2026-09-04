@@ -73,7 +73,7 @@ function ensureMarkup(){
   const description=header?.querySelector('p');if(description)description.textContent='Personalize interface, vídeo, áudio e controles sem pausar o mundo.';
 
   const tabs=makeElement('nav','settings-tabs');tabs.setAttribute('aria-label','Categorias de configurações');
-  for(const [name,label] of [['general','Geral'],['video','Vídeo'],['audio','Áudio'],['controls','Controles']]){
+  for(const [name,label] of [['general','Geral'],['video','Vídeo'],['audio','Áudio'],['controls','Controles'],['account','Conta']]){
     const button=makeElement('button','settings-tab-button',label);button.type='button';button.dataset.settingsTabTarget=name;button.setAttribute('aria-selected',name==='general'?'true':'false');if(name==='general')button.classList.add('active');tabs.appendChild(button);
   }
 
@@ -82,6 +82,7 @@ function ensureMarkup(){
   const video=makeTab('video','Vídeo');
   const audio=makeTab('audio','Áudio');
   const controls=makeTab('controls','Controles');
+  const account=makeTab('account','Informações da Conta');
 
   general.append(
     makeRange('mouseSensitivityRange','Sensibilidade do mouse','Ajusta a resposta da mira e direção do cursor no mundo.',50,150,5,settings.mouseSensitivity),
@@ -110,10 +111,15 @@ function ensureMarkup(){
   controlsGuide.innerHTML='<div><kbd>WASD</kbd><span>Movimento</span></div><div><kbd>Shift</kbd><span>Correr</span></div><div><kbd>1–5</kbd><span>Habilidades</span></div><div><kbd>Enter</kbd><span>Chat</span></div><div><kbd>I / C</kbd><span>Inventário / Características</span></div><div><kbd>ESC</kbd><span>Abrir / fechar Configurações</span></div>';
   controls.appendChild(controlsGuide);
 
-  content.append(general,video,audio,controls);
+  const accountCard=makeElement('div','settings-account-card');
+  accountCard.innerHTML='<span class="settings-account-kicker">Astraeon Online</span><h3>Informações da Conta</h3><p>Consulte sua identidade conectada e acesse as ações de nuvem sem sair do jogo.</p><div class="settings-account-identity" aria-live="polite"><i id="settingsAccountAvatar">A</i><div><b id="settingsAccountName">Sessão não iniciada</b><small id="settingsAccountEmail">Entre para sincronizar seu legado.</small></div><em id="settingsAccountState">Offline</em></div><button id="settingsAccountOpen" class="inventory-action primary" type="button">Abrir Conta &amp; Nuvem</button>';
+  account.appendChild(accountCard);
+
+  content.append(general,video,audio,controls,account);
   oldGrid.replaceWith(tabs,content);
 
   tabs.addEventListener('click',event=>{const button=event.target.closest('[data-settings-tab-target]');if(button)activateTab(button.dataset.settingsTabTarget);});
+  accountCard.querySelector('#settingsAccountOpen')?.addEventListener('click',openAccountPanel);
   bindNewControls();
   installDrag(panel,card,header);
   observePanel(panel,card);
@@ -123,6 +129,27 @@ function ensureMarkup(){
 function activateTab(name='general'){
   document.querySelectorAll('[data-settings-tab-target]').forEach(button=>{const active=button.dataset.settingsTabTarget===name;button.classList.toggle('active',active);button.setAttribute('aria-selected',String(active));});
   document.querySelectorAll('[data-settings-tab]').forEach(section=>section.classList.toggle('active',section.dataset.settingsTab===name));
+  if(name==='account')syncAccountInfo();
+}
+
+function syncAccountInfo(){
+  const state=global.AstraeonMultiplayerV4?.state;
+  const session=state?.session;
+  const profile=state?.profile;
+  const name=profile?.username||profile?.display_name||session?.user?.user_metadata?.username||'Sessão não iniciada';
+  const email=session?.user?.email||'Entre para sincronizar seu legado.';
+  const avatar=$('#settingsAccountAvatar'),nameEl=$('#settingsAccountName'),emailEl=$('#settingsAccountEmail'),status=$('#settingsAccountState');
+  if(avatar)avatar.textContent=session?String(name).charAt(0).toUpperCase()||'A':'A';
+  if(nameEl)nameEl.textContent=name;
+  if(emailEl)emailEl.textContent=email;
+  if(status){status.textContent=session?'Conectada':'Offline';status.dataset.connected=session?'true':'false';}
+}
+
+function openAccountPanel(){
+  closeSettings();
+  global.AstraeonMultiplayerV4?.install?.();
+  const open=()=>{const panel=$('#onlineAccountPanel');if(!panel)return false;panel.classList.remove('hidden');return true;};
+  if(!open())requestAnimationFrame(open);
 }
 
 function syncInputs(){
@@ -210,7 +237,8 @@ function toggleSettings(tab='general'){const panel=$('#settingsPanel');if(!panel
 
 function observePanel(panel,card){
   if(panel.dataset.settingsObserved==='true')return;panel.dataset.settingsObserved='true';
-  new MutationObserver(()=>{if(panel.classList.contains('hidden'))resetPosition(card);else{resetPosition(card);activateTab('general');syncInputs();}}).observe(panel,{attributes:true,attributeFilter:['class']});
+  let wasHidden=panel.classList.contains('hidden');
+  new MutationObserver(()=>{const hidden=panel.classList.contains('hidden');if(hidden===wasHidden)return;wasHidden=hidden;if(hidden)resetPosition(card);else{resetPosition(card);activateTab('general');syncInputs();}}).observe(panel,{attributes:true,attributeFilter:['class']});
   panel.querySelector('.panelClose')?.addEventListener('click',()=>resetPosition(card));
 }
 function installDrag(panel,card,handle){
@@ -230,6 +258,7 @@ function install(){
   if(!game?.uiV30AInstalled||!$('#settingsPanel')){clearTimeout(retryTimer);retryTimer=setTimeout(install,RETRY_MS);return false;}
   const markup=ensureMarkup();if(!markup){retryTimer=setTimeout(install,RETRY_MS);return false;}
   installed=true;hookGame(game);applySettings(true);syncInputs();activateTab('general');
+  syncAccountInfo();global.addEventListener('astraeon:online-auth-state',syncAccountInfo);
   const mediaObserver=new MutationObserver(records=>{if(records.some(record=>[...record.addedNodes].some(node=>node.nodeType===1&&(node.matches?.('audio')||node.querySelector?.('audio')))))applyAudioElements();});mediaObserver.observe(document.body,{childList:true,subtree:true});
   global.addEventListener('resize',()=>{if(!markup.panel.classList.contains('hidden'))resetPosition(markup.card);applyRenderResolution(game);});
   return true;

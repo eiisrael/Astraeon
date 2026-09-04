@@ -7,8 +7,8 @@ function defaults(){return{version:'3.0-C',enabled:true,gameplay:{godMode:false,
 function deepMerge(a,b){if(!b||typeof b!=='object')return a;for(const[k,v]of Object.entries(b)){if(v&&typeof v==='object'&&!Array.isArray(v)&&a[k]&&typeof a[k]==='object'&&!Array.isArray(a[k]))deepMerge(a[k],v);else a[k]=v;}return a;}
 function load(){try{return deepMerge(defaults(),JSON.parse(localStorage.getItem(STORAGE)||'{}'));}catch(_){return defaults();}}
 function ensureOnlineV4(){
- if(!document.querySelector('link[data-astraeon-online-v4]')){const link=document.createElement('link');link.rel='stylesheet';link.href='src/online-v4.css';link.dataset.astraeonOnlineV4='1';document.head.appendChild(link);}
- const scripts=[['src/world-online-v4.js','AstraeonOnlineWorld'],['src/npcs-v4.js','AstraeonNPCsV4'],['src/realtime-security-v1.js','AstraeonRealtimeSecurityV1'],['src/multiplayer-v4.js','AstraeonMultiplayerV4'],['src/account-status-v4.js','AstraeonAccountStatusV4'],['src/combat-focus-v4.js','AstraeonCombatFocusV4'],['src/chat-system-v4.js','AstraeonChatSystemV4'],['src/live-runtime-v5.js','AstraeonLiveRuntimeV5']];
+ if(!document.querySelector('link[data-astraeon-online-v4]')){const link=document.createElement('link');link.rel='stylesheet';link.href='src/online-v4.css?v=4.6.0';link.dataset.astraeonOnlineV4='1';document.head.appendChild(link);}
+ const scripts=[['src/world-online-v4.js','AstraeonOnlineWorld'],['src/npcs-v4.js','AstraeonNPCsV4'],['src/realtime-security-v1.js','AstraeonRealtimeSecurityV1'],['src/multiplayer-v4.js?v=4.6.1','AstraeonMultiplayerV4'],['src/account-status-v4.js','AstraeonAccountStatusV4'],['src/combat-focus-v4.js','AstraeonCombatFocusV4'],['src/chat-system-v4.js','AstraeonChatSystemV4'],['src/live-runtime-v5.js','AstraeonLiveRuntimeV5']];
  let chain=Promise.resolve();
  scripts.forEach(([src,name])=>{chain=chain.then(()=>new Promise(resolve=>{if(global[name]){global[name].install?.(global.AstraeonMultiplayerV4);resolve();return;}let s=document.querySelector(`script[data-online-src="${src}"]`);if(s){s.addEventListener('load',()=>{global[name]?.install?.(global.AstraeonMultiplayerV4);resolve();},{once:true});return;}s=document.createElement('script');s.src=src;s.dataset.onlineSrc=src;s.onload=()=>{global[name]?.install?.(global.AstraeonMultiplayerV4);resolve();};s.onerror=()=>{console.warn('[Astraeon Online] falha ao carregar',src);resolve();};document.head.appendChild(s);}));});
  return chain;
@@ -17,9 +17,6 @@ ensureOnlineV4();
 function install(){
  const game=global.astraeon,W=global.AstraeonWorld,A=global.AstraeonItems;if(!game||!W||game.adminV30CInstalled)return false;game.adminV30CInstalled=true;
  const cfg=load();game.adminConfigV3C=cfg;
- document.title='ASTRAEON 3.0-C — Hardcore Admin';
- document.querySelectorAll('.world-status .chip').forEach(ch=>{if(ch.textContent.includes('ASTRAEON'))ch.textContent='ASTRAEON 3.0-C'});
- const eyebrow=document.querySelector('#startScreen .eyebrow');if(eyebrow)eyebrow.textContent='Hardcore Remaster 3.0-C · Admin, balanceamento e tipografia responsiva';
  if(!cfg.enabled)return true;
  for(const[id,ov]of Object.entries(cfg.classes||{}))if(W.CLASS_DATA[id])Object.assign(W.CLASS_DATA[id],ov);
  for(const[id,ov]of Object.entries(cfg.mobs||{}))if(W.MOB_DATA[id])Object.assign(W.MOB_DATA[id],ov);

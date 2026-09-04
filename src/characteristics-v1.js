@@ -27,6 +27,12 @@
     };
   }
 
+  function syncActiveCharacter() {
+    const id = global.AstraeonCharactersV6?.activeCharacterId || null;
+    if (!id) { state.serverSyncedCharacterId = null; return; }
+    void syncFromServer(id);
+  }
+
   function equipmentBonuses(instance) {
     if (typeof instance?.getEquipmentBonuses === 'function') return instance.getEquipmentBonuses();
     return { maxHp: 0, maxMana: 0, power: 0, defense: 0, speed: 0, range: 0, crit: 0 };
@@ -129,7 +135,8 @@
       const { data, error } = await client.from('character_progress')
         .select('attribute_damage,attribute_intelligence,attribute_dexterity,attribute_constitution,level')
         .eq('character_id', targetId)
-        .maybeSingle();
+        .maybeSingle()
+        .retry(false);
       if (error) {
         if (authorityUnavailable(error)) state.authorityUnavailableUntil = performance.now() + 30000;
         else console.warn('[Astraeon Características] leitura autoritativa', error.message || error);
@@ -312,12 +319,12 @@
     $('#characteristicsPending').textContent = fullySaved
       ? 'Pontos salvos neste personagem'
       : migrationPending && onlineSave
-        ? 'Pontos salvos no personagem · proteção autoritativa aguardando migration 024'
+        ? 'Pontos salvos no personagem · validação online pendente'
         : 'Salvo localmente · sincronização online pendente';
     instance.toast?.(fullySaved
       ? 'Pontos salvos neste personagem.'
       : migrationPending && onlineSave
-        ? 'Pontos salvos. A proteção autoritativa será ativada após a migration 024.'
+        ? 'Pontos salvos. A validação online será concluída assim que o serviço estiver disponível.'
         : 'Pontos salvos localmente. Não foi possível sincronizar agora.');
     instance.beep?.(760, .08, .035);
   }
@@ -363,6 +370,7 @@
       state.serverSyncedCharacterId = null;
       installCharacterState(this, null, true);
       this.save();
+      syncActiveCharacter();
       return result;
     };
     instance.continueGame = function () {
@@ -371,6 +379,7 @@
       if (!this.player) return result;
       state.serverSyncedCharacterId = null;
       installCharacterState(this, saved, false);
+      syncActiveCharacter();
       return result;
     };
     instance.save = function () {
@@ -397,15 +406,6 @@
     };
   }
 
-  function installServerSyncWatch() {
-    setInterval(() => {
-      const instance = game();
-      const id = global.AstraeonCharactersV6?.activeCharacterId || null;
-      if (!id) { state.serverSyncedCharacterId = null; return; }
-      if (instance?.running && instance.player && state.serverSyncedCharacterId !== id && !state.syncing) void syncFromServer(id);
-    }, 700);
-  }
-
   function install() {
     if (state.installed) return;
     const instance = game();
@@ -413,7 +413,6 @@
     state.installed = true;
     installGameHooks(instance);
     bindUi();
-    installServerSyncWatch();
     global.AstraeonCharacteristicsV1 = { VERSION: '1.2', state, open: openPanel, close: closePanel, render, applyCharacterStats, syncFromServer };
   }
 

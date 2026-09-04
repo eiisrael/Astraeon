@@ -4,6 +4,7 @@ import fs from 'node:fs';
 const read = path => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const index = read('index.html');
 const hudCss = read('src/player-hud-v2.css');
+const onlineFixesCss = read('src/online-fixes-v4.css');
 const game = read('src/game-v2.js');
 const interaction = read('src/game-interaction-v1.js');
 const catalog = read('src/skills-catalog-v1.js');
@@ -65,6 +66,8 @@ assert.match(controller, /installPlayerPanelToggle/, 'O HUD precisa manter o con
 assert.match(controller, /aria-expanded/, 'O estado do HUD recolhido deve ser acessível.');
 assert.match(hudCss, /\.player-card\.player-panel-collapsed\{translate:calc\(-100% - 13px\) 0!important\}/, 'O recolhimento deve usar translate independente do transform do Studio.');
 assert.doesNotMatch(hudCss, /\.player-card\.player-panel-collapsed\{transform:/, 'O recolhimento não deve disputar a propriedade transform com o Studio.');
+assert.doesNotMatch(onlineFixesCss, /\.player-card\.player-panel-collapsed\{transform:/, 'Overrides legados não podem somar transform ao translate do HUD recolhido.');
+assert.match(onlineFixesCss, /\.player-card\.player-panel-collapsed\{translate:calc\(-100% - 8px\) 0!important\}/, 'O fallback de recolhimento deve usar a mesma propriedade translate do HUD atual.');
 
 assert.doesNotMatch(runtime, /important\(element,'overflow','auto'\)/, 'O Studio nunca deve salvar scroll no painel do jogo.');
 assert.match(runtime, /important\(element,'overflow',element\.matches\('#hud \.player-card'\)\?'visible':'hidden'\)/, 'Painéis devem ocultar overflow sem encobrir a aba externa do HUD.');

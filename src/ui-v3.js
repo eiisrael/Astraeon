@@ -64,7 +64,7 @@
     }
     if (!document.querySelector('script[data-astraeon-admin-runtime-v3c]')) {
       const script = document.createElement('script');
-      script.src = 'src/admin-runtime-v3c.js'; script.dataset.astraeonAdminRuntimeV3c = '1';
+      script.src = 'src/admin-runtime-v3c.js?v=3.0.2'; script.dataset.astraeonAdminRuntimeV3c = '1';
       script.addEventListener('load',()=>window.AstraeonAdminRuntime?.install?.());
       document.head.appendChild(script);
     }

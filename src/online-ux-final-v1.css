@@ -6,17 +6,27 @@ body:not(.game-running) #hud{
 }
 
 /* Login boot/session gate. onlineAccountPanel lives outside #gameRoot. */
-body.astraeon-auth-booting #gameRoot,
-body.astraeon-login-required #gameRoot{
+body.astraeon-auth-booting #gameRoot{
   visibility:hidden!important;
   pointer-events:none!important;
 }
+body.astraeon-login-required{
+  overflow:hidden!important;
+}
+body.astraeon-login-required #gameRoot{
+  visibility:visible!important;
+  pointer-events:none!important;
+  filter:brightness(.64) saturate(.78) blur(.8px);
+  transform:scale(1.004);
+  transform-origin:center;
+}
 body.astraeon-login-required #onlineAccountPanel{
   display:grid!important;
-  background:#050504!important;
-  background-image:none!important;
-  backdrop-filter:none!important;
-  -webkit-backdrop-filter:none!important;
+  background:
+    radial-gradient(circle at 50% 45%,rgba(26,78,91,.16),transparent 34%),
+    linear-gradient(145deg,rgba(2,4,5,.44),rgba(5,4,3,.58))!important;
+  backdrop-filter:blur(5px) saturate(.82)!important;
+  -webkit-backdrop-filter:blur(5px) saturate(.82)!important;
 }
 body.astraeon-login-required #onlineAccountClose{
   display:none!important;

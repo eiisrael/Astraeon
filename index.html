@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#080706">
-<title>ASTRAEON ONLINE 4.1 — Ecos da Convergência</title>
+<title>ASTRAEON ONLINE — Multiplayer</title>
+<style data-astraeon-first-paint="1">html,body{background:#050504}body.astraeon-boot-pending #gameRoot,body.astraeon-boot-pending>.overlay-panel{visibility:hidden!important;pointer-events:none!important}</style>
 <link rel="stylesheet" href="src/astraeon-v2.css">
 <link rel="stylesheet" href="src/inventory-v2.css">
 <link rel="stylesheet" href="src/inventory-v4.css?v=4.5.0" data-astraeon-inventory-v4="1">
@@ -16,14 +17,14 @@
 <link rel="stylesheet" href="src/ui-v3.css">
 <link rel="stylesheet" href="src/ui-v3b.css">
 <link rel="stylesheet" href="src/typography-v3c.css" data-astraeon-typography-v3c="1">
-  <link rel="stylesheet" href="src/online-v4.css?v=4.5.0" data-astraeon-online-v4="1">
+  <link rel="stylesheet" href="src/online-v4.css?v=4.6.0" data-astraeon-online-v4="1">
   <link rel="stylesheet" href="src/online-fixes-v4.css">
   <link rel="stylesheet" href="src/player-hud-v2.css?v=2.0.0" data-astraeon-player-hud-v2="1">
-  <link rel="stylesheet" href="src/game-interaction-v1.css?v=1.0.0">
+  <link rel="stylesheet" href="src/game-interaction-v1.css?v=1.1.0">
   <link rel="stylesheet" href="src/panel-studio-runtime-v7.css?v=7.1.0" data-panel-studio-runtime-v7="1">
   <link rel="stylesheet" href="src/panel-fit-v1.css?v=2.0.0" data-astraeon-panel-fit-v1="1">
 </head>
-<body>
+<body class="astraeon-boot-pending">
 <div id="gameRoot">
   <canvas id="world" aria-label="Mundo de Astraeon"></canvas>
   <div id="worldVignette"></div>
@@ -31,7 +32,7 @@
   <section id="startScreen" class="screen">
     <div class="start-shell">
       <article class="start-panel">
-        <span class="eyebrow">ASTRAEON ONLINE 4.1 · cidades vivas, contas, chat e multiplayer</span>
+        <span class="eyebrow">ASTRAEON ONLINE · cidades vivas, NPCs e multiplayer</span>
         <h1 class="logo">ASTRAEON<span>ECOS DA CONVERGÊNCIA</span></h1>
         <p class="lead">Explore Astraeon em cinco climas, visite cidades, converse com habitantes, encontre outros viajantes e evolua equipamentos exclusivos de classe.</p>
         <div class="menu-actions">
@@ -89,7 +90,7 @@
       <footer><span>Recompensa: Núcleo de Astraeon</span><span>+120 ouro</span></footer>
     </section>
 
-    <div class="world-status"><span id="biomeChip" class="chip biome">✦ Convergência</span><span class="chip">ASTRAEON ONLINE 4.1</span></div>
+    <div class="world-status"><span id="biomeChip" class="chip biome">✦ Convergência</span><span class="chip">ASTRAEON ONLINE</span></div>
     <div class="minimap-shell hud-card"><canvas id="minimapCanvas" width="196" height="196"></canvas></div>
 
     <div class="hotbar-shell">
@@ -238,13 +239,13 @@
   </div>
 </div>
 <script src="src/world-v2.js"></script>
-<script src="src/input-guard-v1.js?v=1.0.1" data-astraeon-input-guard-v1="1"></script>
+<script src="src/input-guard-v1.js?v=1.0.3" data-astraeon-input-guard-v1="1"></script>
 <script src="src/entity-collision-v1.js?v=1.0.0" data-astraeon-entity-collision-v1="1"></script>
 <script src="src/combat-effects-v1.js?v=1.0.0" data-astraeon-combat-effects-v1="1"></script>
 <script src="src/game-v2.js"></script>
 <script src="src/inventory-v2.js"></script>
 <script src="src/inventory-v3.js"></script>
-<script src="src/ui-v3.js?v=3.1"></script>
+<script src="src/ui-v3.js?v=3.3"></script>
 <script src="src/systems-v3b.js"></script>
 <script src="src/inventory-v4.js?v=4.5.0" data-astraeon-inventory-v4="1"></script>
 <script src="src/inventory-layout-v43.js?v=4.3.9" data-inventory-layout-v43="1"></script>
@@ -253,11 +254,11 @@
 <script src="src/panel-studio-model-v7.js?v=7.3.0" data-panel-studio-model-v7="1"></script>
 <script src="src/panel-studio-runtime-v7.js?v=7.3.0" data-panel-studio-runtime-v7="1"></script>
 <script src="src/characteristics-model-v1.js?v=1.0.0" data-astraeon-characteristics-model-v1="1"></script>
-<script src="src/characteristics-v1.js?v=1.1.0" data-astraeon-characteristics-v1="1"></script>
+<script src="src/characteristics-v1.js?v=1.1.1" data-astraeon-characteristics-v1="1"></script>
 <script src="src/skills-catalog-v1.js?v=2.0.0" data-astraeon-skills-catalog-v1="1"></script>
 <script src="src/skill-effects-v2.js?v=2.0.0" data-astraeon-skill-effects-v2="1"></script>
 <script src="src/skills-v1.js?v=1.3.0" data-astraeon-skills-v1="1"></script>
-<script src="src/game-interaction-v1.js?v=1.0.0" data-astraeon-game-interaction-v1="1"></script>
+<script src="src/game-interaction-v1.js?v=1.1.0" data-astraeon-game-interaction-v1="1"></script>
 <script src="src/panel-fit-v1.js?v=2.0.0" data-astraeon-panel-fit-v1="1"></script>
 </body>
 </html>

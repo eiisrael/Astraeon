@@ -17,12 +17,20 @@ const classes = new Set(['collapsed-mobile']);
 const chat = { dataset: {}, classList: { contains: value => classes.has(value) } };
 const input = { value: '', closest: selector => selector.includes('input') || selector === '#onlineChat' };
 const neutral = { closest: () => false };
+const classList = { add() {}, remove() {}, contains: () => false };
 const document = {
   activeElement: neutral,
+  body: { classList },
+  head: { appendChild() {} },
+  readyState: 'loading',
+  createElement: () => ({ dataset: {}, classList, setAttribute() {} }),
   querySelector: selector => selector === '#onlineChat' ? chat : selector === '#onlineChatInput' ? input : null
 };
-const context = { window: {}, document };
+const context = { window: {}, document, clearTimeout() {} };
 context.window.window = context.window;
+context.window.addEventListener = () => {};
+context.window.setInterval = () => 0;
+context.window.clearInterval = () => {};
 vm.runInNewContext(guardSource, context);
 const guard = context.window.AstraeonInputGuardV1;
 

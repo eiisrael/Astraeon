@@ -2,8 +2,8 @@
   'use strict';
 
   const EDITABLE_SELECTOR = 'input,textarea,select,[contenteditable="true"],#onlineAccountPanel,#npcDialogue,#astraeonMessageBox';
-  const UX_STYLE = 'src/online-ux-final-v1.css?v=1.0.0';
-  const SETTINGS_STYLE = 'src/settings-menu-v8.css?v=8.0.0';
+  const UX_STYLE = 'src/online-ux-final-v1.css?v=1.1.0';
+  const SETTINGS_STYLE = 'src/settings-menu-v8.css?v=8.1.0';
   const AUTH_RETRY_MS = 50;
   const $ = selector => document.querySelector(selector);
   let authRetryTimer = 0;
@@ -13,7 +13,7 @@
     if (document.querySelector('style[data-astraeon-auth-critical-v1]')) return;
     const style = document.createElement('style');
     style.dataset.astraeonAuthCriticalV1 = '1';
-    style.textContent = 'body.astraeon-auth-booting #gameRoot,body.astraeon-login-required #gameRoot{visibility:hidden!important;pointer-events:none!important}body:not(.game-running) #hud{display:none!important}';
+    style.textContent = 'body.astraeon-auth-booting #gameRoot{visibility:hidden!important;pointer-events:none!important}body:not(.game-running) #hud{display:none!important}';
     document.head.appendChild(style);
   }
 
@@ -72,7 +72,8 @@
 
   function installRuntimeSettingsBridge() {
     const game = global.astraeon;
-    if (!game || game.runtimeSettingsBridgeV8Installed || typeof game.togglePause !== 'function') return false;
+    if (!game || typeof game.togglePause !== 'function') return false;
+    if (game.runtimeSettingsBridgeV8Installed) return true;
     game.runtimeSettingsBridgeV8Installed = true;
     const originalTogglePause = game.togglePause.bind(game);
     game.togglePause = function (force) {
@@ -113,16 +114,17 @@
     const body = document.body;
     const mp = global.AstraeonMultiplayerV4?.state;
     const panel = $('#onlineAccountPanel');
-    if (!body || !mp || !panel || mp.config === null) {
+    if (!body || !mp || !panel || mp.config === null || !body.classList.contains('astraeon-main-menu-ready')) {
       scheduleLoginGate(AUTH_RETRY_MS);
       return;
     }
 
     if (mp.session) {
+      const wasBlockingLogin = body.classList.contains('astraeon-auth-booting') || body.classList.contains('astraeon-login-required');
       body.classList.remove('astraeon-auth-booting', 'astraeon-login-required');
       body.classList.add('astraeon-session-ready');
-      panel.classList.add('hidden');
-      scheduleLoginGate();
+      if (wasBlockingLogin) panel.classList.add('hidden');
+      body.classList.remove('astraeon-boot-pending');
       return;
     }
 
@@ -138,8 +140,7 @@
     } else {
       body.classList.remove('astraeon-login-required');
     }
-
-    scheduleLoginGate();
+    body.classList.remove('astraeon-boot-pending');
   }
 
   function loadRuntime({ globalName, source, dataKey }) {
@@ -168,12 +169,12 @@
     });
     loadRuntime({
       globalName: 'AstraeonMenuBootGuardV1',
-      source: 'src/menu-boot-guard-v1.js?v=1.0.0',
+      source: 'src/menu-boot-guard-v1.js?v=1.0.2',
       dataKey: 'astraeon-menu-boot-guard-v1'
     });
     loadRuntime({
       globalName: 'AstraeonSettingsMenuV8',
-      source: 'src/settings-menu-v8.js?v=8.0.0',
+      source: 'src/settings-menu-v8.js?v=8.1.0',
       dataKey: 'astraeon-settings-menu-v8'
     });
     loadRuntime({
@@ -190,6 +191,7 @@
   loadStyle(UX_STYLE, 'astraeon-online-ux-final-v1');
   loadStyle(SETTINGS_STYLE, 'astraeon-settings-menu-v8');
   global.addEventListener('keydown', routeRuntimeEscape, true);
+  global.addEventListener('astraeon:online-auth-state', syncOnlineLoginGate);
 
   global.AstraeonInputGuardV1 = Object.freeze({
     isEditable,

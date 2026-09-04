@@ -32,7 +32,7 @@
 #settingsPanel .overlay-head p{font-size:11px!important;line-height:1.4!important;color:#9c9182!important}
 .settings-tabs{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
+  grid-template-columns:repeat(5,1fr);
   gap:5px;
   padding:9px 12px 0;
   background:rgba(0,0,0,.11);
@@ -80,6 +80,30 @@
 .settings-controls-guide>div{display:grid;grid-template-columns:78px 1fr;align-items:center;gap:9px;min-height:48px;padding:8px 10px;border:1px solid rgba(205,164,88,.1);border-radius:7px;background:rgba(255,255,255,.012)}
 .settings-controls-guide kbd{display:grid;place-items:center;min-height:28px;padding:4px 7px;border:1px solid rgba(220,178,94,.26);border-radius:5px;background:#0a0907;color:#e5c778;font:900 9px/1 ui-monospace,SFMono-Regular,Consolas,monospace;box-shadow:inset 0 -2px rgba(0,0,0,.5)}
 .settings-controls-guide span{font-size:10px;color:#aaa092}
+.settings-account-card{
+  position:relative;
+  align-self:start;
+  min-height:300px;
+  display:flex;
+  flex-direction:column;
+  padding:25px;
+  border:1px solid rgba(220,177,95,.18);
+  border-radius:12px;
+  background:radial-gradient(circle at 85% 5%,rgba(92,192,222,.09),transparent 34%),linear-gradient(145deg,rgba(104,71,31,.12),rgba(3,8,10,.38));
+  overflow:hidden;
+}
+.settings-account-card::after{content:"A";position:absolute;right:22px;top:12px;color:rgba(232,190,103,.055);font:700 112px/1 Georgia,serif;pointer-events:none}
+.settings-account-kicker{position:relative;z-index:1;color:#dcb765;font:900 8px/1 Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase}
+.settings-account-card h3{position:relative;z-index:1;margin:8px 0 6px;color:#f1dfbe;font:700 23px/1.1 Georgia,serif}
+.settings-account-card>p{position:relative;z-index:1;max-width:490px;margin:0;color:#948a7c;font-size:10px;line-height:1.55}
+.settings-account-identity{position:relative;z-index:1;display:grid;grid-template-columns:50px minmax(0,1fr) auto;align-items:center;gap:12px;margin-top:22px;padding:14px;border:1px solid rgba(107,206,235,.16);border-radius:10px;background:rgba(18,54,65,.1)}
+.settings-account-identity i{width:48px;height:48px;display:grid;place-items:center;border:1px solid rgba(105,211,245,.35);border-radius:50%;background:radial-gradient(circle,rgba(105,211,245,.15),transparent 68%),#071216;color:#bcecff;font:700 19px/1 Georgia,serif;font-style:normal}
+.settings-account-identity b,.settings-account-identity small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.settings-account-identity b{color:#e8f4f5;font-size:11px}.settings-account-identity small{margin-top:4px;color:#81979d;font-size:9px}
+.settings-account-identity em{padding-left:12px;color:#8f9691;font:900 8px/1 Inter,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.08em}
+.settings-account-identity em::before{content:"";display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:50%;background:#696d69}
+.settings-account-identity em[data-connected="true"]{color:#8bd8a4}.settings-account-identity em[data-connected="true"]::before{background:#6be296;box-shadow:0 0 8px rgba(107,226,150,.62)}
+.settings-account-card>.inventory-action{position:relative;z-index:1;align-self:flex-start;min-width:210px;min-height:40px;margin-top:16px!important;border-color:rgba(221,177,91,.4)!important;background:linear-gradient(180deg,rgba(145,96,37,.36),rgba(57,37,18,.64))!important;color:#f4d58f!important}
 body.hide-player-info .player-card{display:none!important}
 body.hide-hud-tips .hud-tip{display:none!important}
 body.hide-vignette-v8 #worldVignette{display:none!important}
@@ -108,5 +132,6 @@ body.video-shadows-off #worldVignette{filter:none}
   #settingsPanel .setting-row,#settingsPanel .setting-row:has(select){grid-template-columns:1fr!important;gap:8px!important}
   #settingsPanel .setting-row:has(input[type="checkbox"]){grid-template-columns:1fr auto!important}
   .settings-controls-guide{grid-template-columns:1fr}
+  .settings-account-card{min-height:0;padding:18px}.settings-account-identity{grid-template-columns:44px minmax(0,1fr);margin-top:16px}.settings-account-identity i{width:42px;height:42px}.settings-account-identity em{grid-column:2;padding-left:0}.settings-account-card>.inventory-action{width:100%}
 }
 @media(prefers-reduced-motion:reduce){#settingsPanel .settings-v8-card{transition:none!important}}

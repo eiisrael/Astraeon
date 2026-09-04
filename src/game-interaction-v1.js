@@ -10,7 +10,7 @@ const activePlayerBuffs=new Map();
 function isEditable(target){return !!target?.closest?.('input,textarea,select,[contenteditable="true"]');}
 function isWorldTarget(target){return target===$('#world')&&document.body.classList.contains('game-running')&&!document.body.classList.contains('panel-studio-embed');}
 function isNearNpc(){const game=global.astraeon,player=game?.player;if(!player)return false;return (game.npcsV4||[]).some(npc=>Math.hypot(npc.x-player.x,npc.y-player.y)<=78);}
-function paint(){raf=0;if(!cursor)return;cursor.style.left=`${nextX}px`;cursor.style.top=`${nextY}px`;cursor.classList.toggle('interacting',isNearNpc());}
+function paint(){raf=0;if(!cursor)return;cursor.style.setProperty('--cursor-x',`${nextX}px`);cursor.style.setProperty('--cursor-y',`${nextY}px`);cursor.classList.toggle('interacting',isNearNpc());}
 function move(event){
   if(!cursor)return;
   if(!isWorldTarget(event.target)){cursor.classList.remove('visible','moving','interacting');return;}
@@ -519,7 +519,7 @@ function installPlayerWorldHud(){
 
 function install(){
   if(document.documentElement.dataset.gameInteractionV1==='true')return;document.documentElement.dataset.gameInteractionV1='true';
-  cursor=document.createElement('div');cursor.id='astraeonCursor';cursor.setAttribute('aria-hidden','true');cursor.innerHTML='<i class="cursor-ring"></i><i class="cursor-rune"></i><i class="cursor-core"></i>';document.body.appendChild(cursor);
+  cursor=document.createElement('div');cursor.id='astraeonCursor';cursor.setAttribute('aria-hidden','true');cursor.innerHTML='<i class="cursor-aura"></i><i class="cursor-ring"></i><i class="cursor-rune"></i><i class="cursor-sigil"></i><i class="cursor-core"></i>';document.body.appendChild(cursor);
   document.addEventListener('pointermove',move,{passive:true,capture:true});
   document.addEventListener('pointerdown',attack,{passive:true,capture:true});
   document.addEventListener('pointerleave',()=>cursor?.classList.remove('visible'));

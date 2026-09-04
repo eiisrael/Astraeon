@@ -10,7 +10,7 @@ body.is-sprinting .stamina-line>span{color:#ffe29a;text-shadow:0 0 10px rgba(230
 .player-card>*:not(.player-panel-toggle){transition:opacity .16s ease}
 .player-panel-toggle{position:absolute;z-index:5;right:-24px;top:50%;transform:translateY(-50%);width:24px;height:42px;display:grid;place-items:center;padding:0;border:1px solid rgba(229,190,105,.22);border-left-color:rgba(229,190,105,.1);border-radius:0 9px 9px 0;background:linear-gradient(180deg,rgba(20,18,14,.94),rgba(8,9,9,.94));box-shadow:7px 8px 22px rgba(0,0,0,.32);color:#d9bf7a;font:700 18px/1 Georgia,serif;cursor:pointer;opacity:.76;transition:opacity .16s ease,border-color .16s ease,background .16s ease,color .16s ease;touch-action:manipulation}
 .player-panel-toggle:hover,.player-panel-toggle:focus-visible{opacity:1;color:#ffe19a;border-color:rgba(229,190,105,.45);background:linear-gradient(180deg,rgba(37,30,17,.98),rgba(10,10,9,.98))}
-.player-card.player-panel-collapsed{transform:translateX(calc(-100% - 8px))!important}
+.player-card.player-panel-collapsed{translate:calc(-100% - 8px) 0!important}
 .player-card.player-panel-collapsed>*:not(.player-panel-toggle){opacity:0;pointer-events:none}
 .player-card.player-panel-collapsed .player-panel-toggle{opacity:.9;box-shadow:7px 8px 24px rgba(0,0,0,.4),0 0 14px rgba(229,190,105,.05)}
 
@@ -31,7 +31,7 @@ body.is-sprinting .stamina-line>span{color:#ffe29a;text-shadow:0 0 10px rgba(230
   .online-chat-launcher::after{display:none}
   .online-access-badge{margin-left:0}
   .player-panel-toggle{right:-23px;width:23px;height:40px;font-size:17px}
-  .player-card.player-panel-collapsed{transform:translateX(calc(-100% - 7px))!important}
+  .player-card.player-panel-collapsed{translate:calc(-100% - 7px) 0!important}
 }
 
 /* A narrow desktop window must not accidentally inherit touch controls. */
