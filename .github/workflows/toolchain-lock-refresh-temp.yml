@@ -1,0 +1,37 @@
+name: Toolchain Lock Refresh Temp
+
+on:
+  push:
+    branches: ['agent/toolchain-refresh-20260903']
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.23.2
+      - name: Refresh lockfile
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Install refreshed dependencies
+        run: npm ci
+      - name: Rebuild vendored Supabase bundle
+        run: npm run build:vendor
+      - name: Show versions
+        run: |
+          node -v
+          npm -v
+          npm exec -- vercel --version
+          npm exec -- supabase --version
+      - name: Upload generated files
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: astraeon-toolchain-generated
+          path: |
+            package-lock.json
+            src/vendor/supabase-v2.js
+          if-no-files-found: error
+          retention-days: 1
