@@ -5,6 +5,8 @@ title ASTRAEON Restart
 cd /d "%~dp0"
 set "PORT=3000"
 set "FOUND=0"
+set "REQUIRED_NODE=22.23.2"
+set "REQUIRED_NPM=10.9.8"
 
 echo.
 echo ========================================
@@ -15,45 +17,60 @@ echo.
 where node.exe >nul 2>&1
 if errorlevel 1 (
     echo [ERRO] Node.js nao foi encontrado no PATH.
-    echo Instale o Node.js 22 LTS e tente novamente.
-    echo.
-    pause
-    exit /b 1
-)
-
-where npx.cmd >nul 2>&1
-if errorlevel 1 (
-    echo [ERRO] npm / npx nao foi encontrado no PATH.
-    echo Reinstale o Node.js 22 LTS e tente novamente.
+    echo [CORRECAO] Instale Node.js %REQUIRED_NODE% com NVM for Windows.
     echo.
     pause
     exit /b 1
 )
 
 for /f "usebackq delims=" %%V in (`node -p "process.versions.node"`) do set "NODE_VERSION=%%V"
-for /f "tokens=1 delims=." %%M in ("!NODE_VERSION!") do set "NODE_MAJOR=%%M"
 
-echo [INFO] Node.js !NODE_VERSION! detectado.
+if /I not "!NODE_VERSION!"=="%REQUIRED_NODE%" (
+    where nvm.exe >nul 2>&1
+    if not errorlevel 1 (
+        echo [INFO] Node.js !NODE_VERSION! detectado. Ajustando para %REQUIRED_NODE%...
+        nvm use %REQUIRED_NODE% >nul 2>&1
+        for /f "usebackq delims=" %%V in (`node -p "process.versions.node"`) do set "NODE_VERSION=%%V"
+    )
+)
 
-if !NODE_MAJOR! GEQ 24 (
+if /I not "!NODE_VERSION!"=="%REQUIRED_NODE%" (
     echo.
-    echo [BLOQUEADO] Node.js !NODE_VERSION! no Windows pode derrubar CLIs com o erro:
-    echo             UV_HANDLE_CLOSING - src\win\async.c
+    echo [BLOQUEADO] Node.js !NODE_VERSION! nao corresponde ao toolchain do Astraeon.
+    echo [CORRECAO] Use Node.js %REQUIRED_NODE%.
     echo.
-    echo [CORRECAO] Use Node.js 22 LTS para o desenvolvimento local do Astraeon.
+    echo Com NVM for Windows:
+    echo   nvm install %REQUIRED_NODE%
+    echo   nvm use %REQUIRED_NODE%
+    echo   node -v
     echo.
-    echo Se voce usa NVM for Windows:
-    echo   1. nvm list available
-    echo   2. instale uma versao 22.x exibida na lista
-    echo   3. nvm use 22.x.x
-    echo   4. node -v
-    echo   5. execute restart.bat novamente
-    echo.
-    echo O servidor nao foi iniciado para evitar o crash nativo do Node/libuv.
+    echo O servidor nao foi iniciado para evitar incompatibilidades nativas do Node/libuv.
     echo.
     pause
     exit /b 2
 )
+
+where npm.cmd >nul 2>&1
+if errorlevel 1 (
+    echo [ERRO] npm nao foi encontrado no PATH.
+    echo [CORRECAO] Reative Node.js %REQUIRED_NODE% pelo NVM.
+    echo.
+    pause
+    exit /b 1
+)
+
+for /f "usebackq delims=" %%V in (`npm.cmd -v`) do set "NPM_VERSION=%%V"
+
+if /I not "!NPM_VERSION!"=="%REQUIRED_NPM%" (
+    echo.
+    echo [BLOQUEADO] npm !NPM_VERSION! detectado. Astraeon usa npm %REQUIRED_NPM%.
+    echo [CORRECAO] Execute: nvm use %REQUIRED_NODE%
+    echo.
+    pause
+    exit /b 3
+)
+
+echo [OK] Node.js !NODE_VERSION! e npm !NPM_VERSION! prontos.
 
 for /f "tokens=5" %%P in ('netstat -ano ^| findstr /R /C:":%PORT% .*LISTENING"') do (
     set "FOUND=1"
@@ -71,12 +88,7 @@ if "%FOUND%"=="0" (
     echo [START] Iniciando Astraeon novamente...
 )
 
-where vercel.cmd >nul 2>&1
-if errorlevel 1 (
-    start "ASTRAEON DEV" cmd /k "npx.cmd --yes vercel dev"
-) else (
-    start "ASTRAEON DEV" cmd /k "vercel.cmd dev"
-)
+start "ASTRAEON DEV" cmd /k "npm.cmd run dev"
 
 timeout /t 2 /nobreak >nul
 echo.
