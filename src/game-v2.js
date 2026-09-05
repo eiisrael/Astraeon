@@ -6,12 +6,38 @@
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   const TERRAIN_CHUNK_TILES = 12;
+  const TERRAIN_CHUNK_OVERLAP = 1;
+  const WATER_VISUALS = Object.freeze({
+    baseTint: '#3f8992',
+    surfaceTint: '#8ac9cd',
+    highlightTint: '#d9f4f2',
+    rippleTint: '#bde8e8',
+    edgeTint: '#75b3b4',
+    edgeHighlightTint: '#d6f1ed',
+    baseSpeed: .000075,
+    highlightSpeed: .00014,
+    rippleSpeed: .00019,
+    wakeSpeed: .0011,
+    noiseScale: .047,
+    distortion: .72,
+    surfaceOpacity: .09,
+    highlightOpacity: .19,
+    rippleOpacity: .15,
+    wakeOpacity: .32,
+    edgeBlend: .28,
+    edgeInset: .055,
+    edgeRadius: .16,
+    isolatedRadius: .35,
+    desktopQuality: 1,
+    mobileQuality: .58,
+    reducedMotionScale: .32
+  });
   const MAP_STYLE = Object.freeze({
-    forest: { light:'rgba(155,205,126,.12)', shade:'rgba(4,20,13,.18)', texture:'#86b875', waterDeep:'rgba(5,30,43,.28)', shore:'rgba(176,219,167,.28)', trunk:'#4b3322', trunkLight:'#8a6140', crown:'#376e45', crownLight:'#70a964' },
-    steppe: { light:'rgba(255,211,124,.13)', shade:'rgba(64,35,16,.17)', texture:'#d3a35c', waterDeep:'rgba(11,64,73,.25)', shore:'rgba(236,202,132,.33)', trunk:'#775033', trunkLight:'#b38250', crown:'#62824b', crownLight:'#9eb66a' },
-    frost: { light:'rgba(244,253,255,.25)', shade:'rgba(45,77,94,.14)', texture:'#f1fbff', waterDeep:'rgba(23,78,107,.24)', shore:'rgba(229,250,255,.48)', trunk:'#43545a', trunkLight:'#879ba0', crown:'#497776', crownLight:'#91b7ac' },
-    swamp: { light:'rgba(151,178,112,.10)', shade:'rgba(5,19,15,.24)', texture:'#799362', waterDeep:'rgba(4,35,32,.34)', shore:'rgba(134,158,102,.28)', trunk:'#40382a', trunkLight:'#74664a', crown:'#3c6140', crownLight:'#6f8d59' },
-    highland: { light:'rgba(206,191,173,.12)', shade:'rgba(24,20,22,.22)', texture:'#a18e7b', waterDeep:'rgba(23,47,58,.30)', shore:'rgba(170,160,145,.26)', trunk:'#51423a', trunkLight:'#8a6d5c', crown:'#555f4d', crownLight:'#818a67' }
+    forest: { light:'rgba(155,205,126,.12)', shade:'rgba(4,20,13,.18)', texture:'#86b875', trunk:'#4b3322', trunkLight:'#8a6140', crown:'#376e45', crownLight:'#70a964' },
+    steppe: { light:'rgba(255,211,124,.13)', shade:'rgba(64,35,16,.17)', texture:'#d3a35c', trunk:'#775033', trunkLight:'#b38250', crown:'#62824b', crownLight:'#9eb66a' },
+    frost: { light:'rgba(244,253,255,.25)', shade:'rgba(45,77,94,.14)', texture:'#f1fbff', trunk:'#43545a', trunkLight:'#879ba0', crown:'#497776', crownLight:'#91b7ac' },
+    swamp: { light:'rgba(151,178,112,.10)', shade:'rgba(5,19,15,.24)', texture:'#799362', trunk:'#40382a', trunkLight:'#74664a', crown:'#3c6140', crownLight:'#6f8d59' },
+    highland: { light:'rgba(206,191,173,.12)', shade:'rgba(24,20,22,.22)', texture:'#a18e7b', trunk:'#51423a', trunkLight:'#8a6d5c', crown:'#555f4d', crownLight:'#818a67' }
   });
 
   class AstraeonGame {
@@ -41,6 +67,11 @@
       this.imageLoads = new Map();
       this.imageRetryAt = new Map();
       this.terrainVisualCache = { world: null, chunks: new Map() };
+      this.waterTileVisualCache = { world: null, tiles: new Map() };
+      const mobileWater = typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 760px), (pointer: coarse)').matches;
+      const reducedWaterMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      this.waterVisualQuality = mobileWater ? WATER_VISUALS.mobileQuality : WATER_VISUALS.desktopQuality;
+      this.waterMotionScale = reducedWaterMotion ? WATER_VISUALS.reducedMotionScale : 1;
       this.classSpritePaths = new Map(Object.entries(W.CLASS_DATA).map(([id, data]) => [id, `Assets/Classes/${data.sprite}`]));
       this.mobSpritePaths = new Map(Object.entries(W.MOB_DATA).map(([id, data]) => [id, `Assets/Mob/${data.sprite}`]));
       this.cooldowns = [0, 0, 0, 0, 0];
@@ -372,7 +403,8 @@
       if (dx || dy) {
         const len = Math.hypot(dx, dy); dx /= len; dy /= len;
         p.facing = dx ? Math.sign(dx) : p.facing;
-        this.moveEntity(p, dx * p.speed * dt, dy * p.speed * dt, 10);
+        const terrainSpeed=p.speed*this.terrainSpeedMultiplier(p);
+        this.moveEntity(p, dx * terrainSpeed * dt, dy * terrainSpeed * dt, 10);
       }
       p.mana = Math.min(p.maxMana, p.mana + dt * 4.4);
 
@@ -408,6 +440,11 @@
       if (!this.isBlocked(tryX, e.y, radius)) e.x = tryX;
       const tryY = e.y + dy;
       if (!this.isBlocked(e.x, tryY, radius)) e.y = tryY;
+    }
+
+    terrainSpeedMultiplier(entity) {
+      const tile=this.world?.tileAtPixel?.(entity?.x,entity?.y);
+      return tile?.kind === 'water' ? .55 : 1;
     }
 
     isBlocked(x, y, r) {
@@ -701,7 +738,7 @@
     }
 
     terrainBase(tile, biome) {
-      if (tile.kind === 'water') return biome.water;
+      if (tile.kind === 'water') return WATER_VISUALS.baseTint;
       if (tile.kind === 'ice') return '#91becd';
       if (tile.kind === 'sand') return '#a87a42';
       if (tile.kind === 'rock') return '#555157';
@@ -713,68 +750,127 @@
       return W.valueNoise(tile.x * 7.13 + salt * .017, tile.y * 9.31 - salt * .013, this.world.seed + 88 + salt);
     }
 
+    waterTileVisual(tile) {
+      if (this.waterTileVisualCache.world !== this.world) this.waterTileVisualCache = { world: this.world, tiles: new Map() };
+      const key = tile.y * this.world.width + tile.x;
+      if (this.waterTileVisualCache.tiles.has(key)) return this.waterTileVisualCache.tiles.get(key);
+      const a = this.terrainNoise(tile, 133), b = this.terrainNoise(tile, 257), c = this.terrainNoise(tile, 389), d = this.terrainNoise(tile, 521);
+      const visual = {
+        phaseA: (a + tile.x * WATER_VISUALS.noiseScale) * Math.PI * 2,
+        phaseB: (b + tile.y * WATER_VISUALS.noiseScale) * Math.PI * 2,
+        phaseC: (c + (tile.x - tile.y) * WATER_VISUALS.noiseScale * .5) * Math.PI * 2,
+        anchorX: .2 + b * .6,
+        anchorY: .2 + c * .6,
+        angle: (d - .5) * Math.PI * 1.55,
+        depthGate: a,
+        detailGate: b,
+        rippleGate: d,
+        curve: (c - .5) * 4
+      };
+      this.waterTileVisualCache.tiles.set(key, visual);
+      return visual;
+    }
+
+    drawWaterTileBase(ctx, tile, biome, x, y, size) {
+      const north=this.world.get(tile.x,tile.y-1),east=this.world.get(tile.x+1,tile.y),south=this.world.get(tile.x,tile.y+1),west=this.world.get(tile.x-1,tile.y);
+      const edgeN=!north||north.kind!=='water',edgeE=!east||east.kind!=='water',edgeS=!south||south.kind!=='water',edgeW=!west||west.kind!=='water';
+      const inset=size*WATER_VISUALS.edgeInset;
+      const radius=size*(edgeN&&edgeE&&edgeS&&edgeW?WATER_VISUALS.isolatedRadius:WATER_VISUALS.edgeRadius);
+      const left=x+(edgeW?inset:-.5),top=y+(edgeN?inset:-.5),right=x+size-(edgeE?inset:-.5),bottom=y+size-(edgeS?inset:-.5);
+      const topLeft=edgeN&&edgeW?radius:0,topRight=edgeN&&edgeE?radius:0,bottomRight=edgeS&&edgeE?radius:0,bottomLeft=edgeS&&edgeW?radius:0;
+      ctx.fillStyle=biome.ground[tile.variant];ctx.fillRect(x,y,size+1,size+1);
+      ctx.fillStyle=WATER_VISUALS.baseTint;ctx.beginPath();ctx.moveTo(left+topLeft,top);ctx.lineTo(right-topRight,top);
+      if(topRight)ctx.quadraticCurveTo(right,top,right,top+topRight);else ctx.lineTo(right,top);
+      ctx.lineTo(right,bottom-bottomRight);if(bottomRight)ctx.quadraticCurveTo(right,bottom,right-bottomRight,bottom);else ctx.lineTo(right,bottom);
+      ctx.lineTo(left+bottomLeft,bottom);if(bottomLeft)ctx.quadraticCurveTo(left,bottom,left,bottom-bottomLeft);else ctx.lineTo(left,bottom);
+      ctx.lineTo(left,top+topLeft);if(topLeft)ctx.quadraticCurveTo(left,top,left+topLeft,top);else ctx.lineTo(left,top);ctx.closePath();ctx.fill();
+    }
+
+    drawTerrainRelief(ctx, x, y, size, eastSlope, southSlope) {
+      const band = Math.max(4, size * .14);
+      if (Math.abs(eastSlope) > .035) {
+        const edge = ctx.createLinearGradient(x + size - band, y, x + size, y);
+        edge.addColorStop(0, 'rgba(0,0,0,0)');
+        edge.addColorStop(1, eastSlope > 0 ? 'rgba(5,8,8,.10)' : 'rgba(255,244,210,.045)');
+        ctx.fillStyle = edge;ctx.fillRect(x + size - band, y, band, size);
+      }
+      if (Math.abs(southSlope) > .035) {
+        const edge = ctx.createLinearGradient(x, y + size - band, x, y + size);
+        edge.addColorStop(0, 'rgba(0,0,0,0)');
+        edge.addColorStop(1, southSlope > 0 ? 'rgba(4,7,8,.11)' : 'rgba(255,244,210,.04)');
+        ctx.fillStyle = edge;ctx.fillRect(x, y + size - band, size, band);
+      }
+    }
+
     drawTerrainTexture(ctx, tile, biome, x, y, size) {
       const style = MAP_STYLE[tile.biome] || MAP_STYLE.forest;
       const n = this.terrainNoise(tile, 17), n2 = this.terrainNoise(tile, 91);
+      const water = tile.kind === 'water';
       ctx.save();
-      ctx.fillStyle = this.terrainBase(tile, biome);
-      ctx.fillRect(x, y, size + 1, size + 1);
-
-      const light = ctx.createLinearGradient(x, y, x + size, y + size);
-      light.addColorStop(0, style.light); light.addColorStop(.48, 'rgba(255,255,255,0)'); light.addColorStop(1, style.shade);
-      ctx.fillStyle = light; ctx.fillRect(x, y, size + 1, size + 1);
-
-      const relief = (Number(tile.elevation) || .5) - .5;
-      ctx.globalAlpha = Math.min(.13, Math.abs(relief) * .27);
-      ctx.fillStyle = relief > 0 ? '#fff3d2' : '#02080a';
-      ctx.fillRect(x, y, size + 1, size + 1);
-      ctx.globalAlpha = 1;
-
-      const east = this.world.get(tile.x + 1, tile.y), south = this.world.get(tile.x, tile.y + 1);
-      const eastSlope = east ? (Number(tile.elevation) || 0) - (Number(east.elevation) || 0) : 0;
-      const southSlope = south ? (Number(tile.elevation) || 0) - (Number(south.elevation) || 0) : 0;
-      if (Math.abs(eastSlope) > .035) { ctx.fillStyle = eastSlope > 0 ? 'rgba(5,8,8,.18)' : 'rgba(255,244,210,.08)'; ctx.fillRect(x + size - 2, y, 2, size); }
-      if (Math.abs(southSlope) > .035) { ctx.fillStyle = southSlope > 0 ? 'rgba(4,7,8,.22)' : 'rgba(255,244,210,.07)'; ctx.fillRect(x, y + size - 2, size, 2); }
-
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      if (tile.kind === 'water') {
-        const depth = ctx.createRadialGradient(x + size * .28, y + size * .22, 1, x + size * .5, y + size * .5, size * .72);
-        depth.addColorStop(0, 'rgba(137,213,221,.13)'); depth.addColorStop(1, style.waterDeep);
-        ctx.fillStyle = depth; ctx.fillRect(x, y, size + 1, size + 1);
-      } else if (tile.kind === 'ice') {
-        ctx.strokeStyle = 'rgba(231,251,255,.25)'; ctx.lineWidth = .7; ctx.beginPath();
-        ctx.moveTo(x + 4 + n * 7, y + 5); ctx.lineTo(x + 15, y + 15 + n2 * 5); ctx.lineTo(x + 11, y + 25); ctx.moveTo(x + 15, y + 15 + n2 * 5); ctx.lineTo(x + 28, y + 11); ctx.stroke();
-      } else if (tile.kind === 'road') {
-        this.drawRoad(ctx, x, y, size, n);
-      } else if (tile.kind === 'rock') {
-        ctx.strokeStyle = 'rgba(28,25,27,.28)'; ctx.lineWidth = 1; ctx.beginPath();ctx.moveTo(x + 3, y + 27 - n * 9);ctx.lineTo(x + 13, y + 18);ctx.lineTo(x + 22, y + 22 + n2 * 4);ctx.lineTo(x + 34, y + 10);ctx.stroke();
-      } else if (tile.biome === 'forest' || tile.biome === 'swamp') {
-        ctx.strokeStyle = style.texture; ctx.globalAlpha = .32; ctx.lineWidth = 1;
-        for (let i = 0; i < 3; i++) { const gx=x+5+((n*43+i*11)%27), gy=y+12+((n2*37+i*7)%20);ctx.beginPath();ctx.moveTo(gx,gy);ctx.quadraticCurveTo(gx-1,gy-4-n2*3,gx-3+n*5,gy-7-n*3);ctx.moveTo(gx,gy);ctx.quadraticCurveTo(gx+1,gy-4,gx+4-n2*3,gy-6);ctx.stroke(); }
-      } else if (tile.biome === 'steppe') {
-        ctx.strokeStyle = style.texture; ctx.globalAlpha = .28; ctx.lineWidth = .8;
-        for (let i=0;i<2;i++){const gx=x+7+((n*37+i*17)%24),gy=y+18+((n2*29+i*9)%15);ctx.beginPath();ctx.moveTo(gx,gy);ctx.lineTo(gx-2,gy-5-n*3);ctx.moveTo(gx,gy);ctx.lineTo(gx+3,gy-4-n2*3);ctx.stroke();}
-      } else if (tile.biome === 'frost') {
-        ctx.fillStyle = style.texture; ctx.globalAlpha = .25;ctx.beginPath();ctx.arc(x+7+n*20,y+9+n2*17,1.1,0,Math.PI*2);ctx.arc(x+25-n2*8,y+25-n*9,.8,0,Math.PI*2);ctx.fill();
+      if (water) {
+        this.drawWaterTileBase(ctx, tile, biome, x, y, size);
       } else {
-        ctx.fillStyle = style.texture; ctx.globalAlpha = .22;ctx.beginPath();ctx.arc(x+7+n*22,y+9+n2*19,1.3,0,Math.PI*2);ctx.arc(x+26-n2*9,y+27-n*11,.9,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle = this.terrainBase(tile, biome);
+        ctx.fillRect(x, y, size + 1, size + 1);
+        const light = ctx.createLinearGradient(x, y, x + size, y + size);
+        light.addColorStop(0, style.light); light.addColorStop(.48, 'rgba(255,255,255,0)'); light.addColorStop(1, style.shade);
+        ctx.globalAlpha = .66;ctx.fillStyle = light;ctx.fillRect(x, y, size + 1, size + 1);ctx.globalAlpha = 1;
+
+        const relief = (Number(tile.elevation) || .5) - .5;
+        ctx.globalAlpha = Math.min(.13, Math.abs(relief) * .27);
+        ctx.fillStyle = relief > 0 ? '#fff3d2' : '#02080a';
+        ctx.fillRect(x, y, size + 1, size + 1);
+        ctx.globalAlpha = 1;
+
+        const east = this.world.get(tile.x + 1, tile.y), south = this.world.get(tile.x, tile.y + 1);
+        const eastSlope = east ? (Number(tile.elevation) || 0) - (Number(east.elevation) || 0) : 0;
+        const southSlope = south ? (Number(tile.elevation) || 0) - (Number(south.elevation) || 0) : 0;
+        this.drawTerrainRelief(ctx, x, y, size, eastSlope, southSlope);
       }
 
-      ctx.globalAlpha = .18 + n * .08; ctx.fillStyle = n > .5 ? biome.detail : biome.edge;
-      ctx.fillRect(x + 3 + n * 10, y + 4 + ((n * 31) % 18), 3 + n * 7, 1.4);
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      if (!water) {
+        if (tile.kind === 'ice') {
+          ctx.strokeStyle = 'rgba(231,251,255,.25)'; ctx.lineWidth = .7; ctx.beginPath();
+          ctx.moveTo(x + 4 + n * 7, y + 5); ctx.lineTo(x + 15, y + 15 + n2 * 5); ctx.lineTo(x + 11, y + 25); ctx.moveTo(x + 15, y + 15 + n2 * 5); ctx.lineTo(x + 28, y + 11); ctx.stroke();
+        } else if (tile.kind === 'road') {
+          this.drawRoad(ctx, x, y, size, n);
+        } else if (tile.kind === 'rock') {
+          ctx.strokeStyle = 'rgba(28,25,27,.28)'; ctx.lineWidth = 1; ctx.beginPath();ctx.moveTo(x + 3, y + 27 - n * 9);ctx.lineTo(x + 13, y + 18);ctx.lineTo(x + 22, y + 22 + n2 * 4);ctx.lineTo(x + 34, y + 10);ctx.stroke();
+        } else if (tile.biome === 'forest' || tile.biome === 'swamp') {
+          ctx.strokeStyle = style.texture; ctx.globalAlpha = .32; ctx.lineWidth = 1;
+          for (let i = 0; i < 3; i++) { const gx=x+5+((n*43+i*11)%27), gy=y+12+((n2*37+i*7)%20);ctx.beginPath();ctx.moveTo(gx,gy);ctx.quadraticCurveTo(gx-1,gy-4-n2*3,gx-3+n*5,gy-7-n*3);ctx.moveTo(gx,gy);ctx.quadraticCurveTo(gx+1,gy-4,gx+4-n2*3,gy-6);ctx.stroke(); }
+        } else if (tile.biome === 'steppe') {
+          ctx.strokeStyle = style.texture; ctx.globalAlpha = .28; ctx.lineWidth = .8;
+          for (let i=0;i<2;i++){const gx=x+7+((n*37+i*17)%24),gy=y+18+((n2*29+i*9)%15);ctx.beginPath();ctx.moveTo(gx,gy);ctx.lineTo(gx-2,gy-5-n*3);ctx.moveTo(gx,gy);ctx.lineTo(gx+3,gy-4-n2*3);ctx.stroke();}
+        } else if (tile.biome === 'frost') {
+          ctx.fillStyle = style.texture; ctx.globalAlpha = .25;ctx.beginPath();ctx.arc(x+7+n*20,y+9+n2*17,1.1,0,Math.PI*2);ctx.arc(x+25-n2*8,y+25-n*9,.8,0,Math.PI*2);ctx.fill();
+        } else {
+          ctx.fillStyle = style.texture; ctx.globalAlpha = .22;ctx.beginPath();ctx.arc(x+7+n*22,y+9+n2*19,1.3,0,Math.PI*2);ctx.arc(x+26-n2*9,y+27-n*11,.9,0,Math.PI*2);ctx.fill();
+        }
+        ctx.globalAlpha = .18 + n * .08; ctx.fillStyle = n > .5 ? biome.detail : biome.edge;
+        ctx.fillRect(x + 3 + n * 10, y + 4 + ((n * 31) % 18), 3 + n * 7, 1.4);
+      }
       ctx.restore();
-      this.drawShoreline(ctx, tile, x, y, size, style);
+      this.drawShoreline(ctx, tile, x, y, size);
     }
 
-    drawShoreline(ctx, tile, x, y, size, style) {
-      const water = tile.kind === 'water';
+    drawShoreline(ctx, tile, x, y, size) {
+      if (tile.kind !== 'water') return;
       const sides = [[0,-1,x,y,x+size,y], [1,0,x+size,y,x+size,y+size], [0,1,x,y+size,x+size,y+size], [-1,0,x,y,x,y+size]];
-      ctx.save();ctx.lineCap='round';
-      for (const [dx,dy,x1,y1,x2,y2] of sides) {
+      ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+      for (let i=0;i<sides.length;i++) {
+        const [dx,dy,x1,y1,x2,y2] = sides[i];
         const neighbor = this.world.get(tile.x + dx, tile.y + dy);
-        if (!neighbor || (neighbor.kind === 'water') === water) continue;
-        ctx.strokeStyle = water ? style.shore : 'rgba(8,12,10,.22)';ctx.lineWidth = water ? 1.4 : 1;
-        ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+        if (!neighbor || neighbor.kind === 'water') continue;
+        const n=this.terrainNoise(tile,611+i*37),inset=size*WATER_VISUALS.edgeInset;
+        const sx=x1-dx*inset,sy=y1-dy*inset,ex=x2-dx*inset,ey=y2-dy*inset;
+        const tx=(ex-sx)/size,ty=(ey-sy)/size,trim=size*WATER_VISUALS.edgeRadius*.62;
+        const startX=sx+tx*trim,startY=sy+ty*trim,endX=ex-tx*trim,endY=ey-ty*trim;
+        const mx=(startX+endX)*.5-dx*(.7+n*.9)+dy*(n-.5)*2.6,my=(startY+endY)*.5-dy*(.7+n*.9)+dx*(n-.5)*2.6;
+        ctx.strokeStyle=WATER_VISUALS.edgeTint;ctx.globalAlpha=WATER_VISUALS.edgeBlend*.68;ctx.lineWidth=4.2;ctx.beginPath();ctx.moveTo(startX,startY);ctx.quadraticCurveTo(mx,my,endX,endY);ctx.stroke();
+        const ax=startX+(endX-startX)*(.18+n*.08),ay=startY+(endY-startY)*(.18+n*.08),bx=startX+(endX-startX)*(.58+n*.1),by=startY+(endY-startY)*(.58+n*.1);
+        ctx.strokeStyle=WATER_VISUALS.edgeHighlightTint;ctx.globalAlpha=WATER_VISUALS.edgeBlend*.72;ctx.lineWidth=.75;ctx.beginPath();ctx.moveTo(ax,ay);ctx.quadraticCurveTo((ax+bx)*.5-dx*2+(n-.5)*dy*3,(ay+by)*.5-dy*2+(n-.5)*dx*3,bx,by);ctx.stroke();
       }
       ctx.restore();
     }
@@ -784,14 +880,16 @@
       const key = `${chunkX},${chunkY}`;
       if (this.terrainVisualCache.chunks.has(key)) return this.terrainVisualCache.chunks.get(key);
       const size = W.TILE, startX = chunkX * TERRAIN_CHUNK_TILES, startY = chunkY * TERRAIN_CHUNK_TILES;
-      const tilesWide = Math.min(TERRAIN_CHUNK_TILES, this.world.width - startX), tilesHigh = Math.min(TERRAIN_CHUNK_TILES, this.world.height - startY);
+      const renderStartX=Math.max(0,startX-TERRAIN_CHUNK_OVERLAP),renderStartY=Math.max(0,startY-TERRAIN_CHUNK_OVERLAP);
+      const renderEndX=Math.min(this.world.width,startX+TERRAIN_CHUNK_TILES+TERRAIN_CHUNK_OVERLAP),renderEndY=Math.min(this.world.height,startY+TERRAIN_CHUNK_TILES+TERRAIN_CHUNK_OVERLAP);
+      const tilesWide=renderEndX-renderStartX,tilesHigh=renderEndY-renderStartY;
       const canvas = document.createElement('canvas');canvas.width = tilesWide * size;canvas.height = tilesHigh * size;
       const chunkCtx = canvas.getContext('2d');chunkCtx.imageSmoothingEnabled = true;
       for (let y = 0; y < tilesHigh; y++) for (let x = 0; x < tilesWide; x++) {
-        const tile = this.world.get(startX + x, startY + y), biome = W.BIOMES[tile.biome];
+        const tile = this.world.get(renderStartX + x, renderStartY + y), biome = W.BIOMES[tile.biome];
         this.drawTerrainTexture(chunkCtx, tile, biome, x * size, y * size, size);
       }
-      const chunk = { canvas, x:startX * size, y:startY * size };
+      const chunk = { canvas, x:renderStartX * size, y:renderStartY * size };
       this.terrainVisualCache.chunks.set(key, chunk);return chunk;
     }
 
@@ -804,22 +902,59 @@
       ctx.save();ctx.imageSmoothingEnabled = true;
       for (let cy=chunkStartY;cy<chunkEndY;cy++) for(let cx=chunkStartX;cx<chunkEndX;cx++) { const chunk=this.terrainChunk(cx,cy);ctx.drawImage(chunk.canvas,chunk.x,chunk.y); }
       ctx.restore();
+      const waterNow=performance.now();
       for (let y = sy; y < ey; y++) for (let x = sx; x < ex; x++) {
-        const tile = this.world.get(x, y), biome = W.BIOMES[tile.biome], px = x * size, py = y * size;
-        if (tile.kind === 'water') this.drawWater(ctx, px, py, size, biome, this.terrainNoise(tile, 133));
+        const tile = this.world.get(x, y), px = x * size, py = y * size;
+        if (tile.kind === 'water') this.drawWater(ctx, tile, px, py, size, waterNow);
         if (tile.object) this.drawFeature(ctx, tile, px, py, size);
       }
     }
 
-    drawWater(ctx, x, y, size, biome, noise) {
-      const time = performance.now() * .0014, phase = time + x * .031 + y * .019 + noise * 5;
-      ctx.save();ctx.beginPath();ctx.rect(x,y,size,size);ctx.clip();ctx.lineCap='round';
-      for (let i=0;i<2;i++) {
-        const yy=y+9+i*13+Math.sin(phase+i*1.9)*2.2;
-        ctx.strokeStyle=i?'rgba(201,242,248,.11)':'rgba(226,252,255,.23)';ctx.lineWidth=i?1:1.25;ctx.beginPath();
-        ctx.moveTo(x-3,yy);ctx.bezierCurveTo(x+size*.25,yy-2.5,x+size*.62,yy+2.5,x+size+3,yy-1);ctx.stroke();
+    drawWater(ctx, tile, x, y, size, now) {
+      const visual=this.waterTileVisual(tile),motion=this.waterMotionScale,quality=this.waterVisualQuality;
+      const showSurface=visual.depthGate>.52+(1-quality)*.25;
+      const showHighlight=visual.detailGate>.7+(1-quality)*.22;
+      const showRipple=visual.rippleGate>.86+(1-quality)*.1;
+      if(!showSurface&&!showHighlight&&!showRipple)return;
+      const baseTime=now*WATER_VISUALS.baseSpeed*motion+visual.phaseA;
+      const highlightTime=now*WATER_VISUALS.highlightSpeed*motion+visual.phaseB;
+      const rippleTime=now*WATER_VISUALS.rippleSpeed*motion+visual.phaseC;
+      const cx=x+size*visual.anchorX,cy=y+size*visual.anchorY;
+      ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+
+      if(showSurface){
+        const driftX=(Math.sin(baseTime)+Math.cos(baseTime*.61+visual.phaseB)*.38)*WATER_VISUALS.distortion;
+        const driftY=(Math.cos(baseTime*.79)+Math.sin(baseTime*.53+visual.phaseC)*.32)*WATER_VISUALS.distortion;
+        const flow=.5+.5*Math.sin(baseTime*.73+visual.phaseC),angle=visual.angle*.35+Math.sin(baseTime*.31+visual.phaseB)*.12;
+        const ux=Math.cos(angle),uy=Math.sin(angle),vx=-uy,vy=ux,len=size*(.12+visual.detailGate*.09),bend=(visual.curve*.28+Math.sin(baseTime*.47+visual.phaseC))*WATER_VISUALS.distortion;
+        ctx.strokeStyle=WATER_VISUALS.surfaceTint;ctx.globalAlpha=WATER_VISUALS.surfaceOpacity*(.48+flow*.35);ctx.lineWidth=2+visual.rippleGate*.45;ctx.beginPath();
+        ctx.moveTo(cx+driftX-ux*len*.5,cy+driftY-uy*len*.5);ctx.quadraticCurveTo(cx+driftX+vx*bend,cy+driftY+vy*bend,cx+driftX+ux*len*.5,cy+driftY+uy*len*.5);ctx.stroke();
       }
-      const glint = (Math.sin(phase*.72)+1)*.5;ctx.fillStyle=`rgba(224,250,255,${.025+glint*.045})`;ctx.fillRect(x+4+noise*13,y+4,7+glint*8,1);
+
+      if(showHighlight){
+        const shimmer=.5+.5*Math.sin(highlightTime),angle=visual.angle*.22+Math.sin(highlightTime*.43)*.12;
+        const ux=Math.cos(angle),uy=Math.sin(angle),vx=-uy,vy=ux,len=size*(.16+visual.depthGate*.13),bend=visual.curve+Math.sin(highlightTime*.71)*1.4;
+        const hx=x+size*(.24+visual.rippleGate*.52),hy=y+size*(.24+visual.depthGate*.52);
+        ctx.strokeStyle=WATER_VISUALS.highlightTint;ctx.globalAlpha=WATER_VISUALS.highlightOpacity*(.38+shimmer*.48);ctx.lineWidth=.65+visual.rippleGate*.3;ctx.beginPath();
+        ctx.moveTo(hx-ux*len*.5,hy-uy*len*.5);ctx.quadraticCurveTo(hx+vx*bend,hy+vy*bend,hx+ux*len*.5,hy+uy*len*.5);ctx.stroke();
+      }
+
+      if(showRipple){
+        const rippleCycle=rippleTime/(Math.PI*2),pulse=((rippleCycle%1)+1)%1,radius=size*(.045+pulse*.14),fade=Math.sin(pulse*Math.PI)*(1-pulse);
+        ctx.strokeStyle=WATER_VISUALS.rippleTint;ctx.globalAlpha=WATER_VISUALS.rippleOpacity*fade;ctx.lineWidth=.7;ctx.beginPath();
+        ctx.ellipse(cx,cy,radius,radius*(.35+visual.detailGate*.12),visual.angle,.18+visual.depthGate*.45,Math.PI*(1.35+visual.detailGate*.38));ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    drawWaterWake(ctx, player) {
+      if (this.world?.tileAtPixel?.(player.x,player.y)?.kind !== 'water') return;
+      const time=performance.now()*WATER_VISUALS.wakeSpeed*this.waterMotionScale;
+      ctx.save();ctx.translate(player.x,player.y+10);ctx.strokeStyle=WATER_VISUALS.rippleTint;ctx.lineWidth=1;
+      for(let i=0;i<2;i++){
+        const pulse=(time+i*.5)%1;
+        ctx.globalAlpha=(1-pulse)*WATER_VISUALS.wakeOpacity;ctx.beginPath();ctx.ellipse(0,0,8+pulse*16,2.6+pulse*4.8,0,.16+i*.22,Math.PI*(1.42+i*.12));ctx.stroke();
+      }
       ctx.restore();
     }
 
@@ -882,6 +1017,7 @@
 
     drawPlayer(ctx) {
       const p = this.player, c = W.CLASS_DATA[p.classId], src = this.classSpritePaths.get(p.classId) || `Assets/Classes/${c.sprite}`, img = this.spriteImage(src);
+      this.drawWaterWake(ctx,p);
       ctx.save(); ctx.translate(p.x, p.y);
       ctx.fillStyle = 'rgba(0,0,0,.33)'; ctx.beginPath(); ctx.ellipse(0, 12, 15, 5, 0, 0, Math.PI * 2); ctx.fill();
       if (img) { ctx.save(); if (p.facing < 0) ctx.scale(-1,1); ctx.drawImage(img, -24, -39, 48, 48); ctx.restore(); }

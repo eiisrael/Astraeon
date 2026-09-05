@@ -154,11 +154,11 @@
     let kind = 'ground';
     let blocked = false;
     if (!road) {
-      if (biome === 'swamp' && moisture > .67) { kind = 'water'; blocked = moisture > .82; }
+      if (biome === 'swamp' && moisture > .67) { kind = 'water'; }
       else if (biome === 'frost' && moisture > .77) { kind = 'ice'; blocked = false; }
       else if (biome === 'steppe' && elevation < .23) { kind = 'sand'; }
       else if (biome === 'highland' && elevation > .78) { kind = 'rock'; blocked = true; }
-      else if (biome === 'forest' && moisture > .81) { kind = 'water'; blocked = true; }
+      else if (biome === 'forest' && moisture > .81) { kind = 'water'; }
     } else {
       kind = 'road';
     }
@@ -179,6 +179,7 @@
       if (typeof override.object === 'string') object = override.object || null;
       if (override.kind) kind = override.kind;
     }
+    if (kind === 'water') blocked = false;
 
     const variant = Math.floor(detail * cfg.ground.length) % cfg.ground.length;
     return { x, y, biome, kind, blocked, object, variant, elevation, moisture, key };

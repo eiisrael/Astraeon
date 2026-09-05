@@ -79,6 +79,27 @@ assert.match(menuBootSource,/classList\.add\('astraeon-main-menu-ready'\)/,'some
 const drawCities=worldSource.match(/function drawCities\([\s\S]*?\n  function pruneCityMobs/);
 assert.ok(drawCities,'drawCities deve existir');
 assert.doesNotMatch(drawCities[0],/fillText\s*\(/,'nome da cidade não deve mais ser desenhado no mundo');
+assert.match(worldSource,/\[-6,-6,'house',5,5,'east',0\]/,'casas devem ter interiores amplos de 5 por 5 tiles');
+assert.match(worldSource,/t\.blocked=perimeter&&!isDoorTile\(structure,xx,yy\)/,'paredes devem bloquear passagem sem fechar a porta ou o interior');
+assert.match(worldSource,/drawHouseFloor\(ctx,s,style,x,y,w,h\)/,'casas devem exibir piso interno sem telhado');
+assert.match(worldSource,/drawHouseFurniture\(ctx,s,style,x,y,w,h\)/,'plantas devem possuir mobílias variadas');
+assert.doesNotMatch(worldSource,/lineTo\(x\+w\/2,y\+1\)/,'o telhado triangular legado não deve ser desenhado');
+const cityTiles=new Map();
+const cityWorld={width:96,height:96,get(x,y){
+  if(x<0||y<0||x>=this.width||y>=this.height)return null;
+  const key=`${x},${y}`;
+  if(!cityTiles.has(key))cityTiles.set(key,{x,y,biome:'forest',kind:'ground',blocked:false,object:null});
+  return cityTiles.get(key);
+}};
+const citySandbox={AstraeonWorld:{TILE:36},document:{querySelector:()=>null},addEventListener:()=>{},console};
+citySandbox.window=citySandbox;
+vm.runInNewContext(worldSource,citySandbox);
+citySandbox.AstraeonOnlineWorld.decorate(cityWorld);
+const openHouse=cityWorld.cityStructures.find(structure=>structure.cityId==='astralum'&&structure.type==='house');
+assert.ok(openHouse,'cidade deve possuir casa caminhável');
+assert.equal(cityWorld.get(openHouse.x,openHouse.y).blocked,true,'canto da parede deve permanecer sólido');
+assert.equal(cityWorld.get(openHouse.x+1,openHouse.y+1).blocked,false,'interior da casa deve permitir jogadores e NPCs');
+assert.equal(cityWorld.get(openHouse.x+openHouse.w-1,openHouse.y+Math.floor(openHouse.h/2)).blocked,false,'abertura da porta deve permitir entrada');
 assert.match(worldSource,/id = 'cityLocationHud'/,'HUD de cidade deve existir');
 assert.match(worldSource,/minimap\.insertAdjacentElement\('beforebegin',hud\)/,'HUD de cidade deve ficar antes/acima do minimapa');
 assert.match(worldSource,/updateCityHud\(game\)/,'cidade deve acompanhar a posição do jogador');
