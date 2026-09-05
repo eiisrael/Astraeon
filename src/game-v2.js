@@ -9,22 +9,23 @@
   const TERRAIN_CHUNK_OVERLAP = 1;
   const WATER_VISUALS = Object.freeze({
     baseTint: '#3f8992',
+    deepTint: '#2e717e',
+    shallowTint: '#72b5b9',
     surfaceTint: '#8ac9cd',
     highlightTint: '#d9f4f2',
     rippleTint: '#bde8e8',
-    edgeTint: '#75b3b4',
-    edgeHighlightTint: '#d6f1ed',
-    baseSpeed: .000075,
-    highlightSpeed: .00014,
-    rippleSpeed: .00019,
-    wakeSpeed: .0011,
+    edgeTint: 'rgba(22,66,78,.26)',
+    baseSpeed: .00022,
+    highlightSpeed: .00038,
+    rippleSpeed: .00029,
     noiseScale: .047,
-    distortion: .72,
-    surfaceOpacity: .09,
-    highlightOpacity: .19,
-    rippleOpacity: .15,
-    wakeOpacity: .32,
-    edgeBlend: .28,
+    distortion: 1.6,
+    surfaceOpacity: .13,
+    highlightOpacity: .24,
+    rippleOpacity: .12,
+    toneScale: .008,
+    textureNoise: .12,
+    edgeBlend: .8,
     edgeInset: .055,
     edgeRadius: .16,
     isolatedRadius: .35,
@@ -759,16 +760,38 @@
         phaseA: (a + tile.x * WATER_VISUALS.noiseScale) * Math.PI * 2,
         phaseB: (b + tile.y * WATER_VISUALS.noiseScale) * Math.PI * 2,
         phaseC: (c + (tile.x - tile.y) * WATER_VISUALS.noiseScale * .5) * Math.PI * 2,
-        anchorX: .2 + b * .6,
-        anchorY: .2 + c * .6,
+        anchorX: .32 + b * .36,
+        anchorY: .32 + c * .36,
         angle: (d - .5) * Math.PI * 1.55,
         depthGate: a,
         detailGate: b,
         rippleGate: d,
-        curve: (c - .5) * 4
+        curve: (c - .5) * 4,
+        tone: this.waterToneTexture(tile)
       };
       this.waterTileVisualCache.tiles.set(key, visual);
       return visual;
+    }
+
+    waterToneTexture(tile) {
+      // World-space samples and a one-pixel gutter keep adjacent tiles seamless.
+      // This runs only when the terrain cache is built, never in the animation loop.
+      const step=3, side=W.TILE/step+2, canvas=document.createElement('canvas');
+      canvas.width=side;canvas.height=side;
+      const ctx=canvas.getContext('2d'),pixels=ctx.createImageData(side,side);
+      const deep=parseInt(WATER_VISUALS.deepTint.slice(1),16),shallow=parseInt(WATER_VISUALS.shallowTint.slice(1),16);
+      for(let py=0;py<side;py++)for(let px=0;px<side;px++){
+        const wx=tile.x*W.TILE+(px-.5)*step,wy=tile.y*W.TILE+(py-.5)*step;
+        const broad=W.fbm(wx*WATER_VISUALS.toneScale,wy*WATER_VISUALS.toneScale*.8,this.world.seed+6209);
+        const fine=W.fbm(wx*.075,wy*.11,this.world.seed+7919);
+        const tone=W.clamp(.12+broad*.78+(fine-.5)*WATER_VISUALS.textureNoise,0,1),offset=(py*side+px)*4;
+        pixels.data[offset]=W.lerp(deep>>16,shallow>>16,tone);
+        pixels.data[offset+1]=W.lerp((deep>>8)&255,(shallow>>8)&255,tone);
+        pixels.data[offset+2]=W.lerp(deep&255,shallow&255,tone);
+        pixels.data[offset+3]=255;
+      }
+      ctx.putImageData(pixels,0,0);
+      return canvas;
     }
 
     drawWaterTileBase(ctx, tile, biome, x, y, size) {
@@ -783,7 +806,13 @@
       if(topRight)ctx.quadraticCurveTo(right,top,right,top+topRight);else ctx.lineTo(right,top);
       ctx.lineTo(right,bottom-bottomRight);if(bottomRight)ctx.quadraticCurveTo(right,bottom,right-bottomRight,bottom);else ctx.lineTo(right,bottom);
       ctx.lineTo(left+bottomLeft,bottom);if(bottomLeft)ctx.quadraticCurveTo(left,bottom,left,bottom-bottomLeft);else ctx.lineTo(left,bottom);
-      ctx.lineTo(left,top+topLeft);if(topLeft)ctx.quadraticCurveTo(left,top,left+topLeft,top);else ctx.lineTo(left,top);ctx.closePath();ctx.fill();
+      ctx.lineTo(left,top+topLeft);if(topLeft)ctx.quadraticCurveTo(left,top,left+topLeft,top);else ctx.lineTo(left,top);ctx.closePath();
+      ctx.save();ctx.clip();
+      const tone=this.waterTileVisual(tile).tone,gutter=1-.5/3,span=size/3+1/3;
+      ctx.imageSmoothingEnabled=true;
+      ctx.drawImage(tone,gutter,gutter,span,span,x-.5,y-.5,size+1,size+1);
+      this.drawShoreline(ctx,tile,x,y,size);
+      ctx.restore();
     }
 
     drawTerrainRelief(ctx, x, y, size, eastSlope, southSlope) {
@@ -852,25 +881,22 @@
         ctx.fillRect(x + 3 + n * 10, y + 4 + ((n * 31) % 18), 3 + n * 7, 1.4);
       }
       ctx.restore();
-      this.drawShoreline(ctx, tile, x, y, size);
     }
 
     drawShoreline(ctx, tile, x, y, size) {
       if (tile.kind !== 'water') return;
       const sides = [[0,-1,x,y,x+size,y], [1,0,x+size,y,x+size,y+size], [0,1,x,y+size,x+size,y+size], [-1,0,x,y,x,y+size]];
-      ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+      ctx.save();
       for (let i=0;i<sides.length;i++) {
         const [dx,dy,x1,y1,x2,y2] = sides[i];
         const neighbor = this.world.get(tile.x + dx, tile.y + dy);
         if (!neighbor || neighbor.kind === 'water') continue;
-        const n=this.terrainNoise(tile,611+i*37),inset=size*WATER_VISUALS.edgeInset;
-        const sx=x1-dx*inset,sy=y1-dy*inset,ex=x2-dx*inset,ey=y2-dy*inset;
-        const tx=(ex-sx)/size,ty=(ey-sy)/size,trim=size*WATER_VISUALS.edgeRadius*.62;
-        const startX=sx+tx*trim,startY=sy+ty*trim,endX=ex-tx*trim,endY=ey-ty*trim;
-        const mx=(startX+endX)*.5-dx*(.7+n*.9)+dy*(n-.5)*2.6,my=(startY+endY)*.5-dy*(.7+n*.9)+dx*(n-.5)*2.6;
-        ctx.strokeStyle=WATER_VISUALS.edgeTint;ctx.globalAlpha=WATER_VISUALS.edgeBlend*.68;ctx.lineWidth=4.2;ctx.beginPath();ctx.moveTo(startX,startY);ctx.quadraticCurveTo(mx,my,endX,endY);ctx.stroke();
-        const ax=startX+(endX-startX)*(.18+n*.08),ay=startY+(endY-startY)*(.18+n*.08),bx=startX+(endX-startX)*(.58+n*.1),by=startY+(endY-startY)*(.58+n*.1);
-        ctx.strokeStyle=WATER_VISUALS.edgeHighlightTint;ctx.globalAlpha=WATER_VISUALS.edgeBlend*.72;ctx.lineWidth=.75;ctx.beginPath();ctx.moveTo(ax,ay);ctx.quadraticCurveTo((ax+bx)*.5-dx*2+(n-.5)*dy*3,(ay+by)*.5-dy*2+(n-.5)*dx*3,bx,by);ctx.stroke();
+        const inset=size*WATER_VISUALS.edgeInset,band=size*.24;
+        const sx=x1-dx*inset,sy=y1-dy*inset;
+        const gradient=ctx.createLinearGradient(sx,sy,sx-dx*band,sy-dy*band);
+        gradient.addColorStop(0,WATER_VISUALS.edgeTint);gradient.addColorStop(1,'rgba(22,66,78,0)');
+        ctx.fillStyle=gradient;ctx.globalAlpha=WATER_VISUALS.edgeBlend;
+        ctx.fillRect(x,y,size+1,size+1);
       }
       ctx.restore();
     }
@@ -916,9 +942,9 @@
       const showHighlight=visual.detailGate>.7+(1-quality)*.22;
       const showRipple=visual.rippleGate>.86+(1-quality)*.1;
       if(!showSurface&&!showHighlight&&!showRipple)return;
-      const baseTime=now*WATER_VISUALS.baseSpeed*motion+visual.phaseA;
-      const highlightTime=now*WATER_VISUALS.highlightSpeed*motion+visual.phaseB;
-      const rippleTime=now*WATER_VISUALS.rippleSpeed*motion+visual.phaseC;
+      const baseTime=now*WATER_VISUALS.baseSpeed*motion*(.8+visual.detailGate*.4)+visual.phaseA;
+      const highlightTime=now*WATER_VISUALS.highlightSpeed*motion*(.9+visual.rippleGate*.3)+visual.phaseB;
+      const rippleTime=now*WATER_VISUALS.rippleSpeed*motion*(.8+visual.depthGate*.35)+visual.phaseC;
       const cx=x+size*visual.anchorX,cy=y+size*visual.anchorY;
       ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
 
@@ -934,26 +960,16 @@
       if(showHighlight){
         const shimmer=.5+.5*Math.sin(highlightTime),angle=visual.angle*.22+Math.sin(highlightTime*.43)*.12;
         const ux=Math.cos(angle),uy=Math.sin(angle),vx=-uy,vy=ux,len=size*(.16+visual.depthGate*.13),bend=visual.curve+Math.sin(highlightTime*.71)*1.4;
-        const hx=x+size*(.24+visual.rippleGate*.52),hy=y+size*(.24+visual.depthGate*.52);
+        const hx=x+size*(.3+visual.rippleGate*.4)-Math.sin(highlightTime*.7)*WATER_VISUALS.distortion,hy=y+size*(.3+visual.depthGate*.4)+Math.cos(highlightTime*.57)*WATER_VISUALS.distortion*.45;
         ctx.strokeStyle=WATER_VISUALS.highlightTint;ctx.globalAlpha=WATER_VISUALS.highlightOpacity*(.38+shimmer*.48);ctx.lineWidth=.65+visual.rippleGate*.3;ctx.beginPath();
         ctx.moveTo(hx-ux*len*.5,hy-uy*len*.5);ctx.quadraticCurveTo(hx+vx*bend,hy+vy*bend,hx+ux*len*.5,hy+uy*len*.5);ctx.stroke();
       }
 
       if(showRipple){
-        const rippleCycle=rippleTime/(Math.PI*2),pulse=((rippleCycle%1)+1)%1,radius=size*(.045+pulse*.14),fade=Math.sin(pulse*Math.PI)*(1-pulse);
-        ctx.strokeStyle=WATER_VISUALS.rippleTint;ctx.globalAlpha=WATER_VISUALS.rippleOpacity*fade;ctx.lineWidth=.7;ctx.beginPath();
-        ctx.ellipse(cx,cy,radius,radius*(.35+visual.detailGate*.12),visual.angle,.18+visual.depthGate*.45,Math.PI*(1.35+visual.detailGate*.38));ctx.stroke();
-      }
-      ctx.restore();
-    }
-
-    drawWaterWake(ctx, player) {
-      if (this.world?.tileAtPixel?.(player.x,player.y)?.kind !== 'water') return;
-      const time=performance.now()*WATER_VISUALS.wakeSpeed*this.waterMotionScale;
-      ctx.save();ctx.translate(player.x,player.y+10);ctx.strokeStyle=WATER_VISUALS.rippleTint;ctx.lineWidth=1;
-      for(let i=0;i<2;i++){
-        const pulse=(time+i*.5)%1;
-        ctx.globalAlpha=(1-pulse)*WATER_VISUALS.wakeOpacity;ctx.beginPath();ctx.ellipse(0,0,8+pulse*16,2.6+pulse*4.8,0,.16+i*.22,Math.PI*(1.42+i*.12));ctx.stroke();
+        const rx=cx+Math.cos(rippleTime*.63)*WATER_VISUALS.distortion*.5,ry=cy-Math.sin(rippleTime*.81)*WATER_VISUALS.distortion;
+        const length=size*(.22+visual.depthGate*.15),bend=Math.sin(rippleTime+visual.phaseA)*1.4+visual.curve;
+        ctx.strokeStyle=WATER_VISUALS.rippleTint;ctx.globalAlpha=WATER_VISUALS.rippleOpacity*(.5+.3*Math.sin(rippleTime*.73));ctx.lineWidth=.8;ctx.beginPath();
+        ctx.moveTo(rx-length*.5,ry+1);ctx.bezierCurveTo(rx-length*.18,ry-bend,rx+length*.16,ry+bend*.6,rx+length*.5,ry-1);ctx.stroke();
       }
       ctx.restore();
     }
@@ -1017,7 +1033,6 @@
 
     drawPlayer(ctx) {
       const p = this.player, c = W.CLASS_DATA[p.classId], src = this.classSpritePaths.get(p.classId) || `Assets/Classes/${c.sprite}`, img = this.spriteImage(src);
-      this.drawWaterWake(ctx,p);
       ctx.save(); ctx.translate(p.x, p.y);
       ctx.fillStyle = 'rgba(0,0,0,.33)'; ctx.beginPath(); ctx.ellipse(0, 12, 15, 5, 0, 0, Math.PI * 2); ctx.fill();
       if (img) { ctx.save(); if (p.facing < 0) ctx.scale(-1,1); ctx.drawImage(img, -24, -39, 48, 48); ctx.restore(); }
